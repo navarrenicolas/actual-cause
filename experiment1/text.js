@@ -1,17 +1,16 @@
 var instructions_presentation =
-    "<h1>Instructions (1 of 5)</h1><p>In this experiment, you will perform the task of a data analyst a drug threatment research program. The task will consist of determening whether a certain drug treatment will have adverse side effects on a patient based on some genetic data.</p>";
+/*
+    Possible changes:
+        - Give the drug treatment, so that it is not confused with multiple treatments
+*/
+    "<h1>Instructions (1 of 3)</h1><p>In this experiment, you will perform the task of a medical student trying to determine if a patient will experience adverese side-effects after taking a drug treatment. The adverse side-effects occur based on each patient's genetic data. As a medical student, you will be presented with many known patient's reactions to the drug treatment. Your job is to use that information to make predictions on new unknown patients.</p>";
 
 var instructions_alleles = 
-    "<h1>Instructions (2 of 5)</h1><p> The genetic data will depend on 4 alleles that may or may not be present in a patient. The alleles each are represented by their own colour. For each patient, we say they have the allele if the colour is present, otherwise it will be blank.</p>";
-    
-var instructions_grid1 =
-    "<h1>Instructions (2 of 5)</h1><p>A table of data like the one below will appear on the screen <strong>for a very brief moment</strong>.</p><p>You have to memorize where the black squares are.</p><p>You should <strong>memorize</strong> the pattern, <strong>not use notes</strong> or diagrams!</p>";
-
-var instructions_inferences =
-    "<h1>Instructions (3 of 5)</h1><p>Then, you will be presented with sentences on the screen. After one or more sentences are presented, we will ask you <strong>whether you can draw a certain conclusion from them</strong>. We want to know whether, assuming that the sentences you are given are true, <strong>you think</strong> that the proposed conclusion is <strong>guaranteed to be true</strong>.<p class=\"premise\">Every man is mortal.</p><p class=\"premise\">John is a man.</p></p><p class=\"prompt\">Does the sentence below follow from the sentences above?</p><p class=\"conclusion\">John is mortal.</p>";
-
-var instructions_grid2 =
-    "<h1>Instructions (4 of 5)</h1><p>Finally, a blank grid will appear.</p><p>You have to reproduce the pattern from before by clicking on the grid.</p><p>It is important that you recreate the grid as accurately as possible.</p><p>After answering, you will be given feedback on your performance.</p><p>Take a minute to play around with the grid.  Once four squares in the grid are black, you can continue to the next page.</p>";
+    "<h1>Instructions (2 of 3)</h1><p> The genetic data will depend on a collection of alleles that may or may not be present in a patient. In the folowing example there are 4 alleles which we will call A,B,C,and D. The presence of each allele is indicated by a black square, and the absence with a blank square. The last cell declares whether the treatment will have adverse side effects. Red when there are adverse side-effects, and green when it is safe to administer the drug.</p>";
+var instructions_alleles2 = 
+    "<h1>Instructions (3 of 3)</h1><p>  These are examples examples of known patients' data for one specific drug. Individual patients are represented by each row. Note that it is possible for two patients to have the same allele structures (some arrangements are more likely than others). In this scenario only two alleles are of interest, A and B. In this case, it is known that the drug will have adverse side-effects when A is present and B is not, as is shown in the patient data bellow.</p>";
+var tutorial_1 =
+    "<h1>Instructions (1 of 3)</h1><p>Finally, a blank grid will appear.</p><p>You have to reproduce the pattern from before by clicking on the grid.</p><p>It is important that you recreate the grid as accurately as possible.</p><p>After answering, you will be given feedback on your performance.</p><p>Take a minute to play around with the grid.  Once four squares in the grid are black, you can continue to the next page.</p>";
 
 var instructions_inferences_example1 =
     "<h1>Instructions (5 of 5)</h1><p>We will now give you <strong>two examples</strong> of the kinds of questions you will be asked.</p>";

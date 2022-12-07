@@ -1,8 +1,9 @@
 /** Actual Cause in causal inference experiment
 
 Nicolas Navarre
-
+Dec 7 2022
 */
+
 //////////////////////////////////////////////////////////////////////////////////////
 ///////                   Definitions                           //////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
@@ -10,12 +11,6 @@ Nicolas Navarre
 // Simulate some random subject
 var subject_ID = jsPsych.randomization.randomID(10);
 jsPsych.data.addProperties({ 'subject_ID': subject_ID });
-
-var consent_block = {
-  type: "consent-dec",
-  cont_btn: "start",
-  data: { questionId: "consent" }
-};
 
 var make_instruction = function(stimulus){
   return {
@@ -26,46 +21,9 @@ var make_instruction = function(stimulus){
 };
 
 
-// TODO:  Standard consent block
-
-// Record subject's Prolific ID
-var prolificID = {
-  type: 'survey-text',
-  questions: [
-    {prompt: "Please enter your Prolific ID below.", name: 'Comments', rows: 1, columns: 30, font_size: 18}
-  ],
-  data: { questionId: "ProlificID" }
-};
-
-jsPsych.data.addProperties({'subject_ID': subject_ID});
-jsPsych.data.addProperties({'group_number': group_number});
-
-
-
-/////////////////////////
-// GRID PARAMETERS
-/////////////////////////
-
-// parameter for the memory-load task
-// background color of the selected squares
-var color_present = "black";
-var color_safe = "green";
-var color_unsafe = "red";
-
-// set to false to draw only inner borders in the grids
-var border = true; 
-var grid_size = 71;
-// symbol displayed in the selected squares
-var symbol_show = "Show";
-var symbol_answ = "Ans";
-
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////
 //////////                     GRID FUNCTIONS              /////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
-var grid_dim_hard = [4,4];
-var grid_dim_easy = [2,2];
 
 // creates a trial where a grid is shown
 // target is the pattern of squares, color the color of the target squares and 
@@ -120,7 +78,9 @@ var feedbackGrid = function(perc_correct) {
   }
 };
 
+var dataCreator = function (is_test,targets){
 
+};
 // creates nb targets of level of difficulty lvl for a grid of dimensions
 // grid_dim 
 // the target maker function is under resourses/common
@@ -143,27 +103,56 @@ var gridTargetCreator = function(nb, lvl, grid_dim) {
 };
 
 
-// creates a trial for the inference-making task
-var inferenceCreator = function(stimulus) {
-  return {
-    type: "survey-multi-choice",
-    questions: [{
-      prompt: stimulus.stim,
-      options: ["Yes", "No"],
-      horizontal: false,
-      //required: true
-    }],
-    validation: "request",
-    data: stimulus.data,
-    on_finish: function(data) {
-      data.expected = data.expect == data.button_pressed;
-    }
-  };
-};
+
+/////////////////////////////////////////////////////////
+/////////////       GRID PARAMETERS   ///////////////////
+/////////////////////////////////////////////////////////
+
+// parameter for the memory-load task
+// background color of the selected squares
+var color_present = "black";
+var color_safe = "green";
+var color_unsafe = "red";
+
+// set to false to draw only inner borders in the grids
+var border = true; 
+var grid_size = 71;
+// symbol displayed in the selected squares
+var symbol_show = "";
+
+// Define the tutorial data
+var instruction_1 = [1,0,0,1,1];
+var instruction_2 = [[1,0,1],[1,0,1],[1,1,0],[1,1,0]];
+var tutorial_1 = [[0,1,0],[1,1,0],[1,1,0],[1,0,1]];
+
+var tutorial_1_dim = [4,3]
+var grid_dim_hard = [4,4];
+var grid_dim_easy = [2,2];
+
 
 ////////////////////////////////////////////////////
 ////////        Trials       ///////////////////////
 ////////////////////////////////////////////////////
+
+var consent_block = {
+  type: "consent-dec",
+  cont_btn: "start",
+  data: { questionId: "consent" }
+};
+
+
+// Record subject's Prolific ID
+var prolificID = {
+  type: 'survey-text',
+  questions: [
+    {prompt: "Please enter your Prolific ID below.", name: 'Comments', rows: 1, columns: 30, font_size: 18}
+  ],
+  data: { questionId: "ProlificID" }
+};
+
+jsPsych.data.addProperties({'subject_ID': subject_ID});
+jsPsych.data.addProperties({'group_number': group_number});
+
 
 var survey_trial = {
   type: 'survey-text',
@@ -175,7 +164,6 @@ var prolific_id_trial = {
   questions: [{prompt: "Please enter your Prolific ID:", rows: 1, columns: 50}],
 };
 
-
 var instructions = [
   {
     type: 'html-button-response',
@@ -185,47 +173,77 @@ var instructions = [
   {
     type: 'grid-shower',
     training: true,
-    prompt: instructions_grid1,
-    grid: [4,4],
-    targets: [[0,0],[1,1],[2,2],[3,3]],
+    prompt: instructions_alleles,
+    grid: [1,5],
+    targets: instruction_1,
     target_color: color_present,
     target_symbol: symbol_show,
     border: border,
     grid_square_size: grid_size
   },
   {
-    type: 'html-button-response',
-    stimulus: instructions_inferences,
-    choices: ['Next']
-  },
-  {
-    type: 'grid-answer',
+    type: 'grid-shower',
     training: true,
-    prompt: instructions_grid2,
-    grid: [4,4],
-    targets: [[0,0],[1,1],[2,2],[3,3]],
-    allow_nontarget_responses: true,
+    prompt: instructions_alleles2,
+    grid: [5,3],
+    targets: instruction_2,
     target_color: color_present,
     target_symbol: symbol_show,
     border: border,
     grid_square_size: grid_size
-  },
-  {
-    type: 'html-button-response',
-    stimulus: instructions_inferences_example1,
-    choices: ['Next']
-  },
-  {
-    type: 'html-button-response',
-    stimulus: instructions_inferences_example2,
-    choices: ['Next']
-  },
-  {
-    type: 'html-button-response',
-    stimulus: instructions_inferences_example3,
-    choices: ['Next']
   }
 ];
+
+// var instructions = [
+//   {
+//     type: 'html-button-response',
+//     stimulus: instructions_presentation,
+//     choices: ['Next']
+//   },
+//   {
+//     type: 'grid-shower',
+//     training: true,
+//     prompt: instructions_grid1,
+//     grid: [4,4],
+//     targets: [[0,0],[1,1],[2,2],[3,3]],
+//     target_color: color_present,
+//     target_symbol: symbol_show,
+//     border: border,
+//     grid_square_size: grid_size
+//   },
+//   {
+//     type: 'html-button-response',
+//     stimulus: instructions_inferences,
+//     choices: ['Next']
+//   },
+//   {
+//     type: 'grid-answer',
+//     training: true,
+//     prompt: instructions_grid2,
+//     grid: [4,4],
+//     targets: [[0,0],[1,1],[2,2],[3,3]],
+//     allow_nontarget_responses: true,
+//     target_color: color_present,
+//     target_symbol: symbol_show,
+//     border: border,
+//     grid_square_size: grid_size
+//   },
+//   {
+//     type: 'html-button-response',
+//     stimulus: instructions_inferences_example1,
+//     choices: ['Next']
+//   },
+//   {
+//     type: 'html-button-response',
+//     stimulus: instructions_inferences_example2,
+//     choices: ['Next']
+//   },
+//   {
+//     type: 'html-button-response',
+//     stimulus: instructions_inferences_example3,
+//     choices: ['Next']
+//   }
+// ];
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////              MAKING GRIDS       //////////////////////////////////////
