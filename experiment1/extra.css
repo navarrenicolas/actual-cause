@@ -1,0 +1,21 @@
+.premise {
+    padding-left: 20px;
+}
+
+.conclusion {
+    font-weight: bold;
+    text-align: center;
+}
+
+.prompt {
+    font-style: italic;
+}
+
+.center-content {
+  text-align: center;
+}
+
+p.indent-line-breaks {
+    margin-top: 0em;
+    margin-bottom: 0em;
+}
