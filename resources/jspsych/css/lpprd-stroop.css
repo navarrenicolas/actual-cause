@@ -1,0 +1,45 @@
+#header {
+    width: 600px;
+    height: 75px;
+    text-align: center;
+    margin: 0 auto;
+}
+
+#options {
+    margin: 0 auto;
+    text-align: center;
+}
+
+#fixation {
+  text-align: center;
+  font-size: 2.5em;
+  font-family: monospace;
+}
+
+#feedback {
+    margin: 0 auto;
+    text-align: center;
+}
+
+.rounded {
+    border-radius: 0.7em;
+    border: 0.1em solid;
+    padding: 0.7em;
+    display: inline-block;
+}
+
+.option {
+    display: inline-block;
+    text-align: center;
+    vertical-align: top;
+    width: 120px;
+}
+
+.response {
+    display: block;
+}
+
+#stroop-stimulus p {
+    text-align: center;
+    font-size: 2em;
+}

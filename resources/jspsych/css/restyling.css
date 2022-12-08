@@ -1,0 +1,210 @@
+#consent {
+  height: 100%;
+  max-width: 800px;
+}
+
+#consent {
+  display: table;
+  margin: auto;
+  display: table-cell;
+  vertical-align: middle;
+}
+
+#instructions {
+  max-width: 800px;
+}
+
+.jspsych-content {
+    max-width: 800px;
+}
+
+#no-more-than-400 {
+  max-width: 400px;
+  height: auto;
+  margin: 0 auto;
+  padding: 10px;
+  position: relative;
+}
+
+#consent_form > label {
+  font-weight: 900;
+}
+
+#consent_body {
+  margin-top: 1em;
+  padding: 2em;
+  box-shadow: 0 0 0 1px;
+}
+@media (min-resolution: 2dppx) {
+  #consent_body {
+    box-shadow: 0 0 0 0.5px;
+  }
+}
+@media (min-resolution: 3dppx) {
+  #consent_body {
+    box-shadow: 0 0 0 0.33333333px;
+  }
+}
+@media (min-resolution: 4dppx) {
+  #consent_body {
+    box-shadow: 0 0 0 0.25px;
+  }
+}
+
+#consent_form {
+  margin: 2.5em;
+}
+
+p {
+    text-align:justify;
+}
+
+body {
+  font-family: Raleway;
+}
+
+#consent_checkbox {
+    opacity: 0;
+    position: absolute;
+}
+
+#consent_label {
+  position: relative;
+}
+
+#consent_checkbox {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px;
+    cursor: pointer;
+}
+
+#consent_checkbox + #consent_label:before {
+    content: '';
+    background: #fff;
+    border: 2px solid;
+    display: inline-block;
+    vertical-align: middle;
+    width: 20px;
+    height: 20px;
+    padding: 2px;
+    margin-right: 10px;
+    text-align: center;
+}
+
+#consent_checkbox:checked + #consent_label:before {
+    background: black;
+    box-shadow: inset 0px 0px 0px 4px #fff;
+}
+
+.jspsych-btn {
+  margin: 2em;
+}
+
+.left {
+  text-align: left;
+}
+
+#jspsych-survey-dropdown-form {
+  max-width: 600px;
+}
+
+.jspsych-survey-dropdown-question {
+  max-width: 400px;
+  display: block;
+  margin: auto;
+}
+
+.jspsych-survey-dropdown-select,
+.jspsych-survey-dropdown-text {
+  display: inline;
+  vertical-align: top;
+  line-height: 28px;
+  border: 0;
+  margin: auto;
+  padding: 5px;
+  min-width: 150px;
+  font-size: 100%;
+}
+
+.jspsych-survey-dropdown-select {
+  float: right;
+}
+
+.fixation-cross {
+    font-size: 32px;
+}
+
+ul.jspsych-survey-sort-question {
+    cursor: pointer;
+    text-align: left;
+    border: 1px solid black;
+    list-style: none;
+}
+
+li.jspsych-survey-sort-option {
+    font-style: italic;
+}
+
+ul.jspsych-survey-sort-question > li::before {
+    content: "\27A4  ";
+}
+
+p.jspsych-survey-sort-text {
+    font-weight: bold;
+}
+
+
+
+/* Fancy progress bar
+ * This is a bunch of hacks that parly *overrides* the defaults from jsPsych. It
+ * would be better to actually change them but this way we get to keep the
+ * original css file untouched and just apply cosmetic
+ */
+
+#jspsych-progressbar-container {
+  background: #FFF;
+  padding: 0px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid #f0f0f0;
+}
+#jspsych-progressbar-container > span {
+  display: none;
+  margin-bottom: 5px;
+}
+
+#jspsych-progressbar-outer {
+  max-height: 4px;
+  display: block;
+  width: 100%;
+  background-color: snow;
+  box-shadow: none;
+}
+
+#jspsych-progressbar-inner {
+  max-height: 4px;
+  display: block;
+  background-color: orange;
+  -webkit-transition: width 0.4s; /* Safari */
+  transition: width 0.4s;
+  transition-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+
+div.lang-reason-prime-images-target-sentence p {
+    text-align: center;
+}
+
+div.lang-reason-prime-images-prompt p {
+    text-align: center;
+}
+
+div.lang-reason-prime-images-images-table {
+    text-align: center;
+}
+
+.lang-reason-prime-images-images-table-cell {
+    font-size: 150%;
+    padding-left: 0.2em;
+    padding-right: 0.2em;
+}

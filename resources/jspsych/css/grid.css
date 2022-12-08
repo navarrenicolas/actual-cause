@@ -1,0 +1,32 @@
+.leo_display {
+    font-weight: bold;
+    padding-top: 50px;
+    padding-bottom: 30px;
+}
+
+.leo_correct {
+    color: green;
+    font-size: 250%;
+}
+
+.leo_wrong {
+    color: red;
+    font-size: 250%;
+}
+
+.leo_almost {
+    color: lightgreen;
+    font-size: 250%;
+}
+
+.centered {
+    text-align: center;
+}
+
+.jspsych-memory-grid-cell {
+    font-size: 12px;
+}
+
+.jspsych-memory-grid-prompt {
+    padding-bottom: 20px;
+}
