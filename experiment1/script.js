@@ -116,7 +116,7 @@ var color_unsafe = "red";
 
 // set to false to draw only inner borders in the grids
 var border = true; 
-var grid_size = 71;
+var grid_size =70;
 // symbol displayed in the selected squares
 var symbol_show = "";
 
@@ -174,7 +174,7 @@ var instructions = [
     type: 'grid-data',
     training: true,
     prompt: instructions_alleles,
-    grid: [1,5],
+    grid: [20,5],
     targets: instruction_1,
     // target_color: color_present,
     // target_symbol: symbol_show,

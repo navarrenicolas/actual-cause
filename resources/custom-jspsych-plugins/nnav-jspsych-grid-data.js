@@ -170,7 +170,7 @@ jsPsych.plugins["grid-data"] = (function() {
       
       for (var j = 0; j < grid[1]; j++) {
         var className = "jspsych-memory-grid-cell";
-        theGrid += "<div class=\"" + className + "\" id=\"jspsych-memory-grid-cell-" + i + "-" + j + "\" data-row=\"" + i + "\" data-column=\"" + j + "\" style=\"width:" + square_size + "px; height:" + square_size + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
+        theGrid += "<div class=\"" + className + "\" id=\"jspsych-memory-grid-cell-" + i + "-" + j + "\" data-row=\"" + i + "\" data-column=\"" + j + "\" style=\"width:" + square_size + "px; height:" + square_size*0.3 + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
         for (var k in targets){
           if (targets[k][0] == i-1 && targets[k][1] == j) {
             if(j==grid[1]-1){
