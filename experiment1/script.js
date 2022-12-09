@@ -121,9 +121,9 @@ var grid_size = 71;
 var symbol_show = "";
 
 // Define the tutorial data
-var instruction_1 = [1,0,0,1,1];
-var instruction_2 = [[1,0,1],[1,0,1],[1,1,0],[1,1,0]];
-var tutorial_1 = [[0,1,0],[1,1,0],[1,1,0],[1,0,1]];
+var instruction_1 = [[0,0],[0,3],[0,5]];
+var instruction_2 = [[0,1],[0,2],[1,0],[1,2],[2,0],[2,1],[3,0],[3,1]];
+var tutorial_1 = [[0,2],[0,3]];
 
 var tutorial_1_dim = [4,3]
 var grid_dim_hard = [4,4];
@@ -171,24 +171,24 @@ var instructions = [
     choices: ['Next']
   },
   {
-    type: 'grid-shower',
+    type: 'grid-data',
     training: true,
     prompt: instructions_alleles,
     grid: [1,5],
     targets: instruction_1,
-    target_color: color_present,
-    target_symbol: symbol_show,
+    // target_color: color_present,
+    // target_symbol: symbol_show,
     border: border,
     grid_square_size: grid_size
   },
   {
-    type: 'grid-shower',
+    type: 'grid-data',
     training: true,
     prompt: instructions_alleles2,
     grid: [5,3],
     targets: instruction_2,
-    target_color: color_present,
-    target_symbol: symbol_show,
+    // target_color: color_present,
+    target_symbol: "hello",
     border: border,
     grid_square_size: grid_size
   }
