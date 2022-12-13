@@ -125,9 +125,11 @@ var instruction_1 = [[0,0],[0,3],[0,5]];
 var instruction_2 = [[0,1],[0,2],[1,0],[1,2],[2,0],[2,1],[3,0],[3,1]];
 var tutorial_1 = [[0,2],[0,3]];
 
-var tutorial_1_dim = [4,3]
-var grid_dim_hard = [4,4];
+var tutorial_1_dim = [4,3];
+var data_dim = [20,5];
+var test_dim = [10,5];
 var grid_dim_easy = [2,2];
+var grid_dim_hard = [4,4];
 
 
 ////////////////////////////////////////////////////
@@ -174,7 +176,7 @@ var instructions = [
     type: 'grid-data',
     training: true,
     prompt: instructions_alleles,
-    grid: [20,5],
+    grid: [1,5],
     targets: instruction_1,
     // target_color: color_present,
     // target_symbol: symbol_show,
@@ -189,6 +191,17 @@ var instructions = [
     targets: instruction_2,
     // target_color: color_present,
     target_symbol: "hello",
+    border: border,
+    grid_square_size: grid_size
+  },
+  {
+    type: 'grid-data',
+    training: true,
+    prompt: tutorial_instructions_1,
+    grid: data_dim,
+    targets: data_targets,
+    // target_color: color_present,
+    // target_symbol: ,
     border: border,
     grid_square_size: grid_size
   }

@@ -14,6 +14,13 @@ jsPsych.plugins["grid-data"] = (function() {
     name: 'grid-data',
     description: '',
     parameters: {
+      causals: {
+        type: jsPsych.plugins.parameterType.INT,
+        pretty_name: 'Causal targets',
+        array: true,
+        default: [[0,0],[0,1],[1,2]],
+        description: 'Location of causal targets to display.  Array of [row, column] coordinates'
+      },
       targets: {
         type: jsPsych.plugins.parameterType.INT,
         pretty_name: 'Targets',
@@ -73,8 +80,8 @@ jsPsych.plugins["grid-data"] = (function() {
       outcome_colour: {
         type: jsPsych.plugins.parameterType.STRING,
         pretty_name: "Outcome colour",
-        // default: '#FF1654',
-        default: 'green',
+        default: '#FF1654',
+        // default: 'green',
         description: "Background color of the selected cells"
       },
       no_outcome_colour: {
@@ -130,7 +137,7 @@ jsPsych.plugins["grid-data"] = (function() {
       }
 
       // create grid
-      display_element.innerHTML += thisPlugin.drawGrid(trial.grid, trial.grid_square_size, trial.border, trial.targets, trial.outcome_colour,trial.no_outcome_colour);
+      display_element.innerHTML += thisPlugin.drawGrid(trial.grid, trial.grid_square_size, trial.border, trial.targets, trial.causals, trial.outcome_colour,trial.no_outcome_colour);
 
       //Display Header
       var headers = ['A','B','C','D','E'];
@@ -163,73 +170,63 @@ jsPsych.plugins["grid-data"] = (function() {
     }
   };
 
-  plugin.drawGrid = function(grid, square_size, full_box, targets, outcome_colour, no_outcome_colour) {
+  
+  plugin.drawGrid = function(grid, square_size, full_box, targets, causals, outcome_colour, no_outcome_colour) {
+    
+    arrayEquals = function(a, b) {
+      return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((val, index) => val === b[index]);
+    };
+
+    checkArray = function(array, val) {
+      for (const arr of array) {
+        if (arrayEquals(val, arr)){
+          return true;
+        }
+      };
+      return false;
+    };
+
+    drawBorders = function (row, col){
+      if (row==0){
+        return "border-top: 1px solid black; border-left: 1px solid black; border-bottom: 3px solid black; border-right: 1px solid black;"
+      };
+      if (checkArray(causals, [row-1,col-1])){
+        return "border-top: 2px solid yellow; border-left: 2px solid yellow; border-bottom: 2px solid yellow; border-right: 2px solid yellow;"
+      }
+      return "border-top: 1px solid black; border-left: 1px solid black; border-bottom: 1px solid black; border-right: 1px solid black;"
+    };
+    
     var theGrid = "<div id=\"jspsych-memory-grid\" style=\"margin:auto; display:table; table-layout:fixed; border-spacing:0px\">";
+    // Itterate all cells based on grid size
     for (var i = 0; i < grid[0]+1; i++) {
       theGrid += "<div class=\"jspsych-memory-grid-row\" style=\"display:table-row;\">";
-      
       for (var j = 0; j < grid[1]; j++) {
         var className = "jspsych-memory-grid-cell";
         theGrid += "<div class=\"" + className + "\" id=\"jspsych-memory-grid-cell-" + i + "-" + j + "\" data-row=\"" + i + "\" data-column=\"" + j + "\" style=\"width:" + square_size + "px; height:" + square_size*0.3 + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
+        // Fill the target cells with colours
         for (var k in targets){
           if (targets[k][0] == i-1 && targets[k][1] == j) {
-            if(j==grid[1]-1){
-                theGrid += "background-color: " + outcome_colour + ";";
+            if(j<grid[1]-1){
+              theGrid += "background-color: " + "black" + ";";
             }else{
-                theGrid += "background-color: " + "black" + ";";
+              theGrid += "background-color: " + outcome_colour + ";";
             }
+          }else if((j == grid[1]-1) && i > 0){
+            console.log("Made it");
+            theGrid += "background-color: " + no_outcome_colour + ";";
           }
         }
-        if (typeof(full_box) !== 'undefined' && full_box == true) {
-          if (i == grid[0]-1) theGrid += "border-top: 3px solid black; border-left: 3px solid black; border-bottom: 3px solid black;"
-          else theGrid += "border-top: 3px solid black; border-left: 3px solid black;"
-          if(j == grid[1]-1) theGrid += "border-top: 3px solid black; border-left: 3px solid black; border-right: 3px solid black;"
-          else theGrid += "border-top: 3px solid black; border-left: 3px solid black;"
-          }
-        else
-          switch (i) {
-          case 0:
-            switch (j) {
-            case 0:
-              theGrid+= "border-right: 1px solid black; border-bottom: 1px solid black;";
-              break;
-            case (grid[1] - 1):
-              theGrid+= "border-left: 1px solid black; border-bottom: 1px solid black;";
-              break;
-            default:
-              theGrid+= "border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black;";
-            }
-            break;
-          case (grid[0] - 1):
-            switch (j) {
-            case 0:
-              theGrid+= "border-right: 1px solid black; border-top: 1px solid black;";
-              break;
-            case (grid[1] - 1):
-              theGrid+= "border-left: 1px solid black; border-top: 1px solid black;";
-              break;
-            default:
-              theGrid+= "border-left: 1px solid black; border-right: 1px solid black; border-top: 1px solid black;";
-            }
-            break;
-          default:
-            switch (j) {
-            case 0:
-              theGrid+= "border-right: 1px solid black; border-top: 1px solid black; border-bottom:1px solid black";
-              break;
-            case (grid[1] - 1):
-              theGrid+= "border-left: 1px solid black; border-top: 1px solid black; border-bottom:1px solid black;";
-              break;
-            default:
-              theGrid+= "border: 1px solid black;";
-            }
-            break;
-          }
+        //Add borders
+        theGrid += drawBorders(i,j);
+
         theGrid += "\"></div>";
       }
       theGrid += "</div>";
     }
     theGrid += "</div>";
+    
+
+
 
     return theGrid;
   };
