@@ -1,14 +1,15 @@
 # Fdb version 3
-["bibtex main"] 1675421691 "main.aux" "main.bbl" "main" 1675422259
-  "/Users/Nicolas/Documents/Research/Latex/ref.bib" 1675180186 23944 31cc2ca72181205cc838a7d4729fabc6 ""
+["bibtex main"] 1678109025 "main.aux" "main.bbl" "main" 1678121774
+  "/Users/Nicolas/Documents/Research/Latex/ref.bib" 1678121773 29210 4a70024fe3a276c34c977dca86aedec6 ""
   "/usr/local/texlive/2018/texmf-dist/bibtex/bst/apacite/apacite.bst" 1480098433 141073 9d7b79dbf9d91133318126032cff8c27 ""
   "main.aux" 1675422258 2229 d7a7414ccf569500ff9e3849ab6eadb7 ""
   (generated)
-  "main.bbl"
   "main.blg"
-["pdflatex"] 1675422257 "/Users/Nicolas/Documents/Research/IJN/M2/Preregistration/write_up/main.tex" "/Users/Nicolas/Documents/Research/IJN/M2/Preregistration/write_up/main.pdf" "main" 1675422259
+  "main.bbl"
+["pdflatex"] 1675422257 "/Users/Nicolas/Documents/Research/IJN/icloud.nosync/actual-cause/notes/preregistration/main.tex" "/Users/Nicolas/Documents/Research/IJN/icloud.nosync/actual-cause/notes/preregistration/main.pdf" "main" 1678121774
   "/Users/Nicolas/Documents/Research/IJN/M2/Preregistration/write_up/main.aux" 1675422258 2229 d7a7414ccf569500ff9e3849ab6eadb7 ""
   "/Users/Nicolas/Documents/Research/IJN/M2/Preregistration/write_up/main.tex" 1675422256 34838 3cd0a726e88f4e4b106c273c4ccf2ec0 ""
+  "/Users/Nicolas/Documents/Research/IJN/icloud.nosync/actual-cause/notes/preregistration/main.tex" 1678095924 34838 3cd0a726e88f4e4b106c273c4ccf2ec0 ""
   "/usr/local/texlive/2018/texmf-dist/fonts/enc/dvips/base/8r.enc" 1480098666 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2018/texmf-dist/fonts/map/fontname/texfonts.map" 1511824771 3332 103109f5612ad95229751940c61aada0 ""
   "/usr/local/texlive/2018/texmf-dist/fonts/tfm/adobe/symbol/psyr.tfm" 1480098689 1408 5937f58aa508ea2cea4901c07d10f5fe ""
@@ -167,11 +168,13 @@
   "/usr/local/texlive/2018/texmf-var/web2c/pdftex/pdflatex.fmt" 1523934516 4220280 10cab8fbd7c5a7c52aba9917e190d018 ""
   "/usr/local/texlive/2018/texmf.cnf" 1523934483 577 0b39adfd7c93507ff20c9c14c2f1a33f ""
   "main.aux" 1675422258 2229 d7a7414ccf569500ff9e3849ab6eadb7 ""
-  "main.bbl" 1675421691 4272 fa5106de19725ca423e7acc7d5971475 "bibtex main"
-  "main.tex" 1675422256 34838 3cd0a726e88f4e4b106c273c4ccf2ec0 ""
+  "main.bbl" 1678109025 4272 fa5106de19725ca423e7acc7d5971475 "bibtex main"
+  "main.tex" 1678095924 34838 3cd0a726e88f4e4b106c273c4ccf2ec0 ""
   (generated)
+  "/Users/Nicolas/Documents/Research/IJN/icloud.nosync/actual-cause/notes/preregistration/main.log"
   "main.aux"
-  "/Users/Nicolas/Documents/Research/IJN/M2/Preregistration/write_up/main.pdf"
-  "main.pdf"
-  "/Users/Nicolas/Documents/Research/IJN/M2/Preregistration/write_up/main.log"
   "main.log"
+  "main.pdf"
+  "/Users/Nicolas/Documents/Research/IJN/M2/Preregistration/write_up/main.pdf"
+  "/Users/Nicolas/Documents/Research/IJN/M2/Preregistration/write_up/main.log"
+  "/Users/Nicolas/Documents/Research/IJN/icloud.nosync/actual-cause/notes/preregistration/main.pdf"
