@@ -3,15 +3,15 @@ var instructions_presentation =
     Possible changes:
         - Give the drug treatment, so that it is not confused with multiple treatments
 */
-    "<h1>Instructions (1 of 3)</h1><p>In this experiment, you will perform the task of a medical student trying to determine if a patient will experience adverese side-effects after taking a drug treatment. The adverse side-effects occur based on each patient's genetic data. As a medical student, you will be presented with many known patient's reactions to the drug treatment. Your job is to use that information to make predictions on new unknown patients.</p>";
+    "<h1>Instructions (1 of 3)</h1><p>In this experiment, you will perform the task of a medical student trying to determine if it is safe for a patient to take a drug treatment. The adverse side-effects occur based on each patient's genetic data. As a medical student, you will be presented with many known patient's reactions to the drug treatment. Your job is to use that information to make predictions on new unknown patients.</p>";
 
 var instructions_alleles = 
     // Treatments as safe unsafe
     // Make sure it is clear that the safeness is a sharp binary variable
-    "<h1>Instructions (2 of 3)</h1><p> The genetic data will depend on a collection of alleles that may or may not be present in a patient. In the folowing example there are 4 alleles which we will call A,B,C,and D. The presence of each allele is indicated by a black square, and the absence with a blank square. The last cell declares whether the treatment will have adverse side effects. Red when there are adverse side-effects, and green when it is safe to administer the drug.</p>";
+    "<h1>Instructions (2 of 3)</h1><p> The genetic data will depend on a collection of alleles that may or may not be present in each patient. In the folowing example there are 4 alleles which we will call A,B,C,and D. The presence of each allele is indicated by a black square, and the absence with a blank square. The last cell declares whether the treatment will have adverse side effects. Red when there are adverse side-effects, and green when it is safe to administer the drug.</p>";
 var instructions_alleles2 = 
     // Give specific examples of indivisual rows
-    "<h1>Instructions (3 of 3)</h1><p>  These are examples examples of known patients' data for one specific drug. Individual patients are represented by each row. Note that it is possible for two patients to have the same allele structures (some arrangements are more likely than others). In this scenario only two alleles are of interest, A and B. In this case, it is known that the drug will have adverse side-effects when A is present and B is not, as is shown in the patient data bellow.</p>";
+    "<h1>Instructions (3 of 3)</h1><p>  These are examples examples of known patients' data for one specific drug. Individual patients are represented by each row. Note that it is possible for two patients to have the same allele structures (some arrangements are more likely than others). For this specific drug, it is know to only depend on two alleles, A and B. It is further known that the drug will have adverse side-effects when A is present and B is not, as is shown in the patient data bellow.</p>";
 var tutorial_instructions_1 =
     "<h1>Instructions (1 of 3)</h1><p>Finally, a blank grid will appear.</p><p>You have to reproduce the pattern from before by clicking on the grid.</p><p>It is important that you recreate the grid as accurately as possible.</p><p>After answering, you will be given feedback on your performance.</p><p>Take a minute to play around with the grid.  Once four squares in the grid are black, you can continue to the next page.</p>";
 
