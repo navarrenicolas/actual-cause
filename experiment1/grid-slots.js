@@ -20,11 +20,17 @@ var jsGridData = (function (jspsych) {
 				type: jspsych.ParameterType.INT,
 				pretty_name: 'Targets',
 				array: true,
-				default: [[0, 0], [0, 1]],
+				default: [[1, 1]],
 				description: 'Location of targets to display.  Array of [row, column] coordinates'
 			},
+			cause: {
+				type: jspsych.ParameterType.INT,
+				pretty_name: 'Grid',
+				default: true,
+				description: 'Dimensions of the array as [rows, columns] (does not include the header)'
+			},
 			grid: {
-				type: jspsych.ParameterType.BOOL,
+				type: jspsych.ParameterType.INT,
 				pretty_name: 'Grid',
 				array: true,
 				default: [4, 3],
@@ -39,7 +45,7 @@ var jsGridData = (function (jspsych) {
 			target_symbol: {
 				type: jspsych.ParameterType.STRING,
 				pretty_name: 'Target symbol',
-				default: '',//String.fromCharCode(11044),
+				default: '',
 				description: 'Symbol to be displayed in target cells'
 			},
 			prompt: {
@@ -53,24 +59,6 @@ var jsGridData = (function (jspsych) {
 				pretty_name: 'Trial duration',
 				default: null,
 				description: 'How long the grid should be displayed'
-			},
-			training: {
-				type: jspsych.ParameterType.BOOL,
-				pretty_name: 'Training',
-				default: false,
-				description: 'Show a button to click on instead of waiting for an answer'
-			},
-			fixation: {
-				type: jspsych.ParameterType.BOOL,
-				pretty_name: "Fixation",
-				default: false,
-				description: "Show a fixation cross for fixation_time milliseconds"
-			},
-			fixation_time: {
-				type: jspsych.ParameterType.INT,
-				pretty_name: "Fixation time",
-				default: 1000,
-				description: "Time to show fixation cross, in milliseconds"
 			},
 			target_colour: {
 				type: jspsych.ParameterType.STRING,
@@ -96,11 +84,16 @@ var jsGridData = (function (jspsych) {
 				default: "#F3FFBD",
 				description: "Colour of the borders surrounding causal cells"
 			},
-			border: {
-				type: jspsych.ParameterType.BOOL,
-				pretty_name: "Border",
-				default: false,
-				description: "Draw only inner borders when set to false"
+			/** The text that appears on the button to go draw the next sample. */
+			button_label_draw: {
+				type: jspsych.ParameterType.STRING,
+				pretty_name: "Button label draw slots",
+				default: "Draw slots",
+			},
+			samples: {
+				type: jspsych.ParameterType.INT,
+				pretty_name: "Number or samples allowed",
+				default: 10,
 			}
 		}
 	};
@@ -119,102 +112,130 @@ var jsGridData = (function (jspsych) {
 			this.jsPsych = jsPsych;
 		}
 
-		drawGrid(grid, square_size, targets, target_colour, outcome_colour, no_outcome_colour) {
-			var theGrid = "<div id=\"jspsych-data-grid\" style=\"margin:auto; display:table; table-layout:fixed; border-spacing:0px\">";
-			for (var i = 1; i <= grid[0]; i++) {
-				theGrid += "<div class=\"jspsych-data-grid-row\" style=\"display:table-row;\">";
-				for (var j = 1; j <= grid[1]; j++) {
-					var className = "jspsych-data-grid-cell";
-					theGrid += "<div class=\"" + className + "\" id=\"jspsych-data-grid-cell-" + i + "-" + j + "\" data-row=\"" + i + "\" data-column=\"" + j + "\" style=\"width:" + square_size + "px; height:" + square_size + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
-				
+
+		trial(display_element, trial) {
+
+			//////////////////
+			// Grid Functions
+			//////////////////
+			function drawObservation(sample_number,n_samples) {
+				var observation = "<div class='jspsych-data-grid-row' style='display:table-row;'>";
+				for (var j = 1; j <= trial.grid[1]; j++) {
+					var className = 'jspsych-data-grid-cell';
+					observation += "<div class=\"" + className + "\" id=\"jspsych-data-grid-cell-" + sample_number + "-" + j + "\" data-row=\"" + sample_number + "\" data-column=\"" + j + "\" style=\"width:" + trial.grid_square_size + "px; height:" + trial.grid_square_size + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
+	
 					// Colour the targets
-					for (var k in targets) {
-						if (targets[k][0] == i  && targets[k][1] == j) {
-							if (j != grid[1]){
-								theGrid += "background-color: " + target_colour + ";";
+					for (var k in trial.targets) {
+						if (trial.targets[k][0] == sample_number && trial.targets[k][1] == j) {
+							if (j != trial.grid[1]) {
+								observation += "background-color: " + trial.target_colour + ";";
 								break;
 							}
-							if (j == grid[1]) {
-								theGrid += "background-color: " + outcome_colour + ";";
+							if (j == trial.grid[1]) {
+								observation += "background-color: " + trial.outcome_colour + ";";
 							} else {
-								theGrid += "background-color: " + no_outcome_colour + ";";
+								observation += "background-color: " + trial.no_outcome_colour + ";";
 							}
 						}
 					}
-					
-					if (i == grid[0]) theGrid += "border-top: 3px solid black; border-bottom: 3px solid black;"
-					else theGrid += "border-top: 3px solid black;"
-					if (j == grid[1]) theGrid += "border-left: 5px solid black; border-right: 3px solid black;"
-					else theGrid += "border-left: 3px solid black;"
-					
-					theGrid += "\"></div>";
+	
+					if (sample_number == n_samples) observation += "border-top: 3px solid black; border-bottom: 3px solid black;"
+					else observation += "border-top: 3px solid black;"
+					if (j == trial.grid[1]) observation += "border-left: 5px solid black; border-right: 3px solid black;"
+					else observation += "border-left: 3px solid black;"
+	
+					observation += "\"></div>";
 				}
-				theGrid += "</div>";
-			}
-			theGrid += "</div>";
-
-			return theGrid;
-		};
-
-		trial(display_element, trial) {
-			var trial_data = {
-				"grid": JSON.stringify(trial.grid),
-				"targets": JSON.stringify(trial.targets)
+				observation += "</div>";
+				return observation
 			};
 
-			var thisPlugin = this;
-
-			deleteScreen();
-			// show a fixation cross
-			if (trial.fixation) {
-				deleteScreen();
-				display_element.innerHTML = "<div id='header'></div>";
-				$("#header").append('<p id="fixation" class="fixation-cross">+</p>');
-				jsPsych.pluginAPI.setTimeout(function () {
-					deleteScreen();
-					afterFixation();
-				}, trial.fixation_time);
+			function drawGrid(n_samples) {
+				var theGrid = "<div id='jspsych-serial-reaction-time-stimulus' style='margin:auto; display: table; table-layout: fixed; border-spacing:"+0+"px'>";
+				for (var i = 1; i <= n_samples; i++) {
+					theGrid += drawObservation(i,n_samples);
+				}
+				theGrid += "</div>";
+	
+				return theGrid;
 			}
-			else { afterFixation(); }
 
 			function deleteScreen() {
 				display_element.innerHTML = "";
 			}
 
-			function afterFixation() {
+			function showGridData(theGrid) {
 				// show prompt if there is one
 				if (trial.prompt !== null) {
 					display_element.innerHTML += "<div class=\"jspsych-data-grid-prompt\">" + trial.prompt + "</div>";
 				}
 
-				// create grid
-				display_element.innerHTML += thisPlugin.drawGrid(trial.grid, trial.grid_square_size, trial.targets, trial.target_colour, trial.outcome_colour, trial.no_outcome_colour);
+				
+				display_element.innerHTML += theGrid;
 
-				// display dots
-				for (var i in trial.targets) {
-					$("#jspsych-data-grid-cell-"
-						+ trial.targets[i][0] + '-'
-						+ trial.targets[i][1]).html(trial.target_symbol);;
-				};
+				display_element.innerHTML += "<div class='jspsych-data-gid-prompt'> <b>Remaining samples:</b> " + (10-current_sample) + " </div>"
 
-				if (trial.training) {
-					display_element.innerHTML += '<div id="jspsych-html-button-response-btngroup">';
-					display_element.innerHTML += '<div class="jspsych-html-button-response-button" style="display: inline-block; margin:Opx 8px" id="jspsych-html-button-response-button-0" data-choice="0"><button class="jspsych-btn">Next</button></div></div>';
+				if (current_sample < 10){
+					display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn'" +
+					"style='margin-left: 5px;'>" +
+					"Next sample"+
+					"</button>";
+				}else{
+					display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn'" +
+					"style='margin-left: 5px;'>" +
+					"Go to test"+
+					"</button>";
 				}
+				
+				let btn = document.getElementById("next-draw-button")
+				btn.addEventListener("click", ()=> {
+					next();
+				});
+				
+			}
+			//////////////////
+			// Trial Finctions
+			//////////////////
 
-				// wait show_duration ms before turning to next trial
-				if (!trial.training) {
-					jsPsych.pluginAPI.setTimeout(function () {
-						jsPsych.finishTrial(trial_data);
-					}, trial.show_duration);
+	
+			function next() {
+				current_sample++;
+				// if done, finish up...
+				if (current_sample > trial.samples) {
+					endTrial();
 				}
-
-				if (trial.training) {
-					display_element.querySelector('#jspsych-html-button-response-button-0').addEventListener('click', function (e) {
-						jsPsych.finishTrial(trial_data);
-					});
+				else {
+					deleteScreen();
+					showGridData(grids[current_sample-1]);
 				}
 			}
+			const endTrial = () => {
+				if (trial.allow_keys) {
+					this.jsPsych.pluginAPI.cancelKeyboardResponse(keyboard_listener);
+				}
+				display_element.innerHTML = "";
+				var trial_data = {
+					rt: Math.round(performance.now() - start_time),
+					"grid": JSON.stringify(trial.grid),
+					"targets": JSON.stringify(trial.targets),
+					//TODO: FILL IN REMAINING TRIAL DATA
+				};
+				this.jsPsych.finishTrial(trial_data);
+			};
+
+			
+			//////////////////
+			// Trial sequence
+			//////////////////
+			var grids = [];
+			var current_sample = 0;
+			var start_time = performance.now();
+			for (var sample = 0; sample< trial.samples;sample++){
+				grids.push(drawGrid(sample+1));
+			}
+			next();
+
+
 		};
 
 	}
