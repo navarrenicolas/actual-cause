@@ -29,7 +29,6 @@ var rules_dict = {};
 mapping_rules.map(o => {rules_dict[Object.keys(o)] = Object.values(o)[0]});
 
 
-
 // Now arrays for the observations: 
 var observation_1 = [
     {'a' : 1}, {'b': 1}, {'c': 0}, {'d':0}, 
@@ -67,5 +66,4 @@ var observation_4 = [
 var D_obs_4 = {};
 observation_4.map(o => {D_obs_4[Object.keys(o)[0]] = Object.values(o)[0]});
 
-
-
+var D_observations = [D_obs_1,D_obs_2,D_obs_3,D_obs_4];

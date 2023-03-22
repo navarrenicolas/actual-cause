@@ -12,10 +12,22 @@
 }
 
 .center-content {
-  text-align: center;
+    text-align: center;
 }
 
 p.indent-line-breaks {
     margin-top: 0em;
     margin-bottom: 0em;
+}
+
+.column {
+    float: left;
+    width: 50%;
+}
+
+/* Clear floats after the columns */
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
 }
