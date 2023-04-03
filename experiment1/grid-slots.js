@@ -23,7 +23,7 @@ var jsGridData = (function (jspsych) {
 				default: [[1, 1]],
 				description: 'Location of targets to display.  Array of [row, column] coordinates'
 			},
-			test_argets: {
+			test_targets: {
 				type: jspsych.ParameterType.INT,
 				pretty_name: 'Targets',
 				array: true,

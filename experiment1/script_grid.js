@@ -215,6 +215,7 @@ const grid_2 = {
   grid: [10, 5],
   prompt: rule_prompt(2),
   targets: observation_data_2,
+  cause: false,
   judgements: cause_data_2,
   target_colour: color_present,
   grid_square_size: grid_size
@@ -228,12 +229,9 @@ const grid_3 = {
   targets: observation_data_3,
   judgements: cause_data_3,
   target_colour: color_present,
-  // outcome_colour: colour_win,
-  // no_outcome_colour: colour_lose,
   grid_square_size: grid_size
 };
 timeline.push(grid_3);
-
 
 const grid_4 = {
   type: jsGridData,
@@ -242,8 +240,6 @@ const grid_4 = {
   targets: observation_data_4,
   judgements: cause_data_4,
   target_colour: color_present,
-  // outcome_colour: colour_win,
-  // no_outcome_colour: colour_lose,
   grid_square_size: grid_size
 };
 timeline.push(grid_4);
