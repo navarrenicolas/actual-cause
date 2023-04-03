@@ -31,3 +31,8 @@ p.indent-line-breaks {
     display: table;
     clear: both;
 }
+
+.jspsych-data-grid-cell{
+    color: blue;
+    font-size: large;
+}

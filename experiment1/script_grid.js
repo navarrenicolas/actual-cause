@@ -30,59 +30,6 @@ jsPsych.data.addProperties({ 'subject_ID': subject.id });
 //////////                     GRID FUNCTIONS              /////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-// creates a trial where a grid is shown
-// target is the pattern of squares, color the color of the target squares and 
-// symbol what is shown on the target squares
-var gridShower = function (target, color, grid_dimensions, symbol) {
-  return {
-    type: 'grid-shower',
-    grid: grid_dimensions,
-    targets: target,
-    show_duration: 850,
-    training: false,
-    fixation: true,
-    fixation_time: 1000,
-    target_color: color,
-    target_symbol: symbol,
-    border: border,
-    grid_square_size: grid_size
-  };
-};
-
-// creates a trial to reproduce a pattern on a grid
-var gridAnswer = function (target, color, grid_dimensions, symbol) {
-  return {
-    type: 'grid-answer',
-    grid: grid_dimensions,
-    targets: target,
-    allow_nontarget_responses: true,
-    target_color: color,
-    target_symbol: symbol,
-    border: border,
-    grid_square_size: grid_size,
-    feedback_function: feedbackGrid,
-    on_finish: function (data) {
-      data.correct = data.correct;
-    }
-  };
-};
-
-// function to display feedback after the memory-load task
-// perc_correct refers to the percentage of correctly reproduced squares
-var feedbackGrid = function (perc_correct) {
-  var stimulus;
-  if (perc_correct == 1) {
-    stimulus = '<p class="leo_correct centered">Correct</p><font size = 5.5><p class="centered">Keep up the good work!</p></font>';
-    return stimulus;
-  } else if (perc_correct > 0.25) {
-    stimulus = '<p class="leo_almost centered">Almost right!</p><font size = 5.5><p class="centered">Keep up the good work!</p></font>';
-    return stimulus;
-  } else {
-    stimulus = '<p class="leo_wrong centered">Wrong pattern</p><font size = 5.5><p class="centered">It\'s very important that you get the pattern right!</p></font>';
-    return stimulus;
-  }
-};
-
 /**
  * Creates a list of target locations to go in the datagrid
  * Take a the set of observations 
@@ -96,35 +43,41 @@ var feedbackGrid = function (perc_correct) {
  */
 var dataCreator = function (urn_order, sample_order, rule) {
   let targets = [];
-  for (var i = 0; i < 10;i++){
-    let sample_dict = D_observations[sample_order[i]];  
-    for (j=0;j< 4;j++){
-      if (sample_dict[urn_order[j]]){targets.push([i+1,j+1])};
+  for (var i = 0; i < 10; i++) {
+    let sample_dict = D_observations[sample_order[i]];
+    for (j = 0; j < 4; j++) {
+      if (sample_dict[urn_order[j]]) { targets.push([i + 1, j + 1]) };
     }
-    if(sample_dict[rule]) {targets.push([i+1,5])};
+    if (sample_dict[rule]) { targets.push([i + 1, 5]) };
   }
   return targets;
 };
 
-var causeCreator = function(urn_order,sample_order,rule){
+var causeCreator = function (urn_order, sample_order, rule) {
   let judgements = [];
-  for (let i = 0; i < 10;i++){
-    let sample_dict = D_observations[sample_order[i]];  
+  for (let i = 0; i < 10; i++) {
+    let sample_dict = D_observations[sample_order[i]];
     let causes = sample_dict[rule];
     // Map over the defined judgements and place them in the correct order
-    judgements.push.apply(judgements,causes.map(j => urn_order.findIndex(el => el == j)).map(loc => [i+1,loc+1])); 
+    judgements.push.apply(judgements, causes.map(j => urn_order.findIndex(el => el == j)).map(loc => [i + 1, loc + 1]));
   }
   return judgements;
 };
+var testCreator = function (urn_order, test_order, rule) {
+  let targets = [];
+  for (var i = 0; i < test_order.length; i++) {
+    let sample_dict = testTrials[test_order[i]];
+    for (j = 0; j < 4; j++) {
+      if (sample_dict[urn_order[j]]) { targets.push([i + 1, j + 1]) };
+    }
+    if (sample_dict[rule]) { targets.push([i + 1, 5]) };
+  }
+  return targets;
+}
 
-
-// var judgmentCreator = function (urn_order,sample_order){
-
-// };
-
-const get_sample_order = () => jsPsych.randomization.shuffle([0,0,0,0,1,1,1,1,2,3]);
-const get_urn_order = () => jsPsych.randomization.shuffle(['a','b','c','d']);
-
+const get_sample_order = () => jsPsych.randomization.shuffle([0, 0, 0, 0, 1, 1, 1, 1, 2, 3]);
+const get_urn_order = () => jsPsych.randomization.shuffle(['a', 'b', 'c', 'd']);
+const get_test_order = () => jsPsych.randomization.shuffle([...Array(testTrials.length).keys()]);
 
 /////////////////////////////////////////////////////////
 /////////////       GRID PARAMETERS   ///////////////////
@@ -155,16 +108,27 @@ var sample_order_2 = get_sample_order();
 var sample_order_3 = get_sample_order();
 var sample_order_4 = get_sample_order();
 
-// Generate the coordinates to be used in the data and judgement creators
-observation_data_1 = dataCreator(urn_order_1,sample_order_1,'R1O');
-observation_data_2 = dataCreator(urn_order_2,sample_order_2,'R2O');
-observation_data_3 = dataCreator(urn_order_3,sample_order_3,'R3O');
-observation_data_4 = dataCreator(urn_order_4,sample_order_4,'R4O');
+// Define the test orders
+var test_order_1 = get_test_order();
+var test_order_2 = get_test_order();
+var test_order_3 = get_test_order();
+var test_order_4 = get_test_order();
 
-cause_data_1 = causeCreator(urn_order_1,sample_order_1,'R1J');
-cause_data_2 = causeCreator(urn_order_2,sample_order_2,'R2J');
-cause_data_3 = causeCreator(urn_order_3,sample_order_3,'R3J');
-cause_data_4 = causeCreator(urn_order_4,sample_order_4,'R4J');
+// Generate the coordinates to be used in the data, judgement and test creators
+observation_data_1 = dataCreator(urn_order_1, sample_order_1, 'R1O');
+observation_data_2 = dataCreator(urn_order_2, sample_order_2, 'R2O');
+observation_data_3 = dataCreator(urn_order_3, sample_order_3, 'R3O');
+observation_data_4 = dataCreator(urn_order_4, sample_order_4, 'R4O');
+
+cause_data_1 = causeCreator(urn_order_1, sample_order_1, 'R1J');
+cause_data_2 = causeCreator(urn_order_2, sample_order_2, 'R2J');
+cause_data_3 = causeCreator(urn_order_3, sample_order_3, 'R3J');
+cause_data_4 = causeCreator(urn_order_4, sample_order_4, 'R4J');
+
+test_data_1 = testCreator(urn_order_1, test_order_1, 'R1O');
+test_data_2 = testCreator(urn_order_2, test_order_2, 'R2O');
+test_data_3 = testCreator(urn_order_3, test_order_3, 'R3O');
+test_data_4 = testCreator(urn_order_4, test_order_4, 'R4O');
 
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -223,38 +187,44 @@ timeline.push(instructions_page);
 
 const grid_1 = {
   type: jsGridData,
-  training: true,
   prompt: rule_prompt(1),
-  grid: [10,5],
+  grid: [10, 5],
   cause: true,
+  test_targets:[],
   targets: observation_data_1,
   judgements: cause_data_1,
   target_colour: color_present,
-  // outcome_colour: colour_win,
-  // no_outcome_colour: colour_lose,
   grid_square_size: grid_size,
 };
 timeline.push(grid_1);
+const test_1 = {
+  type: jsGridData,
+  prompt: rule_prompt(1),
+  grid: [10, 5],
+  cause: true,
+  test_targets: test_data_1,
+  targets: observation_data_1,
+  judgements: cause_data_1,
+  target_colour: color_present,
+  grid_square_size: grid_size,
+};
+timeline.push(test_1);
 
 const grid_2 = {
   type: jsGridData,
-  training: true,
-  grid: [10,5],
+  grid: [10, 5],
   prompt: rule_prompt(2),
   targets: observation_data_2,
   judgements: cause_data_2,
   target_colour: color_present,
-  // outcome_colour: colour_win,
-  // no_outcome_colour: colour_lose,
   grid_square_size: grid_size
 };
 timeline.push(grid_2);
 
 const grid_3 = {
   type: jsGridData,
-  training: true,
   prompt: rule_prompt(3),
-  grid: [10,5],
+  grid: [10, 5],
   targets: observation_data_3,
   judgements: cause_data_3,
   target_colour: color_present,
@@ -267,8 +237,7 @@ timeline.push(grid_3);
 
 const grid_4 = {
   type: jsGridData,
-  training: true,
-  grid: [10,5],
+  grid: [10, 5],
   prompt: rule_prompt(4),
   targets: observation_data_4,
   judgements: cause_data_4,
