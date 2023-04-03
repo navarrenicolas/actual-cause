@@ -123,7 +123,10 @@ var jsGridData = (function (jspsych) {
 			//////////////////
 			function drawObservation(sample_number, targets) {
 				let row_kind = test_trial ? 'test' : 'data';
-				var observation = "<div class='jspsych-" + row_kind + "-grid-row' style='display:table-row;'>";
+				
+				var observation = "<div id='jspsych-serial-reaction-time-stimulus' style='margin:auto; display: table; table-layout: fixed; border-spacing:" + 0 + "px'>";
+				
+				observation += "<div class='jspsych-" + row_kind + "-grid-row' style='display:table-row;'>";
 				for (let j = 1; j <= trial.grid[1]; j++) {
 					let idName = 'jspsych-' + row_kind + '-grid-cell';
 					let className = '';
@@ -133,7 +136,7 @@ var jsGridData = (function (jspsych) {
 					} else {
 						className = 'jspsych-' + row_kind + '-grid-cell';
 					}
-					observation += "<div class=\"" + className + "\" id=\"" + idName + sample_number + "-" + j + "\" data-row=\"" + sample_number + "\" data-column=\"" + j + "\" style=\"width:" + trial.grid_square_size + "px; color:" + trial.cause_colour + "; height:" + trial.grid_square_size + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
+					observation += "<div class=\"" + className + "\" id=\"" + idName + '-' + sample_number + "-" + j + "\" data-row=\"" + sample_number + "\" data-column=\"" + j + "\" style=\"width:" + trial.grid_square_size + "px; color:" + trial.cause_colour + "; height:" + trial.grid_square_size + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
 
 					// Colour the targets
 					for (let k in targets) {
@@ -161,6 +164,7 @@ var jsGridData = (function (jspsych) {
 					observation += "\">" + "</div>";
 				}
 				observation += "</div>";
+				observation += "</div>";
 				return observation
 			};
 
@@ -182,6 +186,7 @@ var jsGridData = (function (jspsych) {
 					let className = '';
 					let background_color = '';
 					if (j == trial.grid[1]) {
+						let background_color = trial.no_outcome_colour;
 						className = 'jspsych-data-grid-outcome';
 					} else {
 						className = 'jspsych-data-grid-cell';
@@ -204,8 +209,8 @@ var jsGridData = (function (jspsych) {
 					}
 					observation += background_color;
 
-					if (sample_number == n_samples) observation += "border-top: 3px solid black; border-bottom: 3px solid black;"
-					else observation += "border-top: 3px solid black;"
+					observation += "border-top: 3px solid black; border-bottom: 3px solid black;"
+					
 					if (j == trial.grid[1]) observation += "border-left: 5px solid black; border-right: 3px solid black;"
 					else observation += "border-left: 3px solid black;"
 
@@ -216,7 +221,7 @@ var jsGridData = (function (jspsych) {
 			};
 
 			function drawGrid(n_samples, targets) {
-				var theGrid = "<div id='jspsych-serial-reaction-time-stimulus' style='margin:auto; display: table; table-layout: fixed; border-spacing:" + 0 + "px'>";
+				var theGrid = "<div id='jspsych-serial-reaction-time-stimulus' style='margin:auto; display: table; table-layout: fixed; border-spacing: 0px 5px'>";
 				for (let i = 1; i <= n_samples; i++) {
 					theGrid += drawGridRow(i, n_samples, targets);
 				}
@@ -230,6 +235,67 @@ var jsGridData = (function (jspsych) {
 			}
 
 			function showObservationData() {
+
+				// show prompt if there is one
+				if (trial.prompt !== null) {
+					display_element.innerHTML += quickHTML(trial.prompt,'div', "jspsych-data-grid-prompt");
+				}
+
+				
+
+				let gridhtml = test_trial ? grids[10] : grids[current_sample];
+				
+				
+				if (!sample_drawn) {
+					gridhtml += quickHTML("Push the button below to draw a sample form the slot machine!",'div');
+				} else {
+					gridhtml += drawObservation(current_sample + 1, test_trial ? trial.test_targets : trial.targets);
+				}
+				
+				gridhtml += quickHTML("<b>Remaining samples: </b>" + (total_samples - current_sample) ,'div',"jspsych-data-gid-prompt");
+
+				display_element.innerHTML += gridhtml;
+
+				// Button for sampling
+				if (!sample_drawn) {
+					display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn' style='margin-left: 5px;'> Draw Sample </button>";
+					var btn_draw = document.getElementById("next-draw-button");
+					btn_draw.addEventListener("click", () => {
+						sample_drawn = true;
+						next_observation()
+					});
+				} else {
+					display_element.innerHTML += "<button id='save-draw-button' class='jspsych-btn'" +
+						"style='margin-left: 5px;'>" +
+						"Save sample" +
+						"</button>";
+					var btn_save = document.getElementById("save-draw-button");
+					btn_save.addEventListener("click", () => {
+						sample_drawn = false;
+						current_sample++;
+						next_observation();
+					});
+				}
+				/////////////////////////////
+
+				// Make the test outcomes editable
+				let outcomes = document.getElementsByClassName("jspsych-test-grid-outcome");
+				for (let i = 0; i < outcomes.length; i++) {
+					outcomes[i].addEventListener('mousedown', function (e) {
+						// var info = {};
+						// info.row = e.currentTarget.getAttribute('data-row');
+						// info.column = e.currentTarget.getAttribute('data-column');
+						// info.outs = outcomes;
+						if (e.currentTarget.style.backgroundColor == trial.outcome_colour) {
+							e.currentTarget.style.backgroundColor = trial.no_outcome_colour;
+						} else {
+							e.currentTarget.style.backgroundColor = trial.outcome_colour;
+						}
+					});
+				};
+			}
+			
+			function showObservationDataColumns() {
 
 				// show prompt if there is one
 				if (trial.prompt !== null) {
