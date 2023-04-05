@@ -34,5 +34,10 @@ p.indent-line-breaks {
 
 .jspsych-data-grid-cell{
     color: blue;
-    font-size: large;
+    font-size: xx-large;
+}
+
+.jspsych-test-grid-cell{
+    color: black;
+    font-size: xx-large; 
 }

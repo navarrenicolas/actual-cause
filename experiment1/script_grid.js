@@ -196,7 +196,7 @@ const grid_1 = {
   target_colour: color_present,
   grid_square_size: grid_size,
 };
-timeline.push(grid_1);
+// timeline.push(grid_1);
 const test_1 = {
   type: jsGridData,
   prompt: rule_prompt(1),
