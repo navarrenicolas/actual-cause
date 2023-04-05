@@ -136,7 +136,7 @@ var jsGridData = (function (jspsych) {
 				if (class_name == null) {
 					return `<${type}>` + input + `</${type}>`;
 				} else {
-					return `<${type} class=${class_name}>` + input + `</${type}>`;
+					return `<${type} class="${class_name}">`+ input + `</${type}>`;
 				}
 			}
 
@@ -170,9 +170,9 @@ var jsGridData = (function (jspsych) {
 						background_color = '';
 					}
 					row += background_color + ball_colour;
-					if (checkArray(trial.judgements, [sample_number, j]) && trial.cause) {
-						row += "border-top: 3px " + 'solid black' + "; border-bottom: 3px " + 'solid black' + ";" +
-							"border-left: 3px solid black; border-right: 3px solid black;";
+					if (checkArray(trial.judgements, [sample_number, j]) && ! test_trial) {
+						row += "border-top: 3px " + 'dashed black' + "; border-bottom: 3px " + 'dashed black' + ";" +
+							"border-left: 3px dashed black; border-right: 3px dashed black;";
 					}
 					if (j == trial.grid[1]) {
 						row += "border-left: 3px solid black; border-right: 3px solid black;" +
@@ -187,7 +187,11 @@ var jsGridData = (function (jspsych) {
 			};
 
 			function drawGrid(n_samples, test_trial) {
-				var theGrid = "<div id='jspsych-serial-reaction-time-stimulus' style='margin:auto; display: table; table-layout: fixed; border-spacing: 5px 5px'>";
+				let border = '';
+				if(!test_trial){
+					border = "border-top: 2px solid black; border-bottom: 2px solid black; border-left: 2px solid black; border-right: solid black;";
+				}
+				var theGrid = `<div id='jspsych-serial-reaction-time-stimulus' style='margin:auto; display: table; table-layout: fixed; border-spacing: 5px 5px;${border}'>`;
 				for (let i = 1; i <= n_samples; i++) {
 					theGrid += drawGridRow(i, test_trial);
 				}
@@ -254,11 +258,11 @@ var jsGridData = (function (jspsych) {
 					display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
 				}
 
-				// let observation_column = quickHTML(drawGrid(10, false), "column");
-				// let test_column = quickHTML(drawGrid(16, true), "column");
-				// let data_columns = quickHTML(observation_column + test_column, "row");
+				let test_column = quickHTML(drawGrid(16, true), "div","column border-right");
+				let observation_column = quickHTML(quickHTML("<b>Observation History</b>","div") + drawGrid(10, false), "div", "column");
+				let data_columns = quickHTML(test_column + observation_column , "div","row");
 
-				let data_columns = drawGrid(4, true);
+				// let data_columns = drawGrid(16, true);
 
 				display_element.innerHTML += data_columns;
 
