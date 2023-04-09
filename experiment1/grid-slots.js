@@ -37,12 +37,20 @@ var jsGridData = (function (jspsych) {
 				default: [],
 				description: 'Location of targets to display.  Array of [row, column] coordinates'
 			},
+			timed_judgment: {				
+				type: jspsych.ParameterType.BOOL,
+				pretty_name: 'Explanation mode',
+				array: true,
+				default: null,
+				description: 'Decides whether the causal judgments should come at a certain point or not'
+			},
 			cause: {
 				type: jspsych.ParameterType.BOOL,
 				pretty_name: 'Grid',
 				default: true,
 				description: 'Determines if causal judgements should be given'
 			},
+
 			grid: {
 				type: jspsych.ParameterType.INT,
 				pretty_name: 'Grid',
@@ -71,9 +79,26 @@ var jsGridData = (function (jspsych) {
 			prompt: {
 				type: jspsych.ParameterType.HTML_STRING,
 				pretty_name: 'Prompt',
-				default: null,
-				description: 'Any content here will be displayed above the grid'
+				array: true,
+				default: [],
+				description: 'An array of prompts to be displayed above the grid, one for each click'
 			},
+
+			
+			// prompt: {
+			// 	type: jspsych.ParameterType.HTML_STRING,
+			// 	pretty_name: 'Prompt',
+			// 	default: null,
+			// 	description: 'Any content here will be displayed above the grid'
+			// },
+
+			custom_prompt: { 
+				type: jspsych.ParameterType.HTML_STRING,
+				pretty_name: 'Custom prompt',
+				default: null,
+				description: 'Decides whether this trial will be done with the default prompt or with something ad hoc'
+			},
+			  
 			target_colour: {
 				type: jspsych.ParameterType.STRING,
 				pretty_name: "Outcome colour",
@@ -123,6 +148,14 @@ var jsGridData = (function (jspsych) {
 			//////////////////
 
 			function drawObservation(sample_number, test_trial) {
+				let judgment_flag = false
+				if (trial.timed_judgment !== null) {
+					if (Array.isArray(trial.timed_judgment) && trial.timed_judgment[sample_number - 1]) {
+					  judgment_flag = true;
+					} else if (typeof trial.timed_judgment === "boolean") {
+					  judgment_flag = trial.timed_judgment;
+					}
+				  }
 				var observation = "<div id='jspsych-serial-reaction-time-stimulus' style='margin:auto; display: table; table-layout: fixed; border-spacing: 5px 5px'>";
 				observation += drawGridRow(sample_number, test_trial);
 				observation += "</div>";
@@ -204,52 +237,164 @@ var jsGridData = (function (jspsych) {
 				display_element.innerHTML = "";
 			}
 
+
+
 			function showObservationData() {
+				var sample_index = 0;
+				var total_observations = trial.grid[0]
+			
+				function updateDisplay() {
+					display_element.innerHTML = '';
+			
+					// index the prompt you want by the current sample
+					if (trial.prompt.length > 0 && trial.prompt[sample_index]) {
+						display_element.innerHTML += quickHTML(trial.prompt[sample_index], 'div', "jspsych-data-grid-prompt");
+					}
+			
+					let gridhtml = '';
+					if (current_sample > 0) {
+						gridhtml = drawGrid(current_sample, false);
+					}
+			
+					if (!sample_drawn) {
+						let promptText = "Push the button below to draw a new sample form the slot machine!";
+						if (trial.custom_prompt !== null) {
+						  if (Array.isArray(trial.custom_prompt) && trial.custom_prompt[current_sample]) {
+							promptText = trial.custom_prompt[current_sample];
+						  } else if (typeof trial.custom_prompt === "string") {
+							promptText = trial.custom_prompt;
+						  }
+						}
+						gridhtml += quickHTML(promptText, 'div');
+					  } else {
+						gridhtml += drawObservation(current_sample + 1, false);
+					  }
+			
+					gridhtml += quickHTML("<b>Remaining samples: </b>" + (total_observations - current_sample), 'div', "jspsych-data-gid-prompt");
+			
+					display_element.innerHTML += gridhtml;
+			
+					// Button for sampling
+					if (!sample_drawn) {
+						display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn' style='margin-left: 5px;'> Draw Sample </button>";
+						var btn_draw = document.getElementById("next-draw-button");
+						btn_draw.addEventListener("click", () => {
+							if (current_sample < total_observations) {
+								sample_drawn = true;
+								sample_index++;
+								next_observation();
+							}
+						});
+					} else {
+						display_element.innerHTML += "<button id='save-draw-button' class='jspsych-btn'" +
+							"style='margin-left: 5px;'>" +
+							"Save sample" +
+							"</button>";
+						var btn_save = document.getElementById("save-draw-button");
+						btn_save.addEventListener("click", () => {
+							if (current_sample < total_observations) {
+								sample_drawn = false;
+								current_sample++;
+								next_observation();
+							}
+						});
 
-				// show prompt if there is one
-				if (trial.prompt !== null) {
-					display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
+
+						// If all observations have been drawn, go to the next trial in the timeline
+						if (current_sample === total_observations) {
+							display_element.innerHTML += "<button id='proceed-button' class='jspsych-btn' style='margin-left: 5px;'> Proceed </button>";
+							var btn_proceed = document.getElementById("proceed-button");
+							btn_proceed.addEventListener("click", () => {
+								endTrial();
+							});
+						}
+
+					}
 				}
-
-				let gridhtml = '';
-				if (current_sample > 0) {
-					gridhtml = drawGrid(current_sample, false);
+			
+				function next_observation() {
+					if (current_sample < total_observations) {
+						updateDisplay();
+					} else {
+						display_element.innerHTML = '';
+				
+						// Show the final prompt
+						if (trial.prompt.length > 0 && trial.prompt[sample_index]) {
+							display_element.innerHTML += quickHTML(trial.prompt[sample_index], 'div', "jspsych-data-grid-prompt");
+						}
+				
+						// Add a "Proceed" button when all observations have been drawn
+						display_element.innerHTML += "<button id='proceed-button' class='jspsych-btn' style='margin-left: 5px;'> Proceed </button>";
+						var btn_proceed = document.getElementById("proceed-button");
+						btn_proceed.addEventListener("click", () => {
+							endTrial();
+						});
+					}
 				}
+			
+				updateDisplay();
+			}
+			
+
+			// function showObservationData() {
+			// 	var sample_index = 0;
+
+			// 	// index the prompt you want by the current sample
+			// 	if (trial.prompt.length > 0 && trial.prompt[sample_index]) {
+			// 		display_element.innerHTML += quickHTML(trial.prompt[sample_index], 'div', "jspsych-data-grid-prompt");
+			// 	}
+			
 
 
-				if (!sample_drawn) {
-					gridhtml += quickHTML("Push the button below to draw a sample form the slot machine!", 'div');
-				} else {
-					gridhtml += drawObservation(current_sample + 1, false);
-				}
+			// 	// show prompt if there is one
+			// 	// if (trial.prompt !== null) {
+			// 	// 	display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
+			// 	// }
 
-				gridhtml += quickHTML("<b>Remaining samples: </b>" + (10 - current_sample), 'div', "jspsych-data-gid-prompt");
+			// 	let gridhtml = '';
+			// 	if (current_sample > 0) {
+			// 		gridhtml = drawGrid(current_sample, false);
+			// 	}
 
-				display_element.innerHTML += gridhtml;
 
-				// Button for sampling
-				if (!sample_drawn) {
-					display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn' style='margin-left: 5px;'> Draw Sample </button>";
-					var btn_draw = document.getElementById("next-draw-button");
-					btn_draw.addEventListener("click", () => {
-						sample_drawn = true;
-						next_observation()
-					});
-				} else {
-					display_element.innerHTML += "<button id='save-draw-button' class='jspsych-btn'" +
-						"style='margin-left: 5px;'>" +
-						"Save sample" +
-						"</button>";
-					var btn_save = document.getElementById("save-draw-button");
-					btn_save.addEventListener("click", () => {
-						sample_drawn = false;
-						current_sample++;
-						next_observation();
-					});
-				}
+			// 	if (!sample_drawn) {
+			// 		gridhtml += quickHTML("Push the button below to draw a sample form the slot machine!", 'div');
+			// 	} else {
+			// 		gridhtml += drawObservation(current_sample + 1, false);
+			// 	}
+
+			// 	gridhtml += quickHTML("<b>Remaining samples: </b>" + (10 - current_sample), 'div', "jspsych-data-gid-prompt");
+
+			// 	display_element.innerHTML += gridhtml;
+
+			// 	// Button for sampling
+			// 	if (!sample_drawn) {
+			// 		display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn' style='margin-left: 5px;'> Draw Sample </button>";
+			// 		var btn_draw = document.getElementById("next-draw-button");
+			// 		btn_draw.addEventListener("click", () => {
+			// 			sample_drawn = true;
+			// 			sample_index++
+			// 			display_element.innerHTML += quickHTML(trial.prompt[sample_index], 'div', "jspsych-data-grid-prompt");
+			// 			//put the iterator here
+			// 			next_observation()
+			// 		});
+			// 	} else {
+			// 		display_element.innerHTML += "<button id='save-draw-button' class='jspsych-btn'" +
+			// 			"style='margin-left: 5px;'>" +
+			// 			"Save sample" +
+			// 			"</button>";
+			// 		var btn_save = document.getElementById("save-draw-button");
+			// 		btn_save.addEventListener("click", () => {
+			// 			sample_drawn = false;
+			// 			current_sample++;
+			// 			next_observation();
+			// 		});
+			// 	}
+
+
 				/////////////////////////////
 
-			}
+			//}
 
 			function showTestData() {
 
@@ -313,9 +458,24 @@ var jsGridData = (function (jspsych) {
 			// Trial Functions
 			//////////////////
 
+
+			const endTrial = () => {
+				if (trial.allow_keys) {
+					this.jsPsych.pluginAPI.cancelKeyboardResponse(keyboard_listener);
+				}
+				display_element.innerHTML = "";
+				var trial_data = {
+					"grid": JSON.stringify(trial.grid),
+					"targets": JSON.stringify(trial.targets),
+					//TODO: FILL IN REMAINING TRIAL DATA
+				};
+				// deleteScreen();
+				this.jsPsych.finishTrial(trial_data);
+			};
+
 			function next_observation() {
 				// if done, finish up...
-				if (current_sample < 10) {
+				if (current_sample < trial.grid[0]) {
 					deleteScreen();
 					showObservationData();
 				} else {
@@ -341,19 +501,7 @@ var jsGridData = (function (jspsych) {
 				}
 			}
 
-			const endTrial = () => {
-				if (trial.allow_keys) {
-					this.jsPsych.pluginAPI.cancelKeyboardResponse(keyboard_listener);
-				}
-				display_element.innerHTML = "";
-				var trial_data = {
-					"grid": JSON.stringify(trial.grid),
-					"targets": JSON.stringify(trial.targets),
-					//TODO: FILL IN REMAINING TRIAL DATA
-				};
-				// deleteScreen();
-				this.jsPsych.finishTrial(trial_data);
-			};
+
 
 			//////////////////
 			// Trial sequence
