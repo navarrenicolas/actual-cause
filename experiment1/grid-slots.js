@@ -169,7 +169,7 @@ var jsGridData = (function (jspsych) {
 				if (class_name == null) {
 					return `<${type}>` + input + `</${type}>`;
 				} else {
-					return `<${type} class="${class_name}">`+ input + `</${type}>`;
+					return `<${type} class="${class_name}">` + input + `</${type}>`;
 				}
 			}
 
@@ -189,7 +189,7 @@ var jsGridData = (function (jspsych) {
 					} else {
 						className = `jspsych-${row_kind}-grid-cell`;
 					}
-					row += "<div class=\"" + className + "\" id=\"" + idName + sample_number + "-" + j + "\" data-row=\"" + sample_number + "\" data-column=\"" + j + "\" style=\"width:" + trial.grid_square_size + "px; color:" + trial.cause_colour + "; height:" + trial.grid_square_size + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
+					row += "<div class=\"" + className + "\" id=\"" + idName + sample_number + "-" + j + "\" data-row=\"" + sample_number + "\" data-column=\"" + j + "\" style=\"width:" + trial.grid_square_size + "px;" + "height:" + trial.grid_square_size + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
 
 
 					if (checkArray((test_trial) ? trial.test_targets : trial.targets, [sample_number, j])) {
@@ -203,9 +203,9 @@ var jsGridData = (function (jspsych) {
 						background_color = '';
 					}
 					row += background_color + ball_colour;
-					if (checkArray(trial.judgements, [sample_number, j]) && ! test_trial) {
-						row += "border-top: 3px " + 'dashed black' + "; border-bottom: 3px " + 'dashed black' + ";" +
-							"border-left: 3px dashed black; border-right: 3px dashed black;";
+					if (checkArray(trial.judgements, [sample_number, j]) && !test_trial) {
+						row += "border-top: 3px " + 'dashed ' + trial.cause_colour + "; border-bottom: 3px " + 'dashed ' + trial.cause_colour + ";" +
+							"border-left: 3px dashed " + trial.cause_colour + "; border-right: 3px dashed " + trial.cause_colour + ";";
 					}
 					if (j == trial.grid[1]) {
 						row += "border-left: 3px solid black; border-right: 3px solid black;" +
@@ -221,7 +221,7 @@ var jsGridData = (function (jspsych) {
 
 			function drawGrid(n_samples, test_trial) {
 				let border = '';
-				if(!test_trial){
+				if (!test_trial) {
 					border = "border-top: 2px solid black; border-bottom: 2px solid black; border-left: 2px solid black; border-right: solid black;";
 				}
 				var theGrid = `<div id='jspsych-serial-reaction-time-stimulus' style='margin:auto; display: table; table-layout: fixed; border-spacing: 5px 5px;${border}'>`;
@@ -396,16 +396,16 @@ var jsGridData = (function (jspsych) {
 
 			//}
 
-			function showTestData() {
-
+			function showTestData(last_outcomes) {
+				deleteScreen();
 				// show prompt if there is one
 				if (trial.prompt !== null) {
 					display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
 				}
 
-				let test_column = quickHTML(drawGrid(16, true), "div","column border-right");
-				let observation_column = quickHTML(quickHTML("<b>Observation History</b>","div") + drawGrid(10, false), "div", "column");
-				let data_columns = quickHTML(test_column + observation_column , "div","row");
+				let test_column = quickHTML(drawGrid(16, true), "div", "column border-right");
+				let observation_column = quickHTML(quickHTML("<b>Observation History</b>", "div") + drawGrid(10, false), "div", "column");
+				let data_columns = quickHTML(test_column + observation_column, "div", "row");
 
 				// let data_columns = drawGrid(16, true);
 
@@ -413,17 +413,20 @@ var jsGridData = (function (jspsych) {
 
 				/////////////////////////////
 
+
 				display_element.innerHTML += "<button id='save-test-button' class='jspsych-btn'" +
 					"style='margin-left: 5px;'>" +
 					"Save answers" +
 					"</button>";
 				let outcomes = document.getElementsByClassName("jspsych-test-grid-outcome");
 				let btn_save = document.getElementById("save-test-button");
+
+
+
 				let answer_blank = false;
 				btn_save.addEventListener("mousedown", () => {
 					for (let i = 0; i < outcomes.length; i++) {
 						if (outcomes[i].style.backgroundColor.length == 0) {
-							console.log(outcomes[i].style.backgroundColor.length);
 							answer_blank = true;
 						}
 					};
@@ -431,12 +434,25 @@ var jsGridData = (function (jspsych) {
 					if (!answer_blank) {
 						endTrial();
 					} else {
-						console.log("PLEASE PREDICT ALL SAMPLES");
+						let outcome_resps = [];
+						for (let i = 0; i < outcomes.length; i++) {
+							outcome_resps.push(outcomes[i].style.backgroundColor);
+						};
+						deleteScreen();
+						display_element.innerHTML += quickHTML("<b>Please select all outcome predictions before preceeding!</b>", "div");
+						setTimeout(() => showTestData(outcome_resps), 1000);
 					}
 				});
 
-				// Make the test outcomes editable
 
+				// Fill in previous answers if originally selected				
+				if (last_outcomes != null) {
+					for (let i = 0; i < outcomes.length; i++) {
+						outcomes[i].style.backgroundColor = last_outcomes[i];
+					};
+				}
+
+				// Make the test outcomes editable
 				for (let i = 0; i < outcomes.length; i++) {
 					outcomes[i].addEventListener("mousedown", function (e) {
 						// var info = {};

@@ -348,6 +348,7 @@ const grid_1 = {
   grid_square_size: grid_size,
 };
 timeline.push(grid_1);
+
 const test_1 = {
   type: jsGridData,
   prompt: rule_prompt(1),
