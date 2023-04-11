@@ -73,18 +73,8 @@ var insCreator = function (urn_order, sample_order, rule) {
 };
 
 var instruction_data = insCreator(['a', 'b'], [0, 1, 2], 'RO0' )
+var instruction_judgments = [[1, 1], [2, 2], [3, 2]]
 
-
-var cinsCreator = function (urn_order, sample_order, rule) {
-  let judgements = [];
-  for (let i = 0; i < 2; i++) {
-    let sample_dict = D_observations[sample_order[i]];
-    let causes = sample_dict[rule];
-    // Map over the defined judgements and place them in the correct order
-    judgements.push.apply(judgements, causes.map(j => urn_order.findIndex(el => el == j)).map(loc => [i + 1, loc + 1]));
-  }
-  return judgements;
-};
 
 var causeCreator = function (urn_order, sample_order, rule) {
   let judgements = [];
@@ -294,7 +284,7 @@ var ins_prompt4 = 'For some of those examples, we will provide you with <b> caus
 
 // One question this is going to raise is what do we do when there is 
 
-
+//var instruction_judgments = [[1, 1], [2, 2], [3, 2]]
 
 
 var instruction_prompt = function(number){
@@ -308,14 +298,13 @@ const grid_0 = {
   prompt: [
 ins_prompt1, ins_prompt2, ins_prompt3, ins_prompt4
 ],
-  custom_prompt: ['This is one', 'This two', 'lemon'],
+  custom_prompt: ['This is the first prompt we show you', 'This is the second prompt we are going to show you', 'Now here is the third prompt, which may or may not invite you to draw', 'apple'],
   grid: [4, 3],
   cause: true,
   test_targets:[],
-  timed_judgment: [false, false, true],
-  judgements: cause_data_1,
+  timed_judgment: [false, false, true, true, true, true, true, true],
+  judgements: instruction_judgments,
   targets: instruction_data,
-  judgements: [],
   target_colour: color_present,
   grid_square_size: grid_size,
 };
@@ -336,6 +325,11 @@ timeline.push(grid_0);
  * 0 1
  */
 
+var obs_with_j = []
+for (let i = 0; i < 15; i++) {
+obs_with_j.push(true)
+}
+console.log(obs_with_j)
 const grid_1 = {
   type: jsGridData,
   prompt: rule_prompt(1),
@@ -346,6 +340,7 @@ const grid_1 = {
   judgements: cause_data_1,
   target_colour: color_present,
   grid_square_size: grid_size,
+  timed_judgment: [true, true, true, true, true, true, true, true, true]
 };
 timeline.push(grid_1);
 
@@ -359,6 +354,7 @@ const test_1 = {
   judgements: cause_data_1,
   target_colour: color_present,
   grid_square_size: grid_size,
+  timed_judgment: []
 };
 timeline.push(test_1);
 
