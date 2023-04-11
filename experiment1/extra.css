@@ -1,0 +1,55 @@
+.premise {
+    padding-left: 20px;
+}
+
+.conclusion {
+    font-weight: bold;
+    text-align: center;
+}
+
+.prompt {
+    font-style: italic;
+}
+
+.center-content {
+    text-align: center;
+}
+
+p.indent-line-breaks {
+    margin-top: 0em;
+    margin-bottom: 0em;
+}
+
+.jspsych-data-grid-cell{
+    color: blue;
+    font-size: xx-large;
+}
+
+.jspsych-test-grid-cell{
+    color: black;
+    font-size: xx-large; 
+}
+
+.border-right {
+    border-right: 3px solid black;
+    float: left;
+    width: 50%;
+}
+
+.border-left {
+    border-left: 3px solid black;
+    float: left;
+    width: 50%;
+}
+
+.column {
+    float: left;
+    width: auto;
+}
+
+/* Clear floats after the columns */
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
+}
