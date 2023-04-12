@@ -142,6 +142,21 @@ var jsGridData = (function (jspsych) {
 
 		trial(display_element, trial) {
 
+			/**
+			 * 
+			 */
+			function main(){
+				var total_observations = trial.grid[0];
+				var sample_drawn = 0;
+				var current_sample = 0;
+				
+				if (trial.test_targets.length > 0) {
+					showTestData()
+				} else {
+				
+					showObservationData();
+				}
+			}
 			//////////////////
 			// Grid Functions
 			//////////////////
@@ -169,7 +184,7 @@ var jsGridData = (function (jspsych) {
 				if (class_name == null) {
 					return `<${type}>` + input + `</${type}>`;
 				} else {
-					return `<${type} class="${class_name}">` + input + `</${type}>`;
+					return `<${type} class="${class_name}">`+ input + `</${type}>`;
 				}
 			}
 
@@ -189,7 +204,7 @@ var jsGridData = (function (jspsych) {
 					} else {
 						className = `jspsych-${row_kind}-grid-cell`;
 					}
-					row += "<div class=\"" + className + "\" id=\"" + idName + sample_number + "-" + j + "\" data-row=\"" + sample_number + "\" data-column=\"" + j + "\" style=\"width:" + trial.grid_square_size + "px;" + "height:" + trial.grid_square_size + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
+					row += "<div class=\"" + className + "\" id=\"" + idName + sample_number + "-" + j + "\" data-row=\"" + sample_number + "\" data-column=\"" + j + "\" style=\"width:" + trial.grid_square_size + "px; color:" + trial.cause_colour + "; height:" + trial.grid_square_size + "px; display:table-cell; vertical-align:middle; text-align: center; cursor: pointer;";
 
 
 					if (checkArray((test_trial) ? trial.test_targets : trial.targets, [sample_number, j])) {
@@ -230,7 +245,7 @@ var jsGridData = (function (jspsych) {
 
 			function drawGrid(n_samples, test_trial) {
 				let border = '';
-				if (!test_trial) {
+				if(!test_trial){
 					border = "border-top: 2px solid black; border-bottom: 2px solid black; border-left: 2px solid black; border-right: solid black;";
 				}
 				var theGrid = `<div id='jspsych-serial-reaction-time-stimulus' style='margin:auto; display: table; table-layout: fixed; border-spacing: 5px 5px;${border}'>`;
@@ -248,195 +263,185 @@ var jsGridData = (function (jspsych) {
 
 
 
-			function showObservationData() {
 
+			// Instruction functions
+			function showInstructionData() {
 
-				var total_observations = trial.grid[0]
-			
-				function updateDisplay() {
-					display_element.innerHTML = '';
-			
-					// // index the prompt you want by the current sample
-
-					if (Array.isArray(trial.prompt) && trial.prompt.length > 0 && trial.prompt[current_sample]) {
-						display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
-					} else if (typeof trial.prompt === "string") {
-						display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
-					}
-					
-					let gridhtml = '';
-					if (current_sample > 0) {
-						gridhtml = drawGrid(current_sample, false);
-					}
-			
-					if (!sample_drawn) {
-						let promptText = "Push the button below to draw a new sample form the slot machine!";
-						if (trial.custom_prompt.length > 0) {
-						  if (Array.isArray(trial.custom_prompt) && trial.custom_prompt[current_sample]) {
-							promptText = trial.custom_prompt[current_sample];
-						  } else if (typeof trial.custom_prompt === "string") {
-							promptText = trial.custom_prompt;
-						  }
-						}
-						gridhtml += quickHTML(promptText, 'div');
-					  } else {
-						//gridhtml += drawObservation(current_sample + 1, false);//, trial.timed_judgment[current_sample]
-
-
-					  }
-			
-					gridhtml += quickHTML("<b>Remaining samples: </b>" + (total_observations - current_sample), 'div', "jspsych-data-gid-prompt");
-			
-					display_element.innerHTML += gridhtml;
-			
-					// Button for sampling
-					if (!sample_drawn) {
-						display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn' style='margin-left: 5px;'> Draw Sample </button>";
-						var btn_draw = document.getElementById("next-draw-button");
-						btn_draw.addEventListener("click", () => {
-							if (current_sample < total_observations) {
-								sample_drawn = true;
-								//current_sample++;
-								next_observation();
-							}
-						});
-					} else {
-						display_element.innerHTML += "<button id='save-draw-button' class='jspsych-btn'" +
-							"style='margin-left: 5px;'>" +
-							"Save sample" +
-							"</button>";
-						var btn_save = document.getElementById("save-draw-button");
-						btn_save.addEventListener("click", () => {
-							if (current_sample < total_observations) {
-								sample_drawn = false;
-								current_sample++;
-								next_observation();
-							}
-						});
-
-
-						// If all observations have been drawn, go to the next trial in the timeline
-						if (current_sample === total_observations) {
-							display_element.innerHTML += "<button id='proceed-button' class='jspsych-btn' style='margin-left: 5px;'> Proceed </button>";
-							var btn_proceed = document.getElementById("proceed-button");
-							btn_proceed.addEventListener("click", () => {
-								endTrial();
-							});
-						}
-
-					}
+				deleteScreen();
+		
+				// index the prompt you want by the current sample
+				if (Array.isArray(trial.prompt) && trial.prompt.length > 0 && trial.prompt[current_sample]) {
+					display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
+				} else if (typeof trial.prompt === "string") {
+					display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
 				}
-			
-				function next_observation() {
-					if (current_sample < total_observations) {
-						updateDisplay();
-					} else {
-						display_element.innerHTML = '';
 				
-
-						
-						
-						if (Array.isArray(trial.prompt) && trial.prompt.length > 0 && trial.prompt[current_sample]) {
-							display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
-						} else if (typeof trial.prompt === "string") {
-							display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
+				let gridhtml = '';
+				if (current_sample > 0) {
+					gridhtml = drawGrid(current_sample, false);
+				}
+		
+				if (!sample_drawn) {
+					let promptText = "Push the button below to draw a new sample form the slot machine!";
+					if (trial.custom_prompt.length > 0) {
+					  if (Array.isArray(trial.custom_prompt) && trial.custom_prompt[current_sample]) {
+						promptText = trial.custom_prompt[current_sample];
+					  } else if (typeof trial.custom_prompt === "string") {
+						promptText = trial.custom_prompt;
+					  }
+					}
+					gridhtml += quickHTML(promptText, 'div');
+				  } else {
+					gridhtml += drawObservation(current_sample + 1, false);
+				  }
+		
+				gridhtml += quickHTML("<b>Remaining samples: </b>" + (total_observations - current_sample), 'div', "jspsych-data-gid-prompt");
+		
+				display_element.innerHTML += gridhtml;
+		
+				// Button for sampling
+				if (!sample_drawn) {
+					display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn' style='margin-left: 5px;'> Draw Sample </button>";
+					var btn_draw = document.getElementById("next-draw-button");
+					btn_draw.addEventListener("click", () => {
+						if (current_sample < total_observations) {
+							sample_drawn = true;
+							//current_sample++;
+							next_observation();
 						}
-						
+					});
+				} else {
+					display_element.innerHTML += "<button id='save-draw-button' class='jspsych-btn'" +
+						"style='margin-left: 5px;'>" +
+						"Save sample" +
+						"</button>";
+					var btn_save = document.getElementById("save-draw-button");
+					btn_save.addEventListener("click", () => {
+						if (current_sample < total_observations) {
+							sample_drawn = false;
+							current_sample++;
+							next_instruction();
+						}
+					});
 
-						// Show the final prompt
 
-
-						// Here I can probably tinker another version, where the prompt for the final frame could be something different, 
-						// using for that the fact that the prompt can also be made to be an array. Let's focus on it later (Apr 10, 2023 5:35:09 PM)
-						// if (trial.prompt.length > 0 && trial.prompt[current_sample]) {
-						// 	display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
-						// }
-
-						
-				
-						// Add a "Proceed" button when all observations have been drawn
+					// If all observations have been drawn, go to the next trial in the timeline
+					if (current_sample === total_observations) {
 						display_element.innerHTML += "<button id='proceed-button' class='jspsych-btn' style='margin-left: 5px;'> Proceed </button>";
 						var btn_proceed = document.getElementById("proceed-button");
 						btn_proceed.addEventListener("click", () => {
 							endTrial();
 						});
 					}
+
+				}
+			}
+
+			function next_instruction() {
+				if (current_sample < total_observations) {
+					updateDisplay();
+				} else {
+					display_element.innerHTML = '';
+			
+					if (Array.isArray(trial.prompt) && trial.prompt.length > 0 && trial.prompt[current_sample]) {
+						display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
+					} else if (typeof trial.prompt === "string") {
+						display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
+					}
+					
+
+					// Show the final prompt
+
+
+					// Here I can probably tinker another version, where the prompt for the final frame could be something different, 
+					// using for that the fact that the prompt can also be made to be an array. Let's focus on it later (Apr 10, 2023 5:35:09 PM)
+					// if (trial.prompt.length > 0 && trial.prompt[current_sample]) {
+					// 	display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
+					// }
+
+					
+			
+					// Add a "Proceed" button when all observations have been drawn
+					display_element.innerHTML += "<button id='proceed-button' class='jspsych-btn' style='margin-left: 5px;'> Proceed </button>";
+					var btn_proceed = document.getElementById("proceed-button");
+					btn_proceed.addEventListener("click", () => {
+						endTrial();
+					});
+				}
+			}
+		
+		
+
+			// Function that allows for data sampling and observing
+			function showObservationData() {
+
+				// index the prompt you want by the current sample
+				if (trial.prompt.length > 0 && trial.prompt[current_sample]) {
+					display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
 				}
 			
-				updateDisplay();
-			}
-			
-
-			// function showObservationData() {
-			// 	var current_sample = 0;
-
-			// 	// index the prompt you want by the current sample
-			// 	if (trial.prompt.length > 0 && trial.prompt[current_sample]) {
-			// 		display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
-			// 	}
-			
 
 
-			// 	// show prompt if there is one
-			// 	// if (trial.prompt !== null) {
-			// 	// 	display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
-			// 	// }
+				// show prompt if there is one
+				// if (trial.prompt !== null) {
+				// 	display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
+				// }
 
-			// 	let gridhtml = '';
-			// 	if (current_sample > 0) {
-			// 		gridhtml = drawGrid(current_sample, false);
-			// 	}
-
-
-			// 	if (!sample_drawn) {
-			// 		gridhtml += quickHTML("Push the button below to draw a sample form the slot machine!", 'div');
-			// 	} else {
-			// 		gridhtml += drawObservation(current_sample + 1, false);
-			// 	}
-
-			// 	gridhtml += quickHTML("<b>Remaining samples: </b>" + (10 - current_sample), 'div', "jspsych-data-gid-prompt");
-
-			// 	display_element.innerHTML += gridhtml;
-
-			// 	// Button for sampling
-			// 	if (!sample_drawn) {
-			// 		display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn' style='margin-left: 5px;'> Draw Sample </button>";
-			// 		var btn_draw = document.getElementById("next-draw-button");
-			// 		btn_draw.addEventListener("click", () => {
-			// 			sample_drawn = true;
-			// 			current_sample++
-			// 			display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
-			// 			//put the iterator here
-			// 			next_observation()
-			// 		});
-			// 	} else {
-			// 		display_element.innerHTML += "<button id='save-draw-button' class='jspsych-btn'" +
-			// 			"style='margin-left: 5px;'>" +
-			// 			"Save sample" +
-			// 			"</button>";
-			// 		var btn_save = document.getElementById("save-draw-button");
-			// 		btn_save.addEventListener("click", () => {
-			// 			sample_drawn = false;
-			// 			current_sample++;
-			// 			next_observation();
-			// 		});
-			// 	}
+				let gridhtml = '';
+				if (current_sample > 0) {
+					gridhtml = drawGrid(current_sample, false);
+				}
 
 
-				/////////////////////////////
+				if (!sample_drawn) {
+					gridhtml += quickHTML("Push the button below to draw a sample form the slot machine!", 'div');
+				} else {
+					gridhtml += drawObservation(current_sample + 1, false);
+				}
+
+				gridhtml += quickHTML("<b>Remaining samples: </b>" + (10 - current_sample), 'div', "jspsych-data-gid-prompt");
+
+				display_element.innerHTML += gridhtml;
+
+				// Button for sampling
+				if (!sample_drawn) {
+					display_element.innerHTML += "<button id='next-draw-button' class='jspsych-btn' style='margin-left: 5px;'> Draw Sample </button>";
+					var btn_draw = document.getElementById("next-draw-button");
+					btn_draw.addEventListener("click", () => {
+						sample_drawn = true;
+						current_sample++
+						display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
+						//put the iterator here
+						next_observation()
+					});
+				} else {
+					display_element.innerHTML += "<button id='save-draw-button' class='jspsych-btn'" +
+						"style='margin-left: 5px;'>" +
+						"Save sample" +
+						"</button>";
+					var btn_save = document.getElementById("save-draw-button");
+					btn_save.addEventListener("click", () => {
+						sample_drawn = false;
+						current_sample++;
+						next_observation();
+					});
+				}
+
+
+				///////////////////////////
 
 			//}
 
-			function showTestData(last_outcomes) {
-				deleteScreen();
+			function showTestData() {
+
 				// show prompt if there is one
 				if (trial.prompt.length > 0) {
 					display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
 				}
 
-				let test_column = quickHTML(drawGrid(16, true), "div", "column border-right");
-				let observation_column = quickHTML(quickHTML("<b>Observation History</b>", "div") + drawGrid(10, false), "div", "column");
-				let data_columns = quickHTML(test_column + observation_column, "div", "row");
+				let test_column = quickHTML(drawGrid(16, true), "div","column border-right");
+				let observation_column = quickHTML(quickHTML("<b>Observation History</b>","div") + drawGrid(10, false), "div", "column");
+				let data_columns = quickHTML(test_column + observation_column , "div","row");
 
 				// let data_columns = drawGrid(16, true);
 
@@ -444,20 +449,17 @@ var jsGridData = (function (jspsych) {
 
 				/////////////////////////////
 
-
 				display_element.innerHTML += "<button id='save-test-button' class='jspsych-btn'" +
 					"style='margin-left: 5px;'>" +
 					"Save answers" +
 					"</button>";
 				let outcomes = document.getElementsByClassName("jspsych-test-grid-outcome");
 				let btn_save = document.getElementById("save-test-button");
-
-
-
 				let answer_blank = false;
 				btn_save.addEventListener("mousedown", () => {
 					for (let i = 0; i < outcomes.length; i++) {
 						if (outcomes[i].style.backgroundColor.length == 0) {
+							console.log(outcomes[i].style.backgroundColor.length);
 							answer_blank = true;
 						}
 					};
@@ -465,25 +467,12 @@ var jsGridData = (function (jspsych) {
 					if (!answer_blank) {
 						endTrial();
 					} else {
-						let outcome_resps = [];
-						for (let i = 0; i < outcomes.length; i++) {
-							outcome_resps.push(outcomes[i].style.backgroundColor);
-						};
-						deleteScreen();
-						display_element.innerHTML += quickHTML("<b>Please select all outcome predictions before preceeding!</b>", "div");
-						setTimeout(() => showTestData(outcome_resps), 1000);
+						console.log("PLEASE PREDICT ALL SAMPLES");
 					}
 				});
 
-
-				// Fill in previous answers if originally selected				
-				if (last_outcomes != null) {
-					for (let i = 0; i < outcomes.length; i++) {
-						outcomes[i].style.backgroundColor = last_outcomes[i];
-					};
-				}
-
 				// Make the test outcomes editable
+
 				for (let i = 0; i < outcomes.length; i++) {
 					outcomes[i].addEventListener("mousedown", function (e) {
 						// var info = {};
@@ -553,21 +542,10 @@ var jsGridData = (function (jspsych) {
 				}
 			}
 
-
-
-			//////////////////
-			// Trial sequence
-			//////////////////
-
-			if (trial.test_targets.length > 0) {
-				showTestData()
-			} else {
-				var sample_drawn = 0;
-				var current_sample = 0;
-				showObservationData();
-			}
-
 		}
+		
+		// Run main sequence
+		main();
 	}
 	DataGridPlugin.info = info;
 	return DataGridPlugin;

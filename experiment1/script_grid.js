@@ -343,7 +343,6 @@ const grid_1 = {
   timed_judgment: [true, true, true, true, true, true, true, true, true]
 };
 timeline.push(grid_1);
-
 const test_1 = {
   type: jsGridData,
   prompt: rule_prompt(1),
