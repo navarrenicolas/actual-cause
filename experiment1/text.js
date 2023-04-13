@@ -2,9 +2,50 @@
  * Instructions and trial prompts for the urn slot machine experiment
  */
 
-var instructions_presentation_1 = `<h1>Instructions</h1><p>In this experiment, you will be playing with a slot machine that samples balls from four urns at the same time. For each urn, the probability of drawing a ball of a given color is relative to the proportion of balls of that color in the urn. </p>`;
+var instructions_presentation_1 = `<h1>Instructions</h1><p>In the following experiment, you will be playing a game of chance.`+
+`The game consists in drawing colored balls at random from four different urns. To each draw from the urns corresponds an outcome: win or lose.`+
+`A draw is winning if the colored balls you've drawn satisfy a certain condition with respects to their color, number, position, or some combination fo those, and losing otherwise.`+
+`The condition for winning is not revealed to you however. Your goal in this game is to guess it based on the outcomes corresponding to the samples you've drawn </p>`;
 
-var instructions_presentation_2 = "<h1>Instructions</h1><p>In the next trials, you will sample directly from a slot machine that draws balls at random from each of the urns for you. The samples occur in the context of a game of chance. In each round of the game, you win or lose depending on the balls you've drawn from the urns. Your goal is to observe the outcome corresponding to each draw, and try to guess the rule that links the balls you have drawn with the outcome (win or lose) associated with a given draw. </p>";
+var urns_presentation_1 = `<h1>Instructions</h1><p>. Here are two example urns, to illustrate the process of random drawing.`+
+` Each urn is composed of yellow balls and blue balls, in different proportions. When you clik on the 'Draw' button, one ball is drawn at random from each urn.`+
+` Each ball in a given urn is equally likely to be drawn.`+
+` Therefore, the more ball of a certain color there are in an urn, the more likely you are to draw a ball of that color from that urn. </p>`
+
+var urns_presentation_2 = `<h1>Instructions</h1><p> Here you have drawn a yellow ball from the first urn and a blue ball from the second urn.`+
+`After each draw, the balls are systematically replaced in the urn,`+
+`so that the probability of drawing a ball of a certain color from a given urn is the same for each draw.`+
+`<br> Now that you understand how urns work, we will explain how the guessing game works.`+
+`<br><br> Click "continue" to move to the next page.</p>`
+
+let example_scoring = (urns) => {
+	const str = instructions_presentation_1
+  const str2 = urns_presentation_2
+if (urns[0].selected && urns[1].selected) {
+    return str2 + `<p> Here you have drawn a yellow ball from the first urn and a blue ball from the second urn.`+
+    `<br><br> Click "continue" to move to the next page.</p>`
+  }
+  return str + '<p> Click on "draw" to draw a ball</p>'
+};
+
+
+var inst_prompt1 = `<p>Let's first introduce a simplified version of the game, where you only draw from the two urns that you have seen just before.<br>`+
+`(The version you will play later will involve four different urns)<br>`+
+`Click on the 'Draw sample' button below to start the game. </p>` //This line to be removed once we have the proper prompt for it
+
+
+var inst_prompt2 = `Here in this first sample, you have drawn a yellow ball from the first urn, and a blue ball from the second urn.`+
+`The outcome is a win, indicated by the green square to the right of the balls (for a loss, you'd see a red square).<br>`+
+`<br> This observation can help you figure out what are the conditions for winning in this game.`+
+`For example, here the condition for winning might be: 'You need to draw a yellow ball from the first urn to win',`+
+` or 'You need to draw at least one blue ball to win', or any other possibility that is compatible with the observation you see.<br>`+
+`<br>When you draw the next sample, this one sample will get saved on the screen, for you to look at it again later if you wish.<br>`+
+`(The corresponding balls however are being replaced in the urns before the next random drawn)`
+
+
+var inst_prompt3 = 'In the second sample you drew, you drew a blue ball from the first urn, and a yellow ball from the second urn. The outcome is, here again, a win. The rule that links observations and outcomes is <b> the same rule </b> for every draw in a given game. So you can use this observation, together with the previous one, to try to infer what is the rule that underlies this dataset.'
+
+
 
 var rule_prompt = function(number){
     return `<h1> Slot Machine ${number}</h1> <p> Try to figure out the rule that links the balls you've picked and the outcome of the round</p>`;
