@@ -84,15 +84,6 @@ var jsGridData = (function (jspsych) {
 				default: [],
 				description: 'An array of prompts or a simple string to be displayed above the grid, one for each click'
 			},
-
-
-			// prompt: {
-			// 	type: jspsych.ParameterType.HTML_STRING,
-			// 	pretty_name: 'Prompt',
-			// 	default: null,
-			// 	description: 'Any content here will be displayed above the grid'
-			// },
-
 			custom_prompt: {
 				type: jspsych.ParameterType.HTML_STRING,
 				pretty_name: 'Custom prompt',
@@ -125,6 +116,9 @@ var jsGridData = (function (jspsych) {
 				default: "gold",
 				description: "Colour of the borders surrounding causal cells"
 			},
+			// start_sample:{
+			// 	type: jspsych.
+			// }
 		}
 	};
 
@@ -145,18 +139,19 @@ var jsGridData = (function (jspsych) {
 
 		trial(display_element, trial) {
 
-
+			
+			
 			/**
 			 * Execute the main trial.
 			 * Checks if the trial is an observation or instruction trial.
-			 */
+			*/
 			function main() {
-				let total_observations = trial.grid[0];
+				var total_observations = trial.grid[0];
 				if (trial.custom_prompt.length > 0) {
 					showInstructionData(0, 0);
 				}
 				if (trial.test_targets.length > 0) {
-					showTestData(0)
+					showTestData()
 				} else {
 					showObservationData(0);
 				}
@@ -311,9 +306,10 @@ var jsGridData = (function (jspsych) {
 			 */
 			function showInstructionData(prompt_index, current_sample) {
 
+				deleteScreen();
 				// index the prompt you want by the current sample
-				if (Array.isArray(trial.prompt) && trial.prompt.length > 0 && trial.prompt[promt_index]) {
-					display_element.innerHTML += quickHTML(trial.prompt[promt_index], 'div', "jspsych-data-grid-prompt");
+				if (Array.isArray(trial.prompt) && trial.prompt.length > 0 && trial.prompt[prompt_index]) {
+					display_element.innerHTML += quickHTML(trial.prompt[prompt_index], 'div', "jspsych-data-grid-prompt");
 				} else if (typeof trial.prompt === "string") {
 					display_element.innerHTML += quickHTML(trial.prompt, 'div', "jspsych-data-grid-prompt");
 				}
@@ -341,19 +337,18 @@ var jsGridData = (function (jspsych) {
 				display_element.innerHTML += gridhtml;
 
 				// Button for sampling
-				if (current_sample == total_observations) {
+				if (current_sample == total_observations ) {
 					display_element.innerHTML += "<button id='end-trial-button' class='jspsych-btn' style='margin-left: 5px;'> Go to test! </button>";
 					var btn_end = document.getElementById("end-trial-button");
-					btn_draw.addEventListener("click", () => {
+					btn_end.addEventListener("click", () => {
 						endTrial();
 					});
-				}
-				if (promptText == sampleText) {
-					display_element.innerHTML += "<button id='next-promt-button' class='jspsych-btn' style='margin-left: 5px;'> Next </button>";
-					var btn_draw = document.getElementById("next-promt-button");
-					btn_draw.addEventListener("click", () => {
+				}else if (promptText == sampleText) {
+					display_element.innerHTML += "<button id='next-prompt-button' class='jspsych-btn' style='margin-left: 5px;'> Next </button>";
+					var btn_next = document.getElementById("next-prompt-button");
+					btn_next.addEventListener("click", () => {
 						//put the iterator here
-						showInstructionData(promt_index + 1, current_sample);
+						showInstructionData(prompt_index + 1, current_sample);
 					});
 				}
 				else {
@@ -361,7 +356,7 @@ var jsGridData = (function (jspsych) {
 					var btn_draw = document.getElementById("next-draw-button");
 					btn_draw.addEventListener("click", () => {
 						//put the iterator here
-						showInstructionData(promt_index, current_sample + 1);
+						showInstructionData(prompt_index + 1, current_sample + 1);
 					});
 				}
 			}
@@ -370,10 +365,11 @@ var jsGridData = (function (jspsych) {
 			 * Displays the observation grid up to the current sample
 			 * When the current sample is at the maximum value
 			 * the button will allow for the trial to end.
-			 * @param {INT} current_sample 
+			 * @param {int} current_sample 
 			 */
 			function showObservationData(current_sample) {
 
+				deleteScreen();
 				// index the prompt you want by the current sample
 				if (trial.prompt.length > 0 && trial.prompt[current_sample]) {
 					display_element.innerHTML += quickHTML(trial.prompt[current_sample], 'div', "jspsych-data-grid-prompt");
@@ -406,7 +402,7 @@ var jsGridData = (function (jspsych) {
 
 			}
 
-
+			
 			/**
 			 * Displays the test data grid.
 			 */
