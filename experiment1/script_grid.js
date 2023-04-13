@@ -53,6 +53,29 @@ var dataCreator = function (urn_order, sample_order, rule) {
   return targets;
 };
 
+
+var D_ins = [{'a' : 1, 'b': 0, 'RO0': 1, 'RJ' : 'a'}, 
+{'a': 0, 'b': 1, 'RO0': 1, 'RJ' : 'b'}, 
+{'a': 0, 'b': 1, 'RO0': 1, 'RJ' : 'b'}, 
+ //{'a': 1, 'b': 1, 'RO0': 1, 'RJ' : 'b'} 
+]
+
+var insCreator = function (urn_order, sample_order, rule) {
+  let targets = [];
+  for (var i = 0; i < 3; i++) {
+    let sample_dict = D_ins[sample_order[i]];
+    for (j = 0; j < 2; j++) {
+      if (sample_dict[urn_order[j]]) { targets.push([i + 1, j + 1]) };
+    }
+    if (sample_dict[rule]) { targets.push([i + 1, 3])};
+  }
+  return targets;
+};
+
+var instruction_data = insCreator(['a', 'b'], [0, 1, 2], 'RO0' )
+var instruction_judgments = [[1, 1], [2, 2], [3, 2]]
+
+
 var causeCreator = function (urn_order, sample_order, rule) {
   let judgements = [];
   for (let i = 0; i < 10; i++) {
@@ -102,6 +125,7 @@ var urn_order_2 = get_urn_order();
 var urn_order_3 = get_urn_order();
 var urn_order_4 = get_urn_order();
 
+
 // Define the sample orders
 var sample_order_1 = get_sample_order();
 var sample_order_2 = get_sample_order();
@@ -119,6 +143,8 @@ observation_data_1 = dataCreator(urn_order_1, sample_order_1, 'R1O');
 observation_data_2 = dataCreator(urn_order_2, sample_order_2, 'R2O');
 observation_data_3 = dataCreator(urn_order_3, sample_order_3, 'R3O');
 observation_data_4 = dataCreator(urn_order_4, sample_order_4, 'R4O');
+console.log(observation_data_1)
+
 
 cause_data_1 = causeCreator(urn_order_1, sample_order_1, 'R1J');
 cause_data_2 = causeCreator(urn_order_2, sample_order_2, 'R2J');
@@ -129,6 +155,27 @@ test_data_1 = testCreator(urn_order_1, test_order_1, 'R1O');
 test_data_2 = testCreator(urn_order_2, test_order_2, 'R2O');
 test_data_3 = testCreator(urn_order_3, test_order_3, 'R3O');
 test_data_4 = testCreator(urn_order_4, test_order_4, 'R4O');
+
+
+
+
+/////////////////////////////////////////////////////////
+/////////////       URN PARAMETERS   ///////////////////
+/////////////////////////////////////////////////////////
+
+let white_scoring = (urns) => {
+	const str = '<p>Here are two example urns. When you click on the "draw" button, one ball will be randomly drawn from the box. Each ball in the box is equally likely to be selected.</p>'
+  if (urns[0].selected && !urns[1].selected) {
+    return str + '<p>You have just drawn a white ball from the first urn! Click on the other urn to draw from it. </p>'
+  }
+   else if (urns[1].selected && !urns[0].selected) {
+    return str + '<p>You have just drawn a colored ball from the second urn! Click on the other urn to draw from it.</p>'
+  }
+  else if (urns[0].selected && urns[1].selected) {
+    return str + '<p>You have drawn a white ball from the first urn and a colored ball from the second urn. Click "continue" to move to the next page.</p>'
+  }
+  return str + '<p> Click on "draw" to draw a ball</p>'
+};
 
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -170,11 +217,104 @@ const AskID = {
 
 const instructions_page = {
   type: jsPsychInstructions,
-  pages: [instructions_presentation],
+  pages: [instructions_presentation_1],
   button_label_next: 'Next',
   show_clickable_nav: true
 };
-timeline.push(instructions_page);
+//timeline.push(instructions_page);
+
+const example_urn_1 = {
+  type: jsUrnSelection,
+  groups: [],
+  canvas_size: [50, 140],
+  prompt: white_scoring,
+  scoring: () => '',
+  urns: [{ball_color: "purple", is_result_color: false, n_colored_balls: 3, n_balls:20, background_ball_color: "white",width: 25, coords: [0,10]},
+  {ball_color: "yellow", is_result_color: true, n_colored_balls: 15, n_balls:20, background_ball_color: "white",width: 25, coords: [50,10]}, ]
+}
+
+
+//timeline.push(example_urn_1);
+
+
+const example_urn_2 = {
+  type: jsUrnSelectionMulti,
+  groups: [],
+  canvas_size: [50, 140],
+  prompt: white_scoring,
+  scoring: () => '',
+  urns: [
+    {
+      ball_color: "purple",
+      is_result_color: false,
+      n_colored_balls: 3,
+      n_balls: 20,
+      background_ball_color: "white",
+      width: 25,
+      coords: [25, 10],
+    },
+    {
+      ball_color: "yellow",
+      is_result_color: true,
+      n_colored_balls: 15,
+      n_balls: 20,
+      background_ball_color: "white",
+      width: 25,
+      coords: [60, 10],
+    },
+  ],
+};
+//timeline.push(example_urn_2);
+
+// Text:
+
+var ins_prompt1 = `We will first present you with a simplified example of the game, where you draw urns from only two urns, and are given the outcome that results from your draw.</br> Click on the 'Draw sample' button to start the game.`
+var ins_prompt2 = "Here in this first sample, you have drawn a yellow ball from the first urn, and a blue ball from the second urn. The outcome is a win, indicated by a green square. This observation can help you figure out what are the conditions for winning in this game.</br>For example, here the condition for winning might be: 'You need to draw a blue ball from the second urn to win', or 'You need to draw at least one yellow ball to win', or any other possibility that is compatible with the observation you see. </br>Once you've drawn a sample, you can clik on `save sample ` to save it and look at it later, together with the other samples you draw. "
+var ins_prompt3 = 'In the second sample you drew, you drew a blue ball from the first urn, and a yellow ball from the second urn. The outcome is, here again, a win. The rule that links observations and outcomes is <b> the same rule </b> for every draw in a given game. So you can use this observation, together with the previous one, to try to infer what is the rule that underlies this dataset.'
+
+var ins_prompt4 = 'For some of those examples, we will provide you with <b> causal explanations </b>'
+
+
+// Here I would neeed a way to make it such that the causal judgments appear after one clicks
+// on the 'draw sample' button the second time around. This is a bit harder to do, so I can make this the focus of tomorrow. 
+
+
+// Another thing I could take care of even now, is to make the string that appears when you psuh the draw button 
+// a parameter à part entière, so that one can manipulate it. 
+
+// One question this is going to raise is what do we do when there is 
+
+//var instruction_judgments = [[1, 1], [2, 2], [3, 2]]
+
+
+var instruction_prompt = function(number){
+  // if (current_sample == 1) {
+  //   return 'Here for example, you drew a yellow ball from the first urn, and a blue ball from the second urn. The outcome associated with that draw is a loss.'
+  // }
+  return `<h1> Here is a simplified example, where you draw balls from just two different balls. The balls in question come from the urns that you have seen before. Click the 'Draw sample', to draw a ball from each of the urns' </p>`;
+}
+const grid_0 = {
+  type: jsGridData,
+  prompt: [
+ins_prompt1, ins_prompt2, ins_prompt3, ins_prompt4
+],
+  custom_prompt: ['This is the first prompt we show you', 'This is the second prompt we are going to show you', 'Now here is the third prompt, which may or may not invite you to draw', 'apple'],
+  grid: [4, 3],
+  cause: true,
+  test_targets:[],
+  timed_judgment: [false, false, true, true, true, true, true, true],
+  judgements: instruction_judgments,
+  targets: instruction_data,
+  target_colour: color_present,
+  grid_square_size: grid_size,
+};
+
+
+timeline.push(grid_0);
+
+
+
+
 
 /**
  * Example 1
@@ -185,6 +325,11 @@ timeline.push(instructions_page);
  * 0 1
  */
 
+var obs_with_j = []
+for (let i = 0; i < 15; i++) {
+obs_with_j.push(true)
+}
+console.log(obs_with_j)
 const grid_1 = {
   type: jsGridData,
   prompt: rule_prompt(1),
@@ -195,9 +340,9 @@ const grid_1 = {
   judgements: cause_data_1,
   target_colour: color_present,
   grid_square_size: grid_size,
+  timed_judgment: [true, true, true, true, true, true, true, true, true]
 };
 timeline.push(grid_1);
-
 const test_1 = {
   type: jsGridData,
   prompt: rule_prompt(1),
@@ -208,6 +353,7 @@ const test_1 = {
   judgements: cause_data_1,
   target_colour: color_present,
   grid_square_size: grid_size,
+  timed_judgment: []
 };
 timeline.push(test_1);
 

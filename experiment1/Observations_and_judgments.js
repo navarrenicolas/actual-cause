@@ -69,6 +69,16 @@ observation_4.map(o => { D_obs_4[Object.keys(o)[0]] = Object.values(o)[0] });
 var D_observations = [D_obs_1, D_obs_2, D_obs_3, D_obs_4];
 
 
+// Array for the instruction trial: 
+var observation_instruction_1 = [
+    { 'a': 0} ,  {'b': 1 },
+    { 'R0O': 1 }, { 'R1J': ['b'] },
+    ]
+var D_ins_1 = {};
+observation_instruction_1.map(o => { D_ins_1[Object.keys(o)[0]] = Object.values(o)[0] });
+
+console.log(D_obs_4)
+
 ////////////////////////////////////////////
 // Generating Test trials
 ////////////////////////////////////////////
@@ -88,7 +98,8 @@ function generateTestTrials() {
                             'R1O': rule1(trial),
                             'R2O': rule2(trial),
                             'R3O': rule3(trial),
-                            'R4O': rule4(trial)
+                            'R4O': rule4(trial),
+                            'R0O': rule0(trial),
                         });
                     // }
                 }
@@ -110,6 +121,11 @@ function rule3(trial) {
 }
 function rule4(trial) {
     return trial[0] & trial[1] & trial[3];
+}
+
+function rule0(trial) {
+ // return (a or b)
+    return trial[0] || trial[1];
 }
 
 

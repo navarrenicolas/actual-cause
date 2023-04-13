@@ -97,17 +97,9 @@ const instructions_page = {
     button_label_next: "Next",
     show_clickable_nav: true
   }
-  timeline.push(instructions_page);
 
-const example_urn_1 = {
-  type: jsUrnSelection,
-  groups: [],
-  canvas_size: [40, 40],
-  prompt: white_scoring,
-  scoring: () => '',
-  urns: [{ball_color: "red", is_result_color: false, n_colored_balls: 3, n_balls:20, background_ball_color: "white",width: 50, coords: [15,20]} ]
-}
-timeline.push(example_urn_1);
+
+  timeline.push(instructions_page);
 
 
 
