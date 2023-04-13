@@ -143,7 +143,6 @@ observation_data_1 = dataCreator(urn_order_1, sample_order_1, 'R1O');
 observation_data_2 = dataCreator(urn_order_2, sample_order_2, 'R2O');
 observation_data_3 = dataCreator(urn_order_3, sample_order_3, 'R3O');
 observation_data_4 = dataCreator(urn_order_4, sample_order_4, 'R4O');
-console.log(observation_data_1)
 
 
 cause_data_1 = causeCreator(urn_order_1, sample_order_1, 'R1J');
@@ -293,28 +292,32 @@ var instruction_prompt = function(number){
   // }
   return `<h1> Here is a simplified example, where you draw balls from just two different balls. The balls in question come from the urns that you have seen before. Click the 'Draw sample', to draw a ball from each of the urns' </p>`;
 }
+
 const grid_0 = {
   type: jsGridData,
-  prompt: [
-ins_prompt1, ins_prompt2, ins_prompt3, ins_prompt4
-],
+  prompt: ["apple",'orange','potato','banana'],
   custom_prompt: ['This is the first prompt we show you', 'This is the second prompt we are going to show you', 'Now here is the third prompt, which may or may not invite you to draw', 'apple'],
   grid: [4, 3],
-  cause: true,
-  test_targets:[],
-  timed_judgment: [false, false, true, true, true, true, true, true],
-  judgements: instruction_judgments,
   targets: instruction_data,
-  target_colour: color_present,
   grid_square_size: grid_size,
+  judgements: instruction_judgments,
+  sample_trial: true,
+  instruction_trial: true,
 };
-
-
 timeline.push(grid_0);
 
-
-
-
+const grid_00 = {
+  type: jsGridData,
+  prompt: ["apple",'orange','potato','banana'],
+  custom_prompt: ['This is the first prompt we show you', 'This is the second prompt we are going to show you', 'Now here is the third prompt, which may or may not invite you to draw', 'apple'],
+  grid: [4, 3],
+  targets: instruction_data,
+  grid_square_size: grid_size,
+  judgements: instruction_judgments,
+  sample_trial: false,
+  instruction_trial: true,
+};
+timeline.push(grid_00);
 
 /**
  * Example 1
@@ -329,7 +332,6 @@ var obs_with_j = []
 for (let i = 0; i < 15; i++) {
 obs_with_j.push(true)
 }
-console.log(obs_with_j)
 const grid_1 = {
   type: jsGridData,
   prompt: rule_prompt(1),
