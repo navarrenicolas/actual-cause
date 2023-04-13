@@ -30,8 +30,9 @@ if (urns[0].selected && urns[1].selected) {
 
 
 var inst_prompt1 = `<p>Let's first introduce a simplified version of the game, where you only draw from the two urns that you have seen just before.<br>`+
-`(The version you will play later will involve four different urns)<br>`+
-`Click on the 'Draw sample' button below to start the game. </p>` //This line to be removed once we have the proper prompt for it
+`(The version you will play later will involve four different urns)<br></p>`
+
+var inst_prompt12 = `<p>Push the 'Draw sample' button below to draw your first sample.</p>`
 
 
 var inst_prompt2 = `Here in this first sample, you have drawn a yellow ball from the first urn, and a blue ball from the second urn.`+
@@ -42,37 +43,73 @@ var inst_prompt2 = `Here in this first sample, you have drawn a yellow ball from
 `<br>When you draw the next sample, this one sample will get saved on the screen, for you to look at it again later if you wish.<br>`+
 `(The corresponding balls however are being replaced in the urns before the next random drawn)`
 
+var inst_prompt22 = `<p>Push the 'Draw sample' button below to draw your next sample.</p>`
 
-var inst_prompt3 = 'In the second sample you drew, you drew a blue ball from the first urn, and a yellow ball from the second urn. The outcome is, here again, a win. The rule that links observations and outcomes is <b> the same rule </b> for every draw in a given game. So you can use this observation, together with the previous one, to try to infer what is the rule that underlies this dataset.'
+
+var inst_prompt3 = `In the second sample you drew, you drew a blue ball from the first urn, and a yellow ball from the second urn.` +
+`The outcome is, here again, a win. Keep in mind that the rule that links observations and outcomes is <b> the same rule </b> for every draw in a given game.`+
+` So you can use this observation, together with the previous one, to try to infer what is the condition for winning in this game.`+
+`In this case, it would have to be a condition that is satisfied by both the first and the second sample. `
+
+var inst_prompt32 = `<p>Push the 'Draw sample' button below to draw a new sample.</p>`
+
+var inst_prompt4 = `Here you drew a blue ball from the first urn, and a yellow ball from the second urn.` +
+`This draw is the same as the previous one. This can happen repeatedly in the game as each draw is random and independant from the others.`+
+`<br> <br> After you've drawn a certain number of samples in this way, we will test your understanding of the condition`+
+`that underlies the game, by presenting you with new samples, and ask you to predict the outcome of the game for these samples`
+
+var inst_prompt42 = `<p>Push the button below to start the test.</p>`
+
+var inst_test_1 = `Here we present you with every possible four draws from those two urns.`+
+`Your goal is to use the knowledge of the rule you have gathered from previous observations in order to guess what`+
+`the outcome of those draws is. This predictions directly depends on what you think the condition for winning/losing is`+
+`<br><br> Click on the square to the right of the urns to turn it green if you think this sample corresponds to a win.`+
+`Click twice to turn it red if you think this sample is a losing one.`
+
+var inst_test_12 = `You must give a prediction for all samples before you can go move on to the next page.`
+
+var inst_judg_1 = `As you probably have noted, it can be hard to ascertain what the condition for winning is.`+
+`based on the limited number of observations you had at your avail.`+
+`For that reason, in some cases we will give you an extra piece of information on top of those observations,`+
+`in the form of explanations for why you won or lost in a particular case.`+
+`Together with the observation, we provide you with a judgment that tells you which subset of the urns`+
+`was particularly responsible for your win or your loss in that case.`
+
+
+var inst_judg_12 = `Push the button below to continue`
+
+var inst_judg_2 = `Those explanations will match the intuitive judgments that a person knowing the rule of the game would give you.`+
+`For example, in the game you just played, if the condition was 'You win if you draw a yellow from either one of the urns'.`+
+`<br> Which it could have been, given the observations you had, we would have told you that in the first case, you won the game`+
+
+`<b> because of the yellow ball from urn 1 </b>, whereas in the second and third samples, you won`+ 
+`<b> because of the yellow ball from urn 2 </b>`+
+`was particularly responsible for your win or your loss in that case.`
+
+
+
+var inst_judg_22 = `Push the button below to continue`
+
+
+var inst_judg_3 = `The frame that is put around the relevant variable corresponds to the variable `+
+`we pointed to you as an explanation for the outcome. It will allow you to keep track of what variables were`+
+`particularly responsible for the outcome in each case, in order to make a more informed guess`+
+
+`<br> <br> In the following, you will be presented with four games in total, each involving a total of four urns`+
+`and asked to guess what is the condition for winning in each of those games`
+
+
+
+var inst_judg_32 = `Once you are ready, you can push the button below to start the experiment.`
 
 
 
 var rule_prompt = function(number){
-    return `<h1> Slot Machine ${number}</h1> <p> Try to figure out the rule that links the balls you've picked and the outcome of the round</p>`;
+    return `<h1> Game ${number}</h1> <p> Try to figure out the rule that links the balls you've picked and the outcome of the round</p>`;
 };
 
 
 
-// Here one needs to make the second part of the prompt appear only after they have drawn.
-// Here you can see the balls that you have drawn from each of the urns, in respective order of the urns. 
-// You can also see the outcome that corresponds to the balls you have drawn. A red square means that this is a losing sample, whereas a green square
-// means that this is a winning sample.
-
-// NB: Actually, we could modify this in order to make it even more explicit, by replacing the squares with crosses and checkmarks?
-
-// Based on the samples and the outcomes you observe, try to figure out the rule that links the balls you have drawn with the outcome of the round.
-// You will not necessarily always be able to figure out the rule exactly, but you should try to give it your best guess.
-
-// Later on, we will give you cues about the relationship between the balls and the outcome, by providing you with explanations 
-// of the rule that links the balls. 
-
-// Those explanations tell you which ball or balls were the cause of your win or loss *in a particular case*. 
-
-// (maybe) They correspond to what a human, that knew how the game worked would say, if they were explaining the outcome of a particular round to you.
-// -> This sounds great actually. 
-
-// You can use these explanations to help you figure out what is the rule that links the balls 
-// After that, we'll ask you... etc. 
 
 
 var start_text = [
