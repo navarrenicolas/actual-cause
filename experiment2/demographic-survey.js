@@ -1,5 +1,5 @@
-var demographics_block = {
-  type: "survey-dropdown",
+const demographics_block = {
+  type: jsSurveyDropdown,
   preamble: "<h1>Demographic questionnaire</h1>\n\n<p>Please answer the following demographic questions.  Your payment will not be\n  affected by your answers.</p>",
   questions: [
     { prompt: "What is the highest degree or level of school you have completed?",
@@ -29,51 +29,24 @@ var demographics_block = {
                  "1 graduate-level course",
                  "2 or more graduate-level courses"],
       labels: [ "NA", "none", "1ug", "2+ug", "1g", "2+g" ]},
-    { prompt: "What is your college-level background in natural language semantics and pragmatics?",
-      options: [ "---",
-                 "None",
-                 "1 undergraduate-level course",
-                 "2 or more undergraduate-level courses",
-                 "1 graduate-level course",
-                 "2 or more graduate-level courses"],
-      labels: [ "NA", "none", "1ug", "2+ug", "1g", "2+g" ]},
-    { prompt: "How much did you rely on notes or diagrams?",
+    { prompt: "How much did you rely on notes or diagrams during this experiment?",
       options: [ "----",
                  "Not at all",
                  "Somewhat",
                  "A lot" ],
       labels: [ "NA", "not", "somewhat", "lots" ]},
-    { prompt: "Are you male or female?",
+    { prompt: "What is your gender?",
       options: [ "----", "Male", "Female", "Other" ],
       labels: [ "NA", "male", "female", "other"] },
-    { prompt: "How old are you?",
-      options: [ "----",
-                 "Less than 18",
-                 "18 to 24",
-                 "25 to 34",
-                 "35 to 44",
-                 "45 to 54",
-                 "55 to 64",
-                 "65 to 74",
-                 "75 or older" ],
-      labels: [ "NA", "-18", "18-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75+" ]
-    },
-    { prompt: "What is your keyboard layout?",
-      options: ["----",
-                "QWERTY",
-                "QÜERTY",
-                "ÄWERTY",
-                "QWERTZ",
-                "QZERTY",
-                "AZERTY",
-                "ĄŽERTY",
-                "Dvorak",
-                "Colemak",
-                "Workman",
-                "Other"
-              ],
-      labels : ["NA", "QWERTY", "QÜERTY", "ÄWERTY", "QWERTZ", "QZERTY","AZERTY", "ĄŽERTY", "Dvorak", "Colemak", "Workman", "Other"]
-    }
   ],
   data: { questionId: "demo" }
 };
+
+const demographics_block_2 = {
+  type: jsPsychSurveyText,
+  questions: [
+    {prompt: 'What is your age?', name: 'age'},
+
+  ],
+  data: { questionId: "demo.age" }
+}

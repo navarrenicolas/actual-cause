@@ -960,7 +960,7 @@ if(group==1){
 timeline.push(instructions_page3);
 timeline.push(final_feedback);
 // timeline.push(final_questions);
-// timeline.push(demographics_block);
-// timeline.push(demographics_block_2);
+timeline.push(demographics_block);
+timeline.push(demographics_block_2);
 
 jsPsych.run(timeline);
