@@ -8,7 +8,7 @@ $filename = basename($_POST['filename']); // Sanitizes input
 $data = $_POST['filedata'] ?? '';
 
 // Define save path
-$target_dir = '/home/s2016170/server_data/experiment1';
+$target_dir = 'path/to/save/directory'; 
 $target_file = $target_dir . '/' . $filename;
 
 // Create folder if it doesn't exist

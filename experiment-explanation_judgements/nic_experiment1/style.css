@@ -18,6 +18,48 @@
     margin: 0 0 0 0; 
 }  
 
+/* ==========================================================================
+   Prediction Table Overrides & Status Column Fix
+   ========================================================================== */
+
+/* 1. Add a 6th column (40px) specifically for the prediction grid status checkmarks */
+.prediction-history-panel .draw-row {
+    grid-template-columns: 46px 46px 46px 46px 64px 40px !important;
+}
+
+/* 2. Style the Prediction Result Box so "WIN"/"LOSE" fits inside cleanly */
+.prediction-box {
+    width: 64px !important;       /* Matches your grid column width */
+    height: 32px !important;      /* Comfortable clickable height */
+    box-sizing: border-box !important;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 11px !important;
+    text-transform: uppercase;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* 3. Style the status cell checkmarks/crosses so they fit naturally */
+.prediction-status-cell {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.status-check {
+    color: #28a745;
+}
+
+.status-cross {
+    color: #dc3545;
+}
 
 .jspsych-html-button-response-btngroup {
     margin-top: 10px;
@@ -193,6 +235,39 @@
     margin-bottom: 6px;
 }
 
+.explanation-selectable-ball {
+    cursor: pointer;
+    transition: transform 0.12s ease, outline-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.explanation-selectable-ball:hover,
+.explanation-selectable-ball.is-hovered {
+    outline: 2px dashed rgba(120, 120, 120, 0.55);
+    outline-offset: 3px;
+}
+
+.explanation-selectable-ball.is-selected {
+    outline: 2px dashed #808080;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 2px rgba(128, 128, 128, 0.08);
+}
+
+.explanation-response-shell {
+    max-width: 870px;
+    margin: 10px auto 0;
+    text-align: center;
+}
+
+.explanation-sentence {
+    font-size: 1.05em;
+    line-height: 1.5;
+    min-height: 2.5em;
+}
+
+.explanation-sentence p {
+    margin: 0;
+}
+
 #remaining-samples {
     text-align: center;
     font-weight: bold;
@@ -229,7 +304,7 @@
 }
   
 .instructions-container h2 {
-    text-align: center;
+    text-align: justify;
     margin-bottom: 10px;   
     margin-top: 30px;         
 }
@@ -243,22 +318,24 @@
     font-weight: bold;
 }
   
-.instructions-container span.win {
+span.win {
     color: green;
+    font-weight: bold;
+
 }
   
-.instructions-container span.lose {
+span.lose {
     color: red;
+    font-weight: bold;
 }
 
 .highlight-box {
-  max-width: 870px;
   margin-top: 20px;
   margin-bottom: 20px;
   padding: 25px;
   font-family: Arial, sans-serif;
   line-height: 1.6;
-  text-align: justify;
+  text-align: center;
   border: 2px solid black;
   background-color: rgb(255, 254, 239);
   margin: 10px auto 0;  
