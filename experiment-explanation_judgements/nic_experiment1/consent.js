@@ -7,7 +7,7 @@ const consentTrial = {
         <h1 style="text-align: center;">Information Sheet for Participants</h1>
         <h3><b>Study title:</b> A study on causal explanation</h3>
         <h3><b>Principal Investigator:</b> Neil Bramley</h3>
-        <h3><b>Researcher collecting data:</b> Stephanie Chen, Nicolas Navarre</h3>
+        <h3><b>Researcher collecting data:</b> Nicolas Navarre</h3>
   
         <p><b>What is this document?</b> This document explains what kind of study we're doing, what your rights 
             are, and what will be done with your data. You should print this page for your records.</p>

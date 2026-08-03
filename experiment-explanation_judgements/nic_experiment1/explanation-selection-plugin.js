@@ -80,7 +80,7 @@ var jsExplanationSelection = (function (jspsych) {
 	function renderSentence(isWin, descriptions, promptText) {
 		if (descriptions.length === 0) return `<p>${promptText}</p>`;
 		const outcomeText = isWin ? "won" : "lost";
-		return `<p>You <span class="${isWin ? 'win' : 'lose'}">${outcomeText}</span> because you got ${joinDescriptions(descriptions)}.</p>`;
+		return `<p>I <span class="${isWin ? 'win' : 'lose'}">${outcomeText}</span> because I got ${joinDescriptions(descriptions)}.</p>`;
 	}
 
 	class ExplanationSelectionPlugin {
@@ -111,7 +111,7 @@ var jsExplanationSelection = (function (jspsych) {
 				` : ""}
 				<div id="explanation-interactive-area" style="${autoDraw ? "" : "display: none;"}">
 					<div class="draw-feedback-shell">
-						<div id="selection-feedback"></div>
+						<div id="feedback-box"></div>
 					</div>
 					<div id="explanation-sample-container">
 						<div class="draw-sample-box">
@@ -130,7 +130,7 @@ var jsExplanationSelection = (function (jspsych) {
 			const sampleContainer = display_element.querySelector("#explanation-draw-table");
 			const sentenceBox = display_element.querySelector("#explanation-sentence");
 			const finishBtn = display_element.querySelector("#finish-explanation-btn");
-			const feedbackBox = display_element.querySelector("#selection-feedback");
+			const feedbackBox = display_element.querySelector("#feedback-box");
 			const interactiveArea = display_element.querySelector("#explanation-interactive-area");
 			const drawBtn = display_element.querySelector("#draw-explanation-sample-btn");
 			const drawBtnContainer = display_element.querySelector("#draw-sample-btn-container");
@@ -159,14 +159,23 @@ var jsExplanationSelection = (function (jspsych) {
 					.filter((urnKey) => selectedUrns.has(urnKey))
 					.map((urnKey) => describeBall(draw[urnKey], urnKey));
 
-				feedbackBox.textContent = descriptions.length > 0
-					? "Selected balls are outlined with a dashed grey line."
-					: "";
+				
+                let feedbackText = `You drew:<ul style="list-style: none; padding-left: 0; margin-left: 0;">` +
+					urnKeys.map(k => `<li>a <span style="color: ${draw[k]}; font-weight: bold;">${draw[k].replace('light', '')}</span> ball from urn ${k}</li>`).join("") +
+					`</ul>`;
+
+                feedbackText += (isWin
+                    ? `<p>With this draw <span style="color: green; font-weight: bold;">YOU WIN!</span></p>`
+                    : `<p>With this draw <span style="color: red; font-weight: bold;">YOU LOSE!</span></p>`);
+                
+                feedbackText += `<p>Why did you ${isWin ? '<span class="win">win</span>' : '<span class="lose">lose</span>'}?`;
+                
+				feedbackBox.innerHTML = feedbackText;
 
 				sentenceBox.innerHTML = renderSentence(
 					isWin,
 					descriptions,
-					trial.selection_prompt || `Why did you ${isWin ? '<span class="win">win</span>' : '<span class="lose">lose</span>'}?`
+					trial.selection_prompt || "Select the balls that explain the result."
 				);
 				finishBtn.disabled = descriptions.length === 0;
 			};

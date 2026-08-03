@@ -340,24 +340,24 @@ const timeline = [];
 
 
 
-// // Consent
-// timeline.push(consentTrial);
+// Consent
+timeline.push(consentTrial);
   
-// // Prolific ID
-// timeline.push({
-//   type: jsPsychSurveyText,
-//   questions: [
-//     {
-//       prompt: "Please enter your Prolific ID:",
-//       name: "prolific_id",
-//       required: true
-//       }
-//     ],
-//     data: { questionID: "prolific_entry" },
-//       on_finish: function(data) {
-//     jsPsych.getDisplayElement().innerHTML = ''; 
-//   }
-//   });
+// Prolific ID
+timeline.push({
+  type: jsPsychSurveyText,
+  questions: [
+    {
+      prompt: "Please enter your Prolific ID:",
+      name: "prolific_id",
+      required: true
+      }
+    ],
+    data: { questionID: "prolific_entry" },
+      on_finish: function(data) {
+    jsPsych.getDisplayElement().innerHTML = ''; 
+  }
+  });
   
 // Welcome and instructions
 timeline.push({
@@ -562,9 +562,7 @@ timeline.push({
   <div class="instructions-container">
     <h2>Comprehension Check 2/2</h2>
     <p>
-      Now that you are familiar with how the draws are generated and we make selections, we will check your understanding of the rule.
-      Below, you will determine if each sample from the urns will be a <span class="win">win</span> or a <span class="lose">loss</span>. 
-      You can click on each box to switch between <span style='color: green; font-weight: bold;'>WIN</span> and <span style='color: red; font-weight: bold;'>LOSE</span>.
+      Now that you are familiar with how the draws are generated and how to make selections, we will check your understanding of the rule.
     </p>
     ${ruleText}
   </div>
@@ -574,7 +572,7 @@ timeline.push({
   urn_keys: ["A", "B", "C", "D"],
   rule_fn: rule,
   question_id: "comprehension_rule",
-  prompt: "Predict the outcome for every possible draw below. Click a box to switch between <span style='color: green; font-weight: bold;'>WIN</span> and <span style='color: red; font-weight: bold;'>LOSE</span>.",
+  prompt: `<p>Please predict the outcome for every draw below.</p><p>Click the result boxes to switch between <span style='color: green; font-weight: bold;'>WIN</span> and <span style='color: red; font-weight: bold;'>LOSE</span>.</p>`,
   on_finish: function() {
     jsPsych.getDisplayElement().innerHTML = '';
   }
@@ -587,12 +585,15 @@ timeline.push({
   stimulus: `
   <div class="instructions-container">
   <h2>You are now ready for the experiment!</h2>
-    <p> In the following task you will provide and explanation for the current sample by selecting balls from be current draw.</p>
+    <p> In the following task you will draw a sample from the urns and observe the results.
+    Suppose someone who does not know the rule of the game asks you the following question:
+    </p>
     <div class="highlight-box">
-    <h2>Question:</h2>
-    <p> Why is the result a <span class="win">win</span> or a <span class="lose">loss</span>?</p>
+    <p> Why did you <span class="win">win</span> or <span class="lose">lose</span>?</p>
     </div>
-    <p>When you are ready, click the <b>Start experiment</b> button.</p>
+    <p>
+    Your job is to select the balls that best explain the result.
+    When you are ready, click the <b>Start experiment</b> button.</p>
     </div>
     `,
   choices: ['Start experiment'],
@@ -614,7 +615,7 @@ explanationDraws.forEach((draw, index) => {
     urn_html: staticUrnHTML,
     is_win: rule(draw),
     current_title: 'Observation',
-    selection_prompt: `Why did you ${rule(draw) ? '<span class="win">win</span>' : '<span class="lose">lose</span>'}?`,
+    // selection_prompt: `Why did you ${rule(draw) ? '<span class="win">win</span>' : '<span class="lose">lose</span>'}?`,
     continue_button_label: 'Continue',
     data: {
       questionID: "explanation_selection",
@@ -650,11 +651,11 @@ timeline.push({
             stimulus: `
               <h2>Thank you for participating!</h2>
               <div class="instructions-container">
-                <p>Please click the <b>‘Finish’</b> button below, or use the code <b>CMSFSJ1B</b> to confirm your participation on Prolific.</p>
+                <p>Please click the <b>‘Finish’</b> button below, or use the code <b>CODE</b> to confirm your participation on Prolific.</p>
               </div>`,
             choices: ['Finish'],
             on_finish: () => {
-              window.location.href = "https://app.prolific.com/submissions/complete?cc=CMSFSJ1B";
+              window.location.href = "https://app.prolific.com/submissions/complete?cc=CODE";
             }
           }
         ]);
