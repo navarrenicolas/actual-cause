@@ -249,10 +249,18 @@ function sampleDraw() {
   return draw;
 }
 
+
 function renderUrnsHTML() {
   return `<div class="urn-display">
     ${Object.keys(urnMap).map(urnKey => {
-      const balls = generateUrnBalls(urnKey).map(color => `<div class="ball" style="background-color:${color}"></div>`).join('');
+      const balls = generateUrnBalls(urnKey).map(color => {
+        // Handle grey vs colored balls using CSS custom properties for radial lighting
+        const isGrey = (color === "lightgrey" || color === "grey" || color === "#d3d3d3");
+        const ballColor = isGrey ? "#c0c0c0" : color;
+        
+        return `<div class="ball" style="background-color:${ballColor};"></div>`;
+      }).join('');
+
       return `<div>
                 <div class="urn-label" style="color: ${urnMap[urnKey].color};">
                   ${urnLabels[urnKey]}
@@ -353,97 +361,85 @@ timeline.push({
       required: true
       }
     ],
-    data: { questionID: "prolific_entry" },
+    data: { question_id: "prolific_entry" },
       on_finish: function(data) {
     jsPsych.getDisplayElement().innerHTML = ''; 
   }
   });
   
 // Welcome and instructions
-timeline.push({
-  type: jsPsychHtmlButtonResponse,
-  stimulus: `
-  <h2>Welcome to the experiment!</h2>
-  <div class="instructions-container">
-        <p><b>Before you continue, please note that this experiment must be completed on a computer</b>. 
-        It is not compatible with mobile phones or tablets.  
-        For the best experience and to ensure your responses are saved correctly, 
-        please use the <b>Google Chrome</b> browser on your computer.</p>
-    </div>`,
-  choices: ['Next'],
-  data: { questionID: "welcome" },
-    on_finish: function(data) {
-  jsPsych.getDisplayElement().innerHTML = ''; 
-}
-});
+
+// timeline.push({
+//   type: jsPsychHtmlButtonResponse,
+//   stimulus: `
+//   <h2>Welcome to the experiment!</h2>
+//   <div class="instructions-container">
+//         <p><b>Before you continue, please note that this experiment must be completed on a computer</b>. 
+//         It is not compatible with mobile phones or tablets.  
+//         For the best experience and to ensure your responses are saved correctly, 
+//         please use the <b>Google Chrome</b> browser on your computer.</p>
+//     </div>`,
+//   choices: ['Next'],
+//   data: { question_id: "welcome" },
+//     on_finish: function(data) {
+//   jsPsych.getDisplayElement().innerHTML = ''; 
+// }
+// });
 
 
+// Instruction trial
 timeline.push({
-  type: jsPsychHtmlButtonResponse,
-  stimulus: `
-  <div class="instructions-container">
-      <h2>Instructions Part 1/2</h2>
+  type: jsPsychInstructions,
+  pages: [`
+    <div class="instructions-container">
+      <h2>Instructions 1/2</h2>
       <p>In this study, you will be interacting with four urns, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>.
       Below is an example of the urns. An <b>urn</b> is simply a container that holds a mix of balls. Some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.</p>
-      <br>
-      ${renderUrnsHTML()}
       <p>On each trial, you will draw one ball at random from each of four different urns. Each trial will produce a result: a <span class="win">win</span> or a <span class="lose">loss</span>.
       A trial is considered a win if the colored balls you draw satisfy a certain rule based on their <b>color, number, or a combination of both</b>.  
       If the rule is not satisfied, the trial will result in a loss.</p>
+      <br>
+      ${staticUrns}
     </div>
   `,
-  choices: ['Try a few draws'],
-  data: { questionID: "instructions" }
+    `
+  <div class="instructions-container">
+  <h2>Instructions 2/2</h2>
+  <p>When you click the <b>Draw sample</b> button, one ball will be drawn at random from each of the four urns. This set of four draws is called a trial.
+  Note that some combinations of draws may appear more than once across trials, as certain urns contain more colored balls than others, making some draw patterns more likely.</p>
+  <p>You will have 10 trials to explore and get a feel for how the rule works. The results of these trials will remain visible until you move on to the next part of the experiment.</p>
+  <p> Click 'Next' when you are ready to try drawing samples.</p>
+  <br>
+  ${staticUrns}
+  </div>
 
+    `
+  
+],
+  show_clickable_nav: true,
+  data: { question_id: "instructions_familiarisation" }
 });
+
 
 
 // Familiarisation trial
 timeline.push({
   type: jsDrawTable,
-  rule_text: `
-  <div class="instructions-container">
-  <h2>Instructions Part 2/2</h2>
-  <p>When you click the <b>Draw sample</b> button below, one ball will be drawn at random from each of the four urns. This set of four draws is called a trial.
-  Note that some combinations of draws may appear more than once across trials, as certain urns contain more colored balls than others, making some draw patterns more likely.</p>
-  <p>You will have 10 trials to explore and get a feel for how the rule works. The results of these trials will remain visible until you move on to the next part of the experiment.</p>
-  <p id = "rule-text">${ruleText}</p>
-  </div>
-    `,
-  urn_html: renderUrnsHTML(),
+  rule_text: `<p id = "rule-text">${ruleText}</p>`,
+  urn_html: staticUrns,
   show_result: true,
   draws: familiarisationDraws,
   urn_keys: ["A", "B", "C", "D"],
   question_id: "familiarisation",
   max_samples: 10,
   rule_fn: rule,
-  data: { questionID: "familiarisation" }
+  data: { question_id: "familiarisation" }
 });
 
 
-// timeline.push({
-//   type: jsPsychHtmlButtonResponse,
-//   stimulus: `
-//   <div class="instructions-container">
-//       <h2>Comprehension Check 2/2</h2>
-//       <p>In this experiment you will make selections of the colored balls to explain the results.
-//       Before producing specific trial explanations you should get familiar with the selection process as well.
-//       In the following task you will be asked to select the balls based on the current criteria.</p>
-//       <p>When you are ready, click the <b>Test selections</b> button to proceed.</p>
-//     </div>`,
-//   choices: ['Test selections'],
-//   data: { questionID: "pre_comp_selection" }
-// });
-
-// Example Sample Observation Data
-const compDraw = { A: 'orange', B: 'lightgrey', C: 'purple', D: 'lightgrey' };
-
-// Task 1: Select all colored balls (A and C)
 timeline.push({
-  type: jsComprehensionSelection,
-  draw: compDraw,
-  rule_text: `
-   <div class="instructions-container">
+  type: jsPsychHtmlButtonResponse,
+  stimulus: `<div class="instructions-container">
       <h2>Comprehension Check 1/2</h2>
       <p>In this experiment you will select the balls that best explain the current sample's results.
       But beofre that, we'll allso get familiar with the selection process.
@@ -452,8 +448,19 @@ timeline.push({
       In the following task you will be asked to select the balls based on the current criteria.
       You can select multiple balls if needed. Once you are done, click the <b>Continue</b> button to proceed.</p>
       </p>
-    </div>
-  `,
+    </div>`,
+  choices: ['Continue'],
+  data: {question_id: "pre_comp_selection"},
+
+});
+
+// Example Sample Observation Data
+const compDraw = { A: 'orange', B: 'lightgrey', C: 'purple', D: 'lightgrey' };
+
+// Task 1: Select all colored balls (A and C)
+timeline.push({
+  type: jsComprehensionSelection,
+  draw: compDraw,
   urn_html: staticUrns,
   urn_keys: ["A", "B", "C", "D"],
   correct_keys: ["A", "C"],
@@ -466,18 +473,6 @@ timeline.push({
 timeline.push({
   type: jsComprehensionSelection,
   draw: compDraw,
-  rule_text: `
-  <div class="instructions-container">
-      <h2>Comprehension Check 1/2</h2>
-      <p>In this experiment you will select the balls that best explain the current sample's results.
-      But beofre that, we'll allso get familiar with the selection process.
-      </p>
-      <p>
-      In the following task you will be asked to select the balls based on the current criteria.
-      You can select multiple balls if needed. Once you are done, click the <b>Continue</b> button to proceed.</p>
-      </p>
-    </div>
-    `,
   urn_html: staticUrns,
   urn_keys: ["A", "B", "C", "D"],
   correct_keys: ["B", "D"],
@@ -489,19 +484,10 @@ timeline.push({
 // Task 3: Select the most likely balls (Assuming A has prob 0.9 and B has prob 0.6)
 const mostLikelyUrns = Object.keys(urnMap).filter(k => urnMap[k].prob >= 0.5);
 
+
 timeline.push({
   type: jsComprehensionSelection,
   draw: compDraw,
-  rule_text: `<div class="instructions-container">
-      <h2>Comprehension Check 1/2</h2>
-      <p>In this experiment you will select the balls that best explain the current sample's results.
-      But beofre that, we'll allso get familiar with the selection process.
-      </p>
-      <p>
-      In the following task you will be asked to select the balls based on the current criteria.
-      You can select multiple balls if needed. Once you are done, click the <b>Continue</b> button to proceed.</p>
-      </p>
-    </div>`,
   urn_html: staticUrns,
   urn_keys: ["A", "B", "C", "D"],
   correct_keys: mostLikelyUrns,
@@ -523,7 +509,7 @@ timeline.push({
 //     </div>
 //   `,
 //   choices: ['Check rule comprehension'],
-//   data: { questionID: "pre_comp_rule" }
+//   data: { question_id: "pre_comp_rule" }
 // });
 
 
@@ -553,22 +539,33 @@ function generateAllDrawCombinations(urnMap) {
   return combinations;
 }
 
-const allDraws = generateAllDrawCombinations(urnMap);
 
-// Add Prediction Task Trial to Timeline
+
 timeline.push({
-  type: jsPredictionTable,
-  rule_text: `
+  type: jsPsychHtmlButtonResponse,
+  stimulus: `
   <div class="instructions-container">
     <h2>Comprehension Check 2/2</h2>
     <p>
       Now that you are familiar with how the draws are generated and how to make selections, we will check your understanding of the rule.
     </p>
-    ${ruleText}
-  </div>
-  `,
+  </div>`,
+  choices: ['Continue'],
+  data: {question_id: "pre_comp_selection"},
+
+});
+
+
+const allDraws = generateAllDrawCombinations(urnMap);
+const testDraws = shuffleArray(allDraws.slice()).slice(0, 5); // Randomly select 5 draws for testing
+
+
+// Add Prediction Task Trial to Timeline
+timeline.push({
+  type: jsPredictionTable,
+  rule_text: `<p id = "rule-text">${ruleText}</p>`,
   urn_html: renderUrnsHTML(),
-  draws: allDraws,
+  draws: testDraws,
   urn_keys: ["A", "B", "C", "D"],
   rule_fn: rule,
   question_id: "comprehension_rule",
@@ -597,7 +594,7 @@ timeline.push({
     </div>
     `,
   choices: ['Start experiment'],
-  data: { questionID: "pre_experiment" }
+  data: { question_id: "pre_experiment" }
 });
 
 
@@ -605,29 +602,39 @@ timeline.push({
 const staticUrnHTML = renderUrnsHTML();
 const explanationDraws = generateAllDraws().sort(() => 0.5 - Math.random()); 
 
-explanationDraws.forEach((draw, index) => {
-  timeline.push({
-    type: jsExplanationSelection,
-    draw: draw,
-    rule_text: `
-      <p id = "rule-text" text-align="center">${ruleText}</p>`,
-    urn_keys: ["A", "B", "C", "D"],
-    urn_html: staticUrnHTML,
-    is_win: rule(draw),
-    current_title: 'Observation',
-    // selection_prompt: `Why did you ${rule(draw) ? '<span class="win">win</span>' : '<span class="lose">lose</span>'}?`,
-    continue_button_label: 'Continue',
-    data: {
-      questionID: "explanation_selection",
-      trial_number: index + 1,
-      draw_A: draw.A,
-      draw_B: draw.B,
-      draw_C: draw.C,
-      draw_D: draw.D,
-      result: rule(draw) ? "win" : "lose"
-    }
-  });
-});
+// Configuration: Batch 4 draws at a time
+const BATCH_SIZE = 4;
+let historyAccumulator = [];
+
+// Loop through draws in batches of 4
+for (let i = 0; i < allDraws.length; i += BATCH_SIZE) {
+    const drawBatch = allDraws.slice(i, i + BATCH_SIZE);
+
+    timeline.push({
+        type: jsExplanationSelection,
+        draws: drawBatch,
+        // Wrap history in a function so jsPsych evaluates it at RUNTIME (when the trial starts)
+        history: function() {
+            return historyAccumulator;
+        },
+        rule_text: ruleText,
+        urn_keys: ["A", "B", "C", "D"],
+        auto_draw: true,
+        urn_html: staticUrnHTML,
+        max_samples: drawBatch.length, // Uses exact batch size (handles remainder batches safely)
+        rule_fn: rule,
+        continue_button_label: 'Continue',
+        data: {
+            question_id: "explanation_selection",
+        },
+        on_finish: function(data) {
+            // Retrieve the accumulated history returned directly by plugin's finishTrial
+            if (data.history) {
+                historyAccumulator = data.history;
+            }
+        }
+    });
+}
 
 // // Demographics
 // timeline.push(demographicTrial);

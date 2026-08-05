@@ -1,89 +1,101 @@
-#rule-text {
-    margin-top: 20px;
+/* ==========================================================================
+   1. Base Page & Layout Setup
+   ========================================================================== */
+
+html {
+    overflow-y: scroll; /* Always show scrollbar to prevent layout width shift */
+}
+
+/* ==========================================================================
+   2. Plugin Outer Container & Centering Engine
+   ========================================================================== */
+
+/* Main flex container that centers trial content vertically and horizontally */
+.draw-plugin-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centers trial segments vertically on screen */
+    align-items: center;     /* Centers trial segments horizontally */
+    height: 98vh;
+    max-height: 100vh;
+    width: 80vw;
+    max-width: 1000px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Top Segment: Urns display, rule text, top control buttons */
+.draw-top-segment {
+    flex: 0 0 auto;
+    width: 100%;
     text-align: center;
 }
 
-
-#ConsentStyle {
-    max-width: 870px;
-    margin: 0 auto;
-    padding: 30px;
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-    text-align: justify;
+/* Bottom Segment: Split planes for Draw Table trial */
+.draw-bottom-segment {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-top: 15px;
+    min-height: 0; /* Enables internal scrolling without stretching container height */
+    gap: 10px;
 }
-  
-#ConsentStyle img {
-    display: block;
-    margin: 0 0 0 0; 
-}  
+
+.draw-bottom-segment.is-hidden {
+    visibility: hidden;
+}
+
+/* Bottom Segment: Selection Trial Variant */
+.comprehension-bottom-segment {
+    flex: 0 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding-top: 10px;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+/* Action Segment: Bottom Submit / Continue Buttons */
+.draw-action-segment {
+    flex: 0 0 auto;
+    width: 100%;
+    text-align: center;
+    padding: 10px 0;
+}
 
 /* ==========================================================================
-   Prediction Table Overrides & Status Column Fix
+   3. Responsive Urns & 3D Ball Components
    ========================================================================== */
 
-/* 1. Add a 6th column (40px) specifically for the prediction grid status checkmarks */
-.prediction-history-panel .draw-row {
-    grid-template-columns: 46px 46px 46px 46px 64px 40px !important;
-}
-
-/* 2. Style the Prediction Result Box so "WIN"/"LOSE" fits inside cleanly */
-.prediction-box {
-    width: 64px !important;       /* Matches your grid column width */
-    height: 32px !important;      /* Comfortable clickable height */
-    box-sizing: border-box !important;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 11px !important;
-    text-transform: uppercase;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-/* 3. Style the status cell checkmarks/crosses so they fit naturally */
-.prediction-status-cell {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    font-weight: bold;
-    line-height: 1;
-}
-
-.status-check {
-    color: #28a745;
-}
-
-.status-cross {
-    color: #dc3545;
-}
-
-.jspsych-html-button-response-btngroup {
-    margin-top: 10px;
-    margin-bottom: 80px;
-}
-
-.jspsych-btn {
-    margin-top: 10px;
-    margin-bottom: 20px;
-  }
-
+/* Container for multiple urns */
 .urn-display {
     display: flex;
     justify-content: center;
-    gap: 25px;
-    margin-bottom: 50px;
-    transform: scale(1.2);
+    align-items: flex-start;
+    gap: clamp(8px, 1.5vw, 16px);
+    margin-bottom: 15px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
+.urn-display-below {
+    margin-top: 30px;
+}
+
+/* Individual Urn Container */
 .urn {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    grid-gap: 4px;
-    padding: 10px;
+    grid-gap: clamp(2px, 0.5vw, 4px);
+    padding: clamp(4px, 1vw, 10px);
     border: 2px solid #a98c4a;
     border-radius: 6px;
     background-color: white;
@@ -93,14 +105,55 @@
     text-align: center;
     font-weight: bold;
     margin-bottom: 5px;
-    font-size: 16px;
+    font-size: clamp(0.8em, 1.2vw, 1em);
 }
 
+/* 3D Rendered Ball */
+.ball {
+    position: relative;
+    width: clamp(12px, 1.8vw, 22px);
+    height: clamp(12px, 1.8vw, 22px);
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+/* Realistic specular light overlay on ball surface */
+.ball::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.65) 100%);
+    pointer-events: none;
+}
+
+/* Checkbox options under urns */
+.urn-checkbox {
+    display: inline-block;
+    margin: 15px;
+    font-weight: bold;
+    font-size: 1em;
+}
+
+.checkbox-row {
+    text-align: center;
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   4. Tables & Grid Layouts
+   ========================================================================== */
 
 .draw-table {
     display: block;
     margin: auto;
 }
+
 .draw-row {
     display: grid;
     grid-template-columns: 46px 46px 46px 46px 64px;
@@ -114,6 +167,7 @@
     justify-content: center;
     align-items: center;
     min-width: 0;
+    height: 34px; /* Maintain height without requiring bounding slot box */
 }
 
 .draw-cell b {
@@ -122,28 +176,96 @@
     font-size: 0.9em;
 }
 
+/* Slot box styling stripped to remove square borders around balls */
 .draw-slot {
-    width: 34px;
-    height: 34px;
-    border: 2px solid #a98c4a;
-    border-radius: 6px;
-    background: white;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: transparent;
+    border: none;
 }
 
-.ball {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    /* border: 1px solid #a98c4a; */
-}
 .result-box {
     width: 20px;
     height: 20px;
     display: inline-block;
     border: 1px solid #a98c4a;
+}
+
+
+/* --- Prediction Grid Overrides --- */
+.prediction-history-panel .draw-row {
+    grid-template-columns: 46px 46px 46px 46px 64px 40px !important;
+}
+
+.prediction-box {
+    width: 64px !important;
+    height: 32px !important;
+    box-sizing: border-box !important;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 11px !important;
+    text-transform: uppercase;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.prediction-status-cell {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.status-check { color: #28a745; }
+.status-cross { color: #dc3545; }
+
+/* ==========================================================================
+   5. Panels & History Split Views
+   ========================================================================== */
+
+.draw-bottom-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 15px;
+    border-right: 1px dashed #ccc;
+    overflow-y: auto;
+}
+
+.draw-bottom-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 15px;
+    overflow-y: auto;
+}
+
+.draw-panel-wrapper {
+    text-align: center;
+    width: 100%;
+}
+
+.draw-panel-title {
+    font-weight: bold;
+    margin-bottom: 12px;
+    font-size: 1.1em;
+}
+
+.draw-history-empty {
+    color: #777;
+    font-style: italic;
+    text-align: center;
+    padding: 10px 0 4px;
 }
 
 .draw-sample-box {
@@ -155,34 +277,12 @@
     background-color: #f9f9f9;
 }
 
-.draw-feedback-shell {
-    /* width: 870px;
-    margin: 10px; */
-    text-align: center;
-    /* height: 6em;fixed, not min-height */
-    /* display: flex; */
-    /* align-items: flex-start; */
-}
-
-#feedback-box {
-    width: 100%;
-    box-sizing: border-box;
-    text-align: center;
-    margin: 0;
-    padding: 0 10px;
-}
-
-#feedback-box p {
-    margin: 30px;
-}
-
 .draw-split-view {
     display: flex;
     flex-direction: column;
     gap: 14px;
 }
 
-.draw-current-panel,
 .draw-history-panel {
     border: 1px solid rgba(0, 0, 0, 0.15);
     border-radius: 10px;
@@ -191,106 +291,147 @@
 }
 
 .draw-current-panel {
-    border-width: 2px;
-    border-color: #a98c4a;
+    border: 2px solid #a98c4a;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.draw-panel-title {
-    text-align: center;
-    font-weight: 700;
-    margin-bottom: 10px;
+/* ==========================================================================
+   6. Interactive Ball Selection Styles
+   ========================================================================== */
+
+/* ==========================================================================
+   6. Interactive & History Ball Selection Styles
+   ========================================================================== */
+
+/* Universal Selection Highlight (Applied to both interactive and history balls) */
+.ball.is-selected {
+    transform: scale(1.15);
+    outline: 3px solid #28a745;
+    outline-offset: 3px;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
 }
 
-.draw-current-table {
-    margin-bottom: 0;
-}
-
-.draw-history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.draw-history-item {
-    padding-top: 2px;
-}
-
-.draw-history-item-label {
-    font-size: 0.9em;
-    font-weight: 700;
-    margin-bottom: 6px;
-    color: #444;
-}
-
-.draw-history-empty {
-    text-align: center;
-    font-style: italic;
-    color: #777;
-    padding: 10px 0 4px;
-}
-
-.draw-history-table .draw-row {
-    gap: 6px;
-    margin-bottom: 6px;
-}
-
+/* Interactive Ball Specific Styles (Active sample only) */
 .explanation-selectable-ball {
     cursor: pointer;
-    transition: transform 0.12s ease, outline-color 0.12s ease, box-shadow 0.12s ease;
+    transition: transform 0.15s ease, outline-color 0.15s ease, box-shadow 0.15s ease;
+    border-radius: 50%;
 }
 
-.explanation-selectable-ball:hover,
-.explanation-selectable-ball.is-hovered {
-    outline: 2px dashed rgba(120, 120, 120, 0.55);
+.explanation-selectable-ball:hover {
+    transform: scale(1.15);
+    outline: 2px dashed #a98c4a;
     outline-offset: 3px;
 }
 
-.explanation-selectable-ball.is-selected {
-    outline: 2px dashed #808080;
-    outline-offset: 3px;
-    box-shadow: 0 0 0 2px rgba(128, 128, 128, 0.08);
+/* History Balls Read-Only Constraints */
+.history-row .ball {
+    cursor: default;
+    pointer-events: none; /* Prevents click/hover interactions on committed history */
 }
 
-.explanation-response-shell {
-    max-width: 870px;
-    margin: 10px auto 0;
+
+/* ==========================================================================
+   7. Feedback & Text Messaging
+   ========================================================================== */
+
+.comprehension-prompt-box {
+    text-align: center;
+    max-width: 600px;
+    margin-top: 5px;
+}
+
+.comprehension-prompt-box p {
+    margin: 4px 0;
+    font-size: 1.05em;
+    line-height: 1.3;
+}
+
+.draw-feedback-text,
+#feedback-box {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    margin: 0;
+    padding: 0 10px;
+}
+
+.draw-feedback-text p,
+#feedback-box p {
+    margin: 4px 0;
+    line-height: 1.3;
+}
+
+.draw-feedback-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 4px auto;
+    display: inline-block;
+    text-align: left;
+}
+
+.draw-feedback-list li {
+    margin-bottom: 2px;
+    line-height: 1.25;
+}
+
+#remaining-samples {
+    text-align: center;
+    font-weight: bold;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+#rule-text {
+    margin-top: 15px;
     text-align: center;
 }
 
+span.win {
+    color: green;
+    font-weight: bold;
+}
+
+span.lose {
+    color: red;
+    font-weight: bold;
+}
+
+/* Dynamic Explanation Sentence Box */
 .explanation-sentence {
+    text-align: center;
     font-size: 1.05em;
-    line-height: 1.5;
-    min-height: 2.5em;
+    line-height: 1.35;
+    margin: 8px auto 0;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border: 1px dashed #a98c4a;
+    border-radius: 6px;
+    width: 90%;
+    box-sizing: border-box;
 }
 
 .explanation-sentence p {
     margin: 0;
 }
 
-#remaining-samples {
-    text-align: center;
-    font-weight: bold;
-    margin-top: 0px;
-    margin-bottom: 10px;
-    font-size: 1em;
+/* ==========================================================================
+   8. Static Instructions & Consent Styles
+   ========================================================================== */
+
+#ConsentStyle {
+    max-width: 870px;
+    margin: 0 auto;
+    padding: 30px;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    text-align: justify;
 }
-  
-.urn-checkbox {
-    display: inline-block;
-    margin: 15px;
-    font-weight: bold;
-    font-size: 1em;
-}
-  
-.checkbox-row {
-    text-align: center;
-    margin-top: 15px;
-    margin-bottom: 20px;
-}
-  
-.urn-display-below {
-    margin-top: 30px;
+
+#ConsentStyle img {
+    display: block;
+    margin: 0;
 }
 
 .instructions-container {
@@ -302,13 +443,13 @@
     line-height: 1.6;
     text-align: left;
 }
-  
+
 .instructions-container h2 {
     text-align: justify;
     margin-bottom: 10px;   
     margin-top: 30px;         
 }
-  
+
 .instructions-container p {
     margin-top: 20px;
     margin-bottom: 10px;    
@@ -317,49 +458,50 @@
 .instructions-container span {
     font-weight: bold;
 }
-  
-span.win {
-    color: green;
-    font-weight: bold;
-
-}
-  
-span.lose {
-    color: red;
-    font-weight: bold;
-}
 
 .highlight-box {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  padding: 25px;
-  font-family: Arial, sans-serif;
-  line-height: 1.6;
-  text-align: center;
-  border: 2px solid black;
-  background-color: rgb(255, 254, 239);
-  margin: 10px auto 0;  
-  border-radius: 8px;  
+    padding: 25px;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    text-align: center;
+    border: 2px solid black;
+    background-color: rgb(255, 254, 239);
+    margin: 10px auto 0;  
+    border-radius: 8px;  
 }
 
 .highlight-box h2 {
     text-align: center;
     font-weight: bold;
-    margin-top: 0px;
+    margin-top: 0;
     margin-bottom: 10px;
     font-size: 20px;
 }
 
 .highlight-box p {
     margin-top: 20px;
-    margin-bottom: 0px;
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   9. Buttons & Likert Scale Controls
+   ========================================================================== */
+
+.jspsych-html-button-response-btngroup {
+    margin-top: 10px;
+    margin-bottom: 80px;
+}
+
+.jspsych-btn {
+    margin-top: 10px;
+    margin-bottom: 20px;
 }
 
 .likert-slider-container {
     margin-top: 20px;
     text-align: left;
-  }
-  
+}
+
 .likert-slider-row {
     display: flex;
     align-items: center;
@@ -367,30 +509,30 @@ span.lose {
     width: 80%;
     margin: auto;
     position: relative;
-  }
-  
+}
+
 .likert-end-label {
     position: absolute;
     top: -20px;
     font-size: 0.9em;
     white-space: nowrap;
-  }
-  
+}
+
 .likert-end-label.left {
     left: 0;
     transform: translateX(-50%);
-  }
-  
+}
+
 .likert-end-label.right {
     right: 0;
     transform: translateX(50%);
-  }
-  
+}
+
 .likert-slider {
     width: 100%;
     margin: 20px 0 5px 0;
-  }
-  
+}
+
 .likert-scale-labels {
     display: flex;
     justify-content: space-between;
@@ -398,9 +540,107 @@ span.lose {
     max-width: 80%;
     margin: auto;
     font-size: 0.85em;
-  }
+}
 
+/* ==========================================================================
+   Layout Rigid Containment Overrides
+   ========================================================================== */
 
-html {
-    overflow-y: scroll; /* always show scrollbar to prevent width jank */
+/* Lock Top Segment so bottom content can NEVER displace it */
+.draw-top-segment {
+    flex: 0 0 auto !important;
+    width: 100%;
+    text-align: center;
+}
+
+/* Strict flex box for bottom planes */
+.draw-bottom-segment {
+    flex: 1 1 0px !important; /* Force exact flex calculation */
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 10px;
+    min-height: 0 !important; /* Critical for internal vertical scrolling */
+    overflow: hidden;
+    gap: 10px;
+}
+
+.draw-bottom-right {
+    flex: 1 1 0px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 10px;
+    min-height: 0 !important;
+    max-height: 100%;
+    overflow: hidden; /* Scroll handled internally by .draw-history-panel */
+}
+
+/* ==========================================================================
+   Compact History Panel & Scroll Body
+   ========================================================================== */
+
+.draw-history-panel {
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.draw-history-panel .draw-panel-title {
+    font-size: 0.95em;
+    margin-bottom: 6px;
+    flex: 0 0 auto;
+}
+
+.draw-history-panel .draw-table {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Scrollable container for history rows */
+.draw-history-scroll-body {
+    overflow-y: auto;
+    max-height: 100%;
+    padding-right: 4px;
+}
+
+/* Compact History Row Dimensions */
+.draw-history-panel .draw-row {
+    grid-template-columns: 34px 34px 34px 34px 50px; /* Tighter column width */
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.draw-history-panel .draw-cell {
+    height: 22px; /* Reduced cell height */
+}
+
+.draw-history-panel .draw-cell b {
+    font-size: 0.75em; /* Smaller text size */
+}
+
+/* Smaller balls inside history entries */
+.draw-history-panel .ball {
+    width: 14px;
+    height: 14px;
+}
+
+/* Proportional green selection outline for compact history balls */
+.draw-history-panel .ball.is-selected {
+    transform: scale(1.15);
+    outline: 2px solid #28a745;
+    outline-offset: 2px;
+    box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
 }

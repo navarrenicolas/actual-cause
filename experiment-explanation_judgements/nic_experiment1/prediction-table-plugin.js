@@ -111,8 +111,8 @@ var jsPredictionTable = (function (jspsych) {
 			};
 
 			display_element.innerHTML = `
+                ${trial.urn_html || ""}
 				${trial.rule_text ? `<div class="instructions-container">${trial.rule_text}</div>` : ""}
-				${trial.urn_html || ""}
 				
 				<div class="explanation-response-shell" style="margin-top: 15px;">
 					<p>${trial.prompt}</p>
