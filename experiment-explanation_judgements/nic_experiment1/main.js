@@ -1,0 +1,488 @@
+// ===== Shuffle Helper =====
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// ===== Urn Configuration =====
+const fixedUrnColors = {
+  A: 'orange',
+  B: 'blue',
+  C: 'purple',
+  D: 'hotpink'
+};
+
+const urnLabels = {
+  A: 'A (orange)',
+  B: 'B (blue)',
+  C: 'C (purple)',
+  D: 'D (pink)'
+};
+
+const shuffledProbs = shuffleArray([0.9, 0.6, 0.4, 0.1]);
+const urnMap = Object.fromEntries(
+  Object.keys(fixedUrnColors).map((key, idx) => [
+    key,
+    { color: fixedUrnColors[key], prob: shuffledProbs[idx] }
+  ])
+);
+
+const positionByProb = Object.fromEntries(
+  Object.entries(urnMap).map(([key, urn]) => [urn.prob, key])
+);
+
+const [highKey, medHighKey, medLowKey, lowKey] = [
+  0.9, 0.6, 0.4, 0.1
+].map(prob => positionByProb[prob]);
+
+const labelByRole = {
+  high: urnMap[highKey].color === 'hotpink' ? 'pink' : urnMap[highKey].color,
+  medHigh: urnMap[medHighKey].color === 'hotpink' ? 'pink' : urnMap[medHighKey].color,
+  medLow: urnMap[medLowKey].color === 'hotpink' ? 'pink' : urnMap[medLowKey].color,
+  low: urnMap[lowKey].color === 'hotpink' ? 'pink' : urnMap[lowKey].color
+};
+
+// ===== Rule Selection =====
+const ruleKeys = Object.keys(rules);
+const selectedRuleKey = ruleKeys[Math.floor(Math.random() * ruleKeys.length)];
+const selectedRule = rules[selectedRuleKey];
+
+const fixedFamiliarisationDraws = fixedFamiliarisation[selectedRuleKey].map(draw => ({
+  [highKey]: draw.high ? urnMap[highKey].color : 'lightgrey',
+  [medHighKey]: draw.medHigh ? urnMap[medHighKey].color : 'lightgrey',
+  [medLowKey]: draw.medLow ? urnMap[medLowKey].color : 'lightgrey',
+  [lowKey]: draw.low ? urnMap[lowKey].color : 'lightgrey'
+}));
+
+const familiarisationDraws = shuffleArray(fixedFamiliarisationDraws.slice());
+const rawRuleDescription = fillRuleTemplate(ruleTemplates[selectedRuleKey], labelByRole);
+const ruleText = `<b>RULE:</b> To win, you must draw <strong>${colorizeWithSpans(rawRuleDescription)}.</strong>`;
+
+// ===== Helper Functions =====
+function rule(draw) {
+  return selectedRule.evaluate(draw, { highKey, medHighKey, medLowKey, lowKey });
+}
+
+function generateUrnBalls(urnKey, total = 20) {
+  const { color, prob } = urnMap[urnKey];
+  const n_colored = Math.round(prob * total);
+  const n_lightgrey = total - n_colored;
+  return shuffleArray(Array(n_colored).fill(color).concat(Array(n_lightgrey).fill('lightgrey')));
+}
+
+function sampleDraw() {
+  const draw = {};
+  for (const urnKey in urnMap) {
+    draw[urnKey] = Math.random() < urnMap[urnKey].prob ? urnMap[urnKey].color : 'lightgrey';
+  }
+  return draw;
+}
+
+function renderUrnsHTML() {
+  return `<div class="urn-display">
+    ${Object.keys(urnMap).map(urnKey => {
+      const balls = generateUrnBalls(urnKey).map(color => {
+        const isGrey = (color === "lightgrey" || color === "grey" || color === "#d3d3d3");
+        const ballColor = isGrey ? "#c0c0c0" : color;
+        
+        return `<div class="ball" style="background-color:${ballColor};"></div>`;
+      }).join('');
+
+      return `<div>
+                <div class="urn-label" style="color: ${urnMap[urnKey].color};">
+                  ${urnLabels[urnKey]}
+                </div> 
+                <div class="urn">${balls}</div>
+              </div>`;
+    }).join('')}
+  </div>`;
+}
+
+const staticUrns = renderUrnsHTML();
+
+function generateAllDraws() {
+  const options = {};
+  for (const key in urnMap) options[key] = [urnMap[key].color, 'lightgrey'];
+  const all = [];
+  for (const A of options.A)
+    for (const B of options.B)
+      for (const C of options.C)
+        for (const D of options.D)
+          all.push({ A, B, C, D });
+  return all;
+}
+
+function generateAllDrawCombinations(urnMap) {
+  const urnKeys = ["A", "B", "C", "D"];
+  const combinations = [];
+
+  function helper(depth, currentDraw) {
+    if (depth === urnKeys.length) {
+      combinations.push({ ...currentDraw });
+      return;
+    }
+    const key = urnKeys[depth];
+    const coloredBall = urnMap[key].color;
+    
+    currentDraw[key] = coloredBall;
+    helper(depth + 1, currentDraw);
+
+    currentDraw[key] = "lightgrey";
+    helper(depth + 1, currentDraw);
+  }
+
+  helper(0, {});
+  return combinations;
+}
+
+// ===== Save Data Helper =====
+function saveDataToServerAsCSV(done = null) {
+  const csv = jsPsych.data.get().csv();
+  const subject_id = jsPsych.data.get().values()[0]?.subject_id || 'anon';
+  const filename = `causal_exp1_${subject_id}.csv`;
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  if (done) done(true);
+}
+
+// ===== jsPsych and Data Properties =====
+const urnProbs = {};
+for (const urnKey in urnMap) {
+  urnProbs[urnKey] = parseFloat(urnMap[urnKey].prob.toFixed(2));
+}
+
+const jsPsych = initJsPsych(); 
+
+const subject_id = 'subj_' + Math.random().toString(36).substring(2, 10);
+
+jsPsych.data.addProperties({
+  subject_id: subject_id,
+  urn_probs: JSON.stringify(['A', 'B', 'C', 'D'].map(k => urnProbs[k])),
+  rule_key: selectedRuleKey,
+});
+
+const timeline = [];
+
+// Consent
+timeline.push(consentTrial);
+  
+// Prolific ID
+timeline.push({
+  type: jsPsychSurveyText,
+  questions: [
+    {
+      prompt: "Please enter your Prolific ID:",
+      name: "prolific_id",
+      required: true
+    }
+  ],
+  data: { question_id: "prolific_entry" },
+  on_finish: function(data) {
+    jsPsych.getDisplayElement().innerHTML = ''; 
+  }
+});
+
+// Instruction trial
+timeline.push({
+  type: jsPsychInstructions,
+  pages: [
+    `
+    <div class="instructions-container">
+      <h2>Instructions 1/2</h2>
+      <p>In this study, you will be interacting with four urns, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>.
+      Below is an example of the urns. An <b>urn</b> is simply a container that holds a mix of balls. Some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.</p>
+      <p>On each trial, you will draw one ball at random from each of four different urns. Each trial will produce a result: a <span class="win">win</span> or a <span class="lose">loss</span>.
+      A trial is considered a win if the colored balls you draw satisfy a certain rule based on their <b>color, number, or a combination of both</b>.  
+      If the rule is not satisfied, the trial will result in a loss.</p>
+      <br>
+      ${staticUrns}
+    </div>
+  `,
+    `
+  <div class="instructions-container">
+  <h2>Instructions 2/2</h2>
+  <p>When you click the <b>Draw sample</b> button, one ball will be drawn at random from each of the four urns. This set of four draws is called a trial.
+  Note that some combinations of draws may appear more than once across trials, as certain urns contain more colored balls than others, making some draw patterns more likely.</p>
+  <p>You will have 10 trials to explore and get a feel for how the rule works. The results of these trials will remain visible until you move on to the next part of the experiment.</p>
+  <p> Click 'Next' when you are ready to try drawing samples.</p>
+  <br>
+  ${staticUrns}
+  </div>
+  `
+],
+  show_clickable_nav: true,
+  data: { question_id: "instructions_familiarisation" }
+});
+
+// Familiarisation trial
+timeline.push({
+  type: jsDrawTable,
+  rule_text: `<p id = "rule-text">${ruleText}</p>`,
+  urn_html: staticUrns,
+  show_result: true,
+  draws: familiarisationDraws,
+  urn_keys: ["A", "B", "C", "D"],
+  question_id: "familiarisation",
+  max_samples: 10,
+  rule_fn: rule,
+  data: { question_id: "familiarisation" }
+});
+
+timeline.push({
+  type: jsPsychHtmlButtonResponse,
+  stimulus: `<div class="instructions-container">
+      <h2>Comprehension Check 1/2</h2>
+      <p>In this experiment you will select the balls that best explain the current sample's results.
+      But beofre that, we'll allso get familiar with the selection process.
+      </p>
+      <p>
+      In the following task you will be asked to select the balls based on the current criteria.
+      You can select multiple balls if needed. Once you are done, click the <b>Continue</b> button to proceed.</p>
+      </p>
+    </div>`,
+  choices: ['Continue'],
+  data: {question_id: "pre_comp_selection"},
+});
+
+// ===== Dynamically Rank Urns by Probability =====
+const sortedUrnsByProb = Object.keys(urnMap).sort((a, b) => urnMap[b].prob - urnMap[a].prob);
+
+const mostLikelyUrnKey = sortedUrnsByProb[0];       // 1st highest (0.9)
+const secondMostLikelyUrnKey = sortedUrnsByProb[1]; // 2nd highest (0.6)
+const thirdMostLikelyUrnKey = sortedUrnsByProb[2];  // 3rd highest (0.4)
+const leastLikelyUrnKey = sortedUrnsByProb[3];      // 4th highest (0.1)
+
+// ===== Sample Observation Draws =====
+// Draw with exactly one colored ball (Urn A)
+const singleColoredDraw = {
+  A: urnMap.A.color,
+  B: 'lightgrey',
+  C: 'lightgrey',
+  D: 'lightgrey'
+};
+
+// Draw with exactly one grey ball (Urn D)
+const singleGreyDraw = {
+  A: urnMap.A.color,
+  B: urnMap.B.color,
+  C: urnMap.C.color,
+  D: 'lightgrey'
+};
+
+// Standard draw with all colored balls showing
+const standardDraw = {
+  A: urnMap.A.color,
+  B: urnMap.B.color,
+  C: urnMap.C.color,
+  D: urnMap.D.color
+};
+
+// ===== Comprehension Check Trials =====
+
+// 1. Select the only colored ball
+timeline.push({
+  type: jsComprehensionSelection,
+  draw: singleColoredDraw,
+  urn_html: staticUrns,
+  urn_keys: ["A", "B", "C", "D"],
+  correct_keys: ["A"],
+  allow_multiple: false,
+  question_id: "comp_only_colored_ball",
+  prompt: "Select the <b>only colored ball</b> in the observation panel above.",
+  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+});
+
+// 2. Select the only grey ball
+timeline.push({
+  type: jsComprehensionSelection,
+  draw: singleGreyDraw,
+  urn_html: staticUrns,
+  urn_keys: ["A", "B", "C", "D"],
+  correct_keys: ["D"],
+  allow_multiple: false,
+  question_id: "comp_only_grey_ball",
+  prompt: "Select the <b>only grey ball</b> in the observation panel above.",
+  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+});
+
+// 3. Select the ball from the urn that is MOST likely to produce a colored ball
+timeline.push({
+  type: jsComprehensionSelection,
+  draw: standardDraw,
+  urn_html: staticUrns,
+  urn_keys: ["A", "B", "C", "D"],
+  correct_keys: [mostLikelyUrnKey],
+  allow_multiple: false,
+  question_id: "comp_most_likely_ball",
+  prompt: "Select the ball from the urn that is <b>MOST likely</b> to produce a colored ball.",
+  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+});
+
+// 4. Select the ball from the urn that is LEAST likely to produce a colored ball
+timeline.push({
+  type: jsComprehensionSelection,
+  draw: standardDraw,
+  urn_html: staticUrns,
+  urn_keys: ["A", "B", "C", "D"],
+  correct_keys: [leastLikelyUrnKey],
+  allow_multiple: false,
+  question_id: "comp_least_likely_ball",
+  prompt: "Select the ball from the urn that is <b>LEAST likely</b> to produce a colored ball.",
+  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+});
+
+// 5. Select the ball from the urn that is the SECOND MOST likely to produce a colored ball
+timeline.push({
+  type: jsComprehensionSelection,
+  draw: standardDraw,
+  urn_html: staticUrns,
+  urn_keys: ["A", "B", "C", "D"],
+  correct_keys: [secondMostLikelyUrnKey],
+  allow_multiple: false,
+  question_id: "comp_second_most_likely_ball",
+  prompt: "Select the ball from the urn that is the <b>SECOND MOST likely</b> to produce a colored ball.",
+  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+});
+
+// 6. Select the ball from the urn that is the THIRD MOST likely to produce a colored ball
+timeline.push({
+  type: jsComprehensionSelection,
+  draw: standardDraw,
+  urn_html: staticUrns,
+  urn_keys: ["A", "B", "C", "D"],
+  correct_keys: [thirdMostLikelyUrnKey],
+  allow_multiple: false,
+  question_id: "comp_third_most_likely_ball",
+  prompt: "Select the ball from the urn that is the <b>THIRD MOST likely</b> to produce a colored ball.",
+  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+});
+
+timeline.push({
+  type: jsPsychHtmlButtonResponse,
+  stimulus: `
+  <div class="instructions-container">
+    <h2>Comprehension Check 2/2</h2>
+    <p>
+      Now that you are familiar with how the draws are generated and how to make selections, we will check your understanding of the rule.
+    </p>
+  </div>`,
+  choices: ['Continue'],
+  data: {question_id: "pre_comp_selection"},
+});
+
+const allDraws = generateAllDrawCombinations(urnMap);
+const testDraws = shuffleArray(allDraws.slice()).slice(0, 5);
+
+timeline.push({
+  type: jsPredictionTable,
+  rule_text: `<p id = "rule-text">${ruleText}</p>`,
+  urn_html: renderUrnsHTML(),
+  draws: testDraws,
+  urn_keys: ["A", "B", "C", "D"],
+  rule_fn: rule,
+  question_id: "comprehension_rule",
+  prompt: `<p>Please predict the outcome for every draw below.</p><p>Click the result boxes to switch between <span style='color: green; font-weight: bold;'>WIN</span> and <span style='color: red; font-weight: bold;'>LOSE</span>.</p>`,
+  on_finish: function() {
+    jsPsych.getDisplayElement().innerHTML = '';
+  }
+});
+
+timeline.push({
+  type: jsPsychHtmlButtonResponse,
+  stimulus: `
+  <div class="instructions-container">
+  <h2>You are now ready for the experiment!</h2>
+    <p> In the following task you will draw a sample from the urns and observe the results.
+    Suppose someone who does not know the rule of the game asks you the following question:
+    </p>
+    <div class="highlight-box">
+    <p> Why did you <span class="win">win</span> or <span class="lose">lose</span>?</p>
+    </div>
+    <p>
+    Your job is to select the balls that best explain the result.
+    When you are ready, click the <b>Start experiment</b> button.</p>
+    </div>
+    `,
+  choices: ['Start experiment'],
+  data: { question_id: "pre_experiment" }
+});
+
+// Explanation selection trial
+const staticUrnHTML = renderUrnsHTML();
+
+const BATCH_SIZE = 4;
+let historyAccumulator = [];
+
+for (let i = 0; i < allDraws.length; i += BATCH_SIZE) {
+    const drawBatch = allDraws.slice(i, i + BATCH_SIZE);
+
+    timeline.push({
+        type: jsExplanationSelection,
+        draws: drawBatch,
+        history: function() {
+            return historyAccumulator;
+        },
+        rule_text: ruleText,
+        urn_keys: ["A", "B", "C", "D"],
+        auto_draw: true,
+        urn_html: staticUrnHTML,
+        max_samples: drawBatch.length,
+        rule_fn: rule,
+        continue_button_label: 'Continue',
+        data: {
+            question_id: "explanation_selection",
+        },
+        on_finish: function(data) {
+            if (data.history) {
+                historyAccumulator = data.history;
+            }
+        }
+    });
+}
+
+// Save data & finish
+timeline.push({
+  type: jsPsychCallFunction,
+  async: true,
+  func: (done) => {
+    jsPsych.data.get().values().forEach(trial => {
+      delete trial.stimulus;
+    });
+
+    saveDataToServerAsCSV((success) => {
+      if (success) {
+        jsPsych.getDisplayElement().innerHTML = '';
+
+        jsPsych.run([
+          {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+              <h2>Thank you for participating!</h2>
+              <div class="instructions-container">
+                <p>Please click the <b>‘Finish’</b> button below, or use the code <b>CODE</b> to confirm your participation on Prolific.</p>
+              </div>`,
+            choices: ['Finish'],
+            on_finish: () => {
+              window.location.href = "https://app.prolific.com/submissions/complete?cc=CODE";
+            }
+          }
+        ]);
+      } else {
+        alert("There was a problem saving your data. Please check your connection and try again.");
+      }
+    });
+  }
+});
+
+jsPsych.run(timeline);

@@ -26,6 +26,10 @@ var jsComprehensionSelection = (function (jspsych) {
                 array: true,
                 default: []
             },
+            allow_multiple: {
+                type: jspsych.ParameterType.BOOL,
+                default: false
+            },
             question_id: {
                 type: jspsych.ParameterType.STRING,
                 default: "comprehension_selection"
@@ -53,7 +57,6 @@ var jsComprehensionSelection = (function (jspsych) {
         }
     };
 
-    // Helper renderers matching jsDrawTable style
     function renderHeader(urnKeys) {
         return `
             <div class="draw-row">
@@ -80,7 +83,15 @@ var jsComprehensionSelection = (function (jspsych) {
             const draw = trial.draw || {};
             const correctKeys = (trial.correct_keys || []).sort();
             const questionId = trial.question_id || "comprehension_selection";
+            const allowMultiple = trial.allow_multiple;
             const selectedUrns = new Set();
+
+            // Validation Check: ensure single-selection trials do not expect multi-item solutions
+            if (!allowMultiple && correctKeys.length > 1) {
+                console.error(
+                    `[jsComprehensionSelection Error] Trial "${questionId}" has allow_multiple set to false, but correct_keys contains ${correctKeys.length} items: [${correctKeys.join(", ")}].`
+                );
+            }
 
             let attemptCount = 0;
             let lastAttemptTime = performance.now();
@@ -92,7 +103,7 @@ var jsComprehensionSelection = (function (jspsych) {
                     <div id="top-segment" class="draw-top-segment">
                         ${trial.urn_html || ""}
                         ${trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
-					</div>
+                    </div>
 
                     <!-- BOTTOM SEGMENT: Sample Display, Prompt & Feedback -->
                     <div id="bottom-segment" class="draw-bottom-segment" style="flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px;">
@@ -108,9 +119,9 @@ var jsComprehensionSelection = (function (jspsych) {
                             <p>${trial.prompt}</p>
                             <div id="feedback-box"></div>
                         </div>
-						<div id="action-segment" class="draw-action-segment">
-							<button id="submit-btn" class="jspsych-btn">${trial.submit_button_label || "Submit"}</button>
-						</div>
+                        <div id="action-segment" class="draw-action-segment">
+                            <button id="submit-btn" class="jspsych-btn">${trial.submit_button_label || "Submit"}</button>
+                        </div>
                     </div>
 
                 </div>
@@ -121,7 +132,6 @@ var jsComprehensionSelection = (function (jspsych) {
             const feedbackBox = display_element.querySelector("#feedback-box");
             const ballElements = sampleContainer.querySelectorAll(".ball");
 
-            // Make ball elements interactive
             ballElements.forEach((ballElement) => {
                 ballElement.classList.add("explanation-selectable-ball");
                 ballElement.setAttribute("role", "button");
@@ -133,21 +143,39 @@ var jsComprehensionSelection = (function (jspsych) {
                 if (!urnKey || !ballElement) return;
 
                 const isSelected = selectedUrns.has(urnKey);
-                if (isSelected) {
-                    selectedUrns.delete(urnKey);
+
+                if (allowMultiple) {
+                    // Multi-select enabled: toggle individual ball state
+                    if (isSelected) {
+                        selectedUrns.delete(urnKey);
+                    } else {
+                        selectedUrns.add(urnKey);
+                    }
+                    ballElement.classList.toggle("is-selected", !isSelected);
+                    ballElement.setAttribute("aria-pressed", !isSelected ? "true" : "false");
                 } else {
-                    selectedUrns.add(urnKey);
+                    // Single-select mode: ensure only 1 ball is selected at a time
+                    if (isSelected) {
+                        selectedUrns.clear();
+                        ballElement.classList.remove("is-selected");
+                        ballElement.setAttribute("aria-pressed", "false");
+                    } else {
+                        selectedUrns.clear();
+                        ballElements.forEach(el => {
+                            el.classList.remove("is-selected");
+                            el.setAttribute("aria-pressed", "false");
+                        });
+                        selectedUrns.add(urnKey);
+                        ballElement.classList.add("is-selected");
+                        ballElement.setAttribute("aria-pressed", "true");
+                    }
                 }
 
-                ballElement.classList.toggle("is-selected", !isSelected);
-                ballElement.setAttribute("aria-pressed", !isSelected ? "true" : "false");
-
-                // Clear feedback and restore submit button label when selection changes
                 feedbackBox.innerHTML = "";
                 submitBtn.textContent = trial.submit_button_label || "Submit";
             };
 
-            // Event Listeners for ball selection
+            // Event Listeners
             sampleContainer.addEventListener("click", (event) => {
                 const ballElement = event.target.closest(".explanation-selectable-ball");
                 if (ballElement && sampleContainer.contains(ballElement)) {
@@ -163,7 +191,7 @@ var jsComprehensionSelection = (function (jspsych) {
                 }
             });
 
-            // Submit / Validation Handler
+            // Submit Handler
             submitBtn.addEventListener("click", () => {
                 attemptCount += 1;
                 const now = performance.now();
@@ -172,7 +200,6 @@ var jsComprehensionSelection = (function (jspsych) {
 
                 const selectedKeys = Array.from(selectedUrns).sort();
 
-                // Check selection accuracy
                 const isCorrect = correctKeys.length === selectedKeys.length &&
                     correctKeys.every((key, i) => key === selectedKeys[i]);
 
@@ -180,13 +207,13 @@ var jsComprehensionSelection = (function (jspsych) {
                     this.jsPsych.increaseTrialIndex();
                 }
 
-                // Log every attempt
                 this.jsPsych.data.write({
                     questionID: questionId,
                     attempt_number: attemptCount,
                     selected_urns: selectedKeys,
                     correct_urns: correctKeys,
                     is_correct: isCorrect,
+                    allow_multiple: allowMultiple,
                     rt: rt
                 });
 
@@ -199,7 +226,6 @@ var jsComprehensionSelection = (function (jspsych) {
                         passed: true
                     });
                 } else {
-                    // Display compact failure feedback and prevent progression
                     feedbackBox.innerHTML = `<p class="lose" style="margin: 4px 0 !important;">${trial.incorrect_feedback_text || "Incorrect selection. Please try again."}</p>`;
                     submitBtn.textContent = trial.retry_button_label || "Try again";
                 }
