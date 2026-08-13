@@ -16,6 +16,10 @@ var jsExplanationSelection = (function (jspsych) {
                 type: jspsych.ParameterType.BOOL,
                 default: true
             },
+            allow_multiple: {
+                type: jspsych.ParameterType.BOOL,
+                default: false
+            },
             urn_html: {
                 type: jspsych.ParameterType.HTML_STRING,
                 default: ""
@@ -131,7 +135,7 @@ var jsExplanationSelection = (function (jspsych) {
         `;
     }
 
-    // Current Interactive Row Renderer (Box container stripped, ball rendered directly)
+    // Current Interactive Row Renderer
     function renderCurrentSampleRow(draw, urnKeys, selectedUrns, result, showResult = true) {
         const isWin = typeof result === "boolean" ? result : result === "win";
         const selectedSet = new Set(selectedUrns);
@@ -139,8 +143,19 @@ var jsExplanationSelection = (function (jspsych) {
         const slotsHTML = urnKeys.map(key => {
             const color = draw[key] || "";
             const isSelected = selectedSet.has(key);
-            const selectClass = isSelected ? "is-selected" : "";
-            const bgStyle = color ? `background-color: ${color};` : "";
+            
+            // Red highlight for loss when selected
+            let selectClass = "";
+            let inlineStyle = color ? `background-color: ${color};` : "";
+            
+            if (isSelected) {
+                if (showResult && !isWin) {
+                    selectClass = "is-selected is-selected-loss";
+                    inlineStyle += " outline: 3px solid #dc3545; border-color: #dc3545;";
+                } else {
+                    selectClass = "is-selected";
+                }
+            }
 
             return `
                 <div class="draw-cell">
@@ -151,7 +166,7 @@ var jsExplanationSelection = (function (jspsych) {
                          tabindex="0" 
                          aria-pressed="${isSelected}"
                          title="Click to select or deselect ball ${key}"
-                         style="${bgStyle}"></div>
+                         style="${inlineStyle}"></div>
                 </div>
             `;
         }).join("");
@@ -171,58 +186,75 @@ var jsExplanationSelection = (function (jspsych) {
         `;
     }
 
-    // History List Renderer with Sticky Header & Scrollable Body
+    // History List Renderer with Sticky Header & Explanations included
     function renderHistoryList(historyEntries, urnKeys, title, showResult, emptyMsg) {
-    if (!historyEntries || historyEntries.length === 0) {
-        return `
-            <div class="draw-panel-wrapper draw-history-panel">
-                ${title ? `<div class="draw-panel-title">${title}</div>` : ""}
-                <div class="draw-history-empty">${emptyMsg}</div>
-            </div>
-        `;
-    }
+        if (!historyEntries || historyEntries.length === 0) {
+            return `
+                <div class="draw-panel-wrapper draw-history-panel">
+                    ${title ? `<div class="draw-panel-title">${title}</div>` : ""}
+                    <div class="draw-history-empty">${emptyMsg}</div>
+                </div>
+            `;
+        }
 
-    const rowsHTML = historyEntries.map((entry, idx) => {
-        const isWin = typeof entry.result === "boolean" ? entry.result : entry.result === "win";
-        const selectedSet = new Set(entry.selected_urns || []);
+        const rowsHTML = historyEntries.map((entry, idx) => {
+            const isWin = typeof entry.result === "boolean" ? entry.result : entry.result === "win";
+            const selectedSet = new Set(entry.selected_urns || []);
 
-        const slotsHTML = urnKeys.map(key => {
-            const color = entry.draw[key] || "";
-            const isSelected = selectedSet.has(key);
-            const selectClass = isSelected ? "is-selected" : "";
-            const bgStyle = color ? `background-color: ${color};` : "";
+            const slotsHTML = urnKeys.map(key => {
+                const color = entry.draw[key] || "";
+                const isSelected = selectedSet.has(key);
+                
+                let selectClass = "";
+                let inlineStyle = color ? `background-color: ${color};` : "";
+
+                if (isSelected) {
+                    if (showResult && !isWin) {
+                        selectClass = "is-selected is-selected-loss";
+                        inlineStyle += " outline: 3px solid #dc3545; border-color: #dc3545;";
+                    } else {
+                        selectClass = "is-selected";
+                    }
+                }
+
+                return `
+                    <div class="draw-cell">
+                        <div class="ball ${selectClass}" style="${inlineStyle}"></div>
+                    </div>
+                `;
+            }).join("");
+
+            const outcomeHTML = showResult 
+                ? `<div class="draw-cell"><b><span class="${isWin ? 'win' : 'lose'}">${isWin ? 'WIN' : 'LOSE'}</span></b></div>` 
+                : "";
+
+            const explanationHTML = entry.explanation_text 
+                ? `<div class="history-explanation-text" style="font-size: 0.85em; margin: 4px 8px 8px 8px; color: #555;">${entry.explanation_text}</div>` 
+                : "";
 
             return `
-                <div class="draw-cell">
-                    <div class="ball ${selectClass}" style="${bgStyle}"></div>
+                <div class="draw-history-item" data-row-label="history-${idx}">
+                    <div class="draw-row history-row">
+                        ${slotsHTML}
+                        ${outcomeHTML}
+                    </div>
+                    ${explanationHTML}
                 </div>
             `;
         }).join("");
 
-        const outcomeHTML = showResult 
-            ? `<div class="draw-cell"><b><span class="${isWin ? 'win' : 'lose'}">${isWin ? 'WIN' : 'LOSE'}</span></b></div>` 
-            : "";
-
         return `
-            <div class="draw-row history-row" data-row-label="history-${idx}">
-                ${slotsHTML}
-                ${outcomeHTML}
-            </div>
-        `;
-    }).join("");
-
-    return `
-        <div class="draw-panel-wrapper draw-history-panel">
-            ${title ? `<div class="draw-panel-title">${title} (${historyEntries.length})</div>` : ""}
-            <div class="draw-table">
-                ${renderHeader(urnKeys, showResult)}
-                <div class="draw-history-scroll-body">
-                    ${rowsHTML}
+            <div class="draw-panel-wrapper draw-history-panel">
+                ${title ? `<div class="draw-panel-title">${title} (${historyEntries.length})</div>` : ""}
+                <div class="draw-table">
+                    ${renderHeader(urnKeys, showResult)}
+                    <div class="draw-history-scroll-body">
+                        ${rowsHTML}
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
-}
+        `;
+    }
 
     class ExplanationSelectionPlugin {
         constructor(jsPsych) {
@@ -238,6 +270,7 @@ var jsExplanationSelection = (function (jspsych) {
             const autoDraw = trial.auto_draw === true;
             const showRule = trial.show_rule !== false;
             const showResult = trial.show_result !== false;
+            const allowMultiple = trial.allow_multiple === true; // Default false
             const totalSamples = trial.max_samples || draws.length;
 
             let sampleIndex = 0;
@@ -315,7 +348,7 @@ var jsExplanationSelection = (function (jspsych) {
                         : `<p>With this draw <span class="lose">YOU LOSE!</span></p>`);
                     feedbackText += `<p><strong>Why did you ${currentResult ? '<span class="win">win</span>' : '<span class="lose">lose</span>'}?</strong></p>`;
                 } else {
-                    feedbackText += `<p><strong>Which balls explain this draw?</strong></p>`;
+                    feedbackText += `<p><strong>Which ball(s) explain this draw?</strong></p>`;
                 }
 
                 feedbackBox.innerHTML = feedbackText;
@@ -364,10 +397,19 @@ var jsExplanationSelection = (function (jspsych) {
                 const urnKey = ballElement.dataset.urnKey;
                 if (!urnKey) return;
 
-                if (selectedUrns.has(urnKey)) {
-                    selectedUrns.delete(urnKey);
+                if (allowMultiple) {
+                    if (selectedUrns.has(urnKey)) {
+                        selectedUrns.delete(urnKey);
+                    } else {
+                        selectedUrns.add(urnKey);
+                    }
                 } else {
-                    selectedUrns.add(urnKey);
+                    if (selectedUrns.has(urnKey)) {
+                        selectedUrns.clear();
+                    } else {
+                        selectedUrns.clear();
+                        selectedUrns.add(urnKey);
+                    }
                 }
 
                 currentDrawContainer.innerHTML = `
@@ -399,6 +441,7 @@ var jsExplanationSelection = (function (jspsych) {
                 const rt = Math.round(drawTime - sampleStartTime);
                 const selectedKeys = urnKeys.filter((k) => selectedUrns.has(k));
                 const selectedDescriptions = selectedKeys.map((k) => describeBall(currentDraw[k], k));
+                const generatedExplanation = renderSentence(currentResult, selectedDescriptions, trial.selection_prompt, showResult);
 
                 this.jsPsych.data.write({
                     questionID: questionId,
@@ -406,14 +449,16 @@ var jsExplanationSelection = (function (jspsych) {
                     draw: currentDraw,
                     result: showResult ? (currentResult ? "win" : "lose") : undefined,
                     selected_urns: selectedKeys,
-                    selected_explanation: renderSentence(currentResult, selectedDescriptions, trial.selection_prompt, showResult),
+                    allow_multiple: allowMultiple,
+                    selected_explanation: generatedExplanation,
                     rt: rt
                 });
 
                 historyEntries.unshift({
                     draw: currentDraw,
                     result: currentResult,
-                    selected_urns: selectedKeys
+                    selected_urns: selectedKeys,
+                    explanation_text: generatedExplanation
                 });
 
                 historyContainer.innerHTML = renderHistoryList(

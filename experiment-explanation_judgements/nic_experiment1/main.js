@@ -419,37 +419,62 @@ timeline.push({
 });
 
 // Explanation selection trial
-const staticUrnHTML = renderUrnsHTML();
 
-const BATCH_SIZE = 4;
-let historyAccumulator = [];
-
-for (let i = 0; i < allDraws.length; i += BATCH_SIZE) {
-    const drawBatch = allDraws.slice(i, i + BATCH_SIZE);
-
-    timeline.push({
-        type: jsExplanationSelection,
-        draws: drawBatch,
-        history: function() {
-            return historyAccumulator;
-        },
-        rule_text: ruleText,
-        urn_keys: ["A", "B", "C", "D"],
-        auto_draw: true,
-        urn_html: staticUrnHTML,
-        max_samples: drawBatch.length,
-        rule_fn: rule,
-        continue_button_label: 'Continue',
-        data: {
-            question_id: "explanation_selection",
-        },
-        on_finish: function(data) {
-            if (data.history) {
-                historyAccumulator = data.history;
-            }
-        }
-    });
+// Compute probability percentage for each draw combination
+function computeDrawProbability(draw, urnMap) {
+  let jointProb = 1.0;
+  for (const urnKey in urnMap) {
+    const urnColor = urnMap[urnKey].color;
+    const urnProb = urnMap[urnKey].prob;
+    const isColored = draw[urnKey] === urnColor;
+    jointProb *= isColored ? urnProb : (1 - urnProb);
+  }
+  return jointProb;
 }
+
+function prepareGridScenarios(allDraws, urnMap, ruleFn) {
+  const scenarios = allDraws.map((draw, idx) => {
+    const probVal = computeDrawProbability(draw, urnMap);
+    const percentageStr = (probVal * 100).toFixed(1) + '%';
+    const isWin = ruleFn(draw);
+
+    return {
+      id: idx + 1,
+      urns: draw,
+      outcome: isWin ? 'win' : 'lose',
+      prob: percentageStr,
+      raw_prob: probVal
+    };
+  });
+
+  return shuffleArray(scenarios);
+}
+
+const staticUrnHTML = renderUrnsHTML();
+const gridScenarios = prepareGridScenarios(allDraws, urnMap, rule);
+
+// Single Explanation Selection Grid Trial
+timeline.push({
+  type: jsPsychExplanationGrid,
+  urn_html: staticUrns,  // Pass the pre-rendered Urns HTML directly
+  rule_text: ruleText,
+  scenarios: gridScenarios,
+  color_map: {
+    orange: 'orange',
+    blue: 'blue',
+    purple: 'purple',
+    hotpink: 'hotpink',
+    pink: 'hotpink',
+    lightgrey: '#888888',
+    grey: '#888888'
+  },
+  prompt: `Select the ball in each active trial that best answers: <i>"Why did you win or lose?"</i>`,
+  data: {
+    question_id: "explanation_grid_selection"
+  }
+});
+
+
 
 // Save data & finish
 timeline.push({

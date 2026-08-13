@@ -230,7 +230,7 @@ html {
    ========================================================================== */
 
 .draw-bottom-left {
-    flex: 1;
+    flex: 1 1 0px !important;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -238,27 +238,37 @@ html {
     padding: 0 15px;
     border-right: 1px dashed #ccc;
     overflow-y: auto;
+    min-height: 0 !important;
+    height: 100%;
 }
 
 .draw-bottom-right {
-    flex: 1;
+    flex: 1 1 0px !important;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 0 15px;
-    overflow-y: auto;
+    padding: 0 10px;
+    min-height: 0 !important;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden; /* Prevent parent window scroll, force panel inner scroll */
 }
 
 .draw-panel-wrapper {
     text-align: center;
     width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .draw-panel-title {
     font-weight: bold;
-    margin-bottom: 12px;
-    font-size: 1.1em;
+    margin-bottom: 6px;
+    font-size: 1.05em;
+    flex: 0 0 auto;
 }
 
 .draw-history-empty {
@@ -268,36 +278,6 @@ html {
     padding: 10px 0 4px;
 }
 
-.draw-sample-box {
-    border: 2px solid black;
-    padding: 15px;
-    width: fit-content;
-    margin: 10px auto 0;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-}
-
-.draw-split-view {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.draw-history-panel {
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    border-radius: 10px;
-    padding: 12px;
-    background: #ffffff;
-}
-
-.draw-current-panel {
-    border: 2px solid #a98c4a;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-/* ==========================================================================
-   6. Interactive Ball Selection Styles
-   ========================================================================== */
 
 /* ==========================================================================
    6. Interactive & History Ball Selection Styles
@@ -580,7 +560,7 @@ span.lose {
 }
 
 /* ==========================================================================
-   Compact History Panel & Scroll Body
+   Full-Height Dynamic History Panel & Scroll Body
    ========================================================================== */
 
 .draw-history-panel {
@@ -590,57 +570,335 @@ span.lose {
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    max-height: 100%;
+    flex: 1 1 auto; /* Expands dynamically to bottom of parent */
+    height: 100%;   /* Forces box to span full available height */
+    min-height: 0;  /* Critical for flex item shrinking / scroll container activation */
     box-sizing: border-box;
     overflow: hidden;
-}
-
-.draw-history-panel .draw-panel-title {
-    font-size: 0.95em;
-    margin-bottom: 6px;
-    flex: 0 0 auto;
 }
 
 .draw-history-panel .draw-table {
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
     height: 100%;
     min-height: 0;
     overflow: hidden;
 }
 
-/* Scrollable container for history rows */
+/* Scrollable container for history rows - fills rest of space down to bottom */
 .draw-history-scroll-body {
-    overflow-y: auto;
-    max-height: 100%;
-    padding-right: 4px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;    /* Activates internal scrollbar when rows overflow bottom */
+    padding-top: 6px;    /* Prevents top row selection ring from clipping */
+    padding-bottom: 6px; /* Clearance at bottom edge of history box */
+    padding-right: 6px;
+    
+    /* Firefox custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: #a98c4a #f1f1f1;
+}
+
+/* Chrome, Safari, Edge custom scrollbar */
+.draw-history-scroll-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.draw-history-scroll-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.draw-history-scroll-body::-webkit-scrollbar-thumb {
+    background: #a98c4a;
+    border-radius: 4px;
+}
+
+.draw-history-scroll-body::-webkit-scrollbar-thumb:hover {
+    background: #8b7138;
 }
 
 /* Compact History Row Dimensions */
 .draw-history-panel .draw-row {
-    grid-template-columns: 34px 34px 34px 34px 50px; /* Tighter column width */
-    gap: 4px;
-    margin-bottom: 4px;
+    grid-template-columns: 32px 32px 32px 32px 46px;
+    gap: 3px;
+    margin-bottom: 2px;
 }
 
 .draw-history-panel .draw-cell {
-    height: 22px; /* Reduced cell height */
+    height: 18px;
 }
 
 .draw-history-panel .draw-cell b {
-    font-size: 0.75em; /* Smaller text size */
+    font-size: 0.68em;
 }
 
 /* Smaller balls inside history entries */
 .draw-history-panel .ball {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
 }
 
-/* Proportional green selection outline for compact history balls */
+/* Proportional selection outline for compact history balls */
 .draw-history-panel .ball.is-selected {
     transform: scale(1.15);
     outline: 2px solid #28a745;
     outline-offset: 2px;
     box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+}
+
+/* ==========================================================================
+   4x4 Explanation Selection Grid Layout
+   ========================================================================== */
+
+.explanation-grid-container {
+    height: 98vh !important;
+    max-height: 100vh !important;
+    justify-content: flex-start !important;
+    padding: 4px 6px;
+    box-sizing: border-box;
+}
+
+.grid-top-segment {
+    flex: 0 0 auto;
+    margin-bottom: 2px;
+}
+
+.grid-rule-text {
+    font-size: 0.8em;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+/* --- Matrix Grid Container --- */
+.grid-matrix-wrapper {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.grid-matrix {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)); /* Strictly equal 25% column widths */
+    gap: 5px;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    box-sizing: border-box;
+}
+
+/* --- Column States --- */
+.grid-column {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    height: 100%;
+    min-width: 0;
+    background: #fdfdfd;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 3px;
+    box-sizing: border-box;
+}
+
+/* Unrevealed Columns */
+.grid-column.is-hidden {
+    visibility: hidden !important;
+    pointer-events: none;
+}
+
+/* Completed Columns */
+.grid-column.is-completed {
+    opacity: 0.65;
+    pointer-events: none;
+    background: #f8f9fa;
+    border: 1px solid #ced4da;
+}
+
+/* Active Column */
+.grid-column.is-active {
+    opacity: 1;
+    visibility: visible !important;
+    border: 2px solid #a98c4a;
+    box-shadow: 0 2px 6px rgba(169, 140, 74, 0.15);
+    background: #ffffff;
+}
+
+.grid-col-header {
+    font-size: 0.65em;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+    color: #555;
+    letter-spacing: 0.5px;
+    flex: 0 0 auto;
+}
+
+/* --- Scenario Card Layout --- */
+.grid-card {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 3px 4px;
+    box-sizing: border-box;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* Compact Header (Badge + Probability) */
+.grid-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-bottom: 2px;
+    min-width: 0;
+}
+
+.outcome-badge {
+    font-size: 0.58em;
+    font-weight: bold;
+    padding: 1px 3px;
+    border-radius: 2px;
+    color: #fff;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.win-badge {
+    background-color: #28a745;
+}
+
+.lose-badge {
+    background-color: #dc3545;
+}
+
+.prob-tag {
+    font-size: 0.55em;
+    font-weight: 700;
+    color: #495057;
+    background: #e9ecef;
+    padding: 1px 3px;
+    border-radius: 2px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* Balls Section: Occupies all remaining vertical height */
+.grid-card-balls {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex: 1 1 auto;
+    margin: 2px 0;
+}
+
+.grid-ball-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.urn-ball-label {
+    font-size: 0.55em;
+    font-weight: bold;
+    color: #666;
+    line-height: 1;
+}
+
+.grid-selectable-ball {
+    width: 10px !important;
+    height: 10px !important;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: transform 0.15s ease, outline 0.15s ease;
+}
+
+.grid-column.is-active .grid-selectable-ball:hover {
+    transform: scale(1.3);
+    outline: 2px dashed #a98c4a;
+    outline-offset: 1px;
+}
+
+/* Selection Rings: Green for Win, Red for Loss */
+.grid-selectable-ball.is-selected-win {
+    transform: scale(1.3) !important;
+    outline: 2px solid #28a745 !important;
+    outline-offset: 1px !important;
+    box-shadow: 0 0 4px rgba(40, 167, 69, 0.6);
+}
+
+.grid-selectable-ball.is-selected-loss {
+    transform: scale(1.3) !important;
+    outline: 2px solid #dc3545 !important;
+    outline-offset: 1px !important;
+    box-shadow: 0 0 4px rgba(220, 53, 69, 0.6);
+}
+
+/* Compact Sentence Box with Dynamic em-based Padding */
+.grid-card-sentence {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 3px;
+    padding: 0.35em 2px; /* Vertical padding scales dynamically with font size */
+    box-sizing: border-box;
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-align: center;
+    margin-top: 2px;
+}
+
+.win {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.lose {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Action Segment */
+.grid-action-segment {
+    flex: 0 0 auto;
+    padding: 2px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.grid-prompt {
+    font-size: 0.78em;
+    font-weight: 500;
+}
+
+.grid-status-tracker {
+    font-size: 0.68em;
+    color: #666;
+    font-weight: bold;
+}
+
+.grid-submit-btn {
+    margin-top: 1px !important;
+    margin-bottom: 2px !important;
+    padding: 4px 14px !important;
+    font-size: 0.8em !important;
 }
