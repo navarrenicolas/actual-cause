@@ -109,7 +109,6 @@ var jsComprehensionSelection = (function (jspsych) {
                     <div id="bottom-segment" class="draw-bottom-segment" style="flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px;">
                         
                         <div class="draw-panel-wrapper">
-                            ${trial.current_title ? `<div class="draw-panel-title">${trial.current_title}</div>` : ""}
                             <div id="comprehension-draw-table" class="draw-table">
                                 ${renderHeader(urnKeys)}
                                 ${renderRow(draw, urnKeys)}

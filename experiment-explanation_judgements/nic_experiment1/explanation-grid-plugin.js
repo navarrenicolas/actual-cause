@@ -26,7 +26,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
       /** Prompt displayed above the column submit button */
       prompt: {
         type: jspsych.ParameterType.STRING,
-        default: "Select the ball in each active trial that best answers: <i>'Why did you win or lose?'</i>"
+        default: "<b>'Why did you win or lose?'</b>"
       },
       /** Color-to-HEX/CSS mapping */
       color_map: {
@@ -135,10 +135,10 @@ var jsPsychExplanationGrid = (function (jspsych) {
           <div class="draw-action-segment grid-action-segment">
             <div class="grid-prompt">${trial.prompt}</div>
             <div class="grid-status-tracker">
-              Column <span id="col-counter">1</span> of ${totalColumns}
+              Set <span id="col-counter">1</span> of ${totalColumns}
             </div>
             <button id="grid-submit-btn" class="jspsych-btn grid-submit-btn" disabled>
-              Submit Column 1 Selections
+              Submit Selections
             </button>
           </div>
         </div>
@@ -161,8 +161,8 @@ var jsPsychExplanationGrid = (function (jspsych) {
           currentColumnIndex++;
           display_element.querySelector("#col-counter").textContent = currentColumnIndex + 1;
           submitBtn.textContent = currentColumnIndex === totalColumns - 1 
-            ? "Submit Final Column & Finish" 
-            : `Submit Column ${currentColumnIndex + 1} Selections`;
+            ? "Submit & Finish" 
+            : `Submit Selections`;
           submitBtn.disabled = true;
 
           this.updateGridState(display_element, currentColumnIndex);
@@ -178,7 +178,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
       let matrixHtml = '';
       for (let c = 0; c < 4; c++) {
         matrixHtml += `<div class="grid-column" data-col="${c}">`;
-        matrixHtml += `<div class="grid-col-header">Column ${c + 1}</div>`;
+        matrixHtml += `<div class="grid-col-header">Set ${c + 1}</div>`;
 
         for (let r = 0; r < 4; r++) {
           const index = c * 4 + r;

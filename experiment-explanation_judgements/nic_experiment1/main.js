@@ -196,15 +196,15 @@ timeline.push({
 // Instruction trial
 timeline.push({
   type: jsPsychInstructions,
-  pages: [
-    `
+  pages: [`
     <div class="instructions-container">
       <h2>Instructions 1/2</h2>
       <p>In this study, you will be interacting with four urns, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>.
       Below is an example of the urns. An <b>urn</b> is simply a container that holds a mix of balls. Some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.</p>
-      <p>On each trial, you will draw one ball at random from each of four different urns. Each trial will produce a result: a <span class="win">win</span> or a <span class="lose">loss</span>.
-      A trial is considered a win if the colored balls you draw satisfy a certain rule based on their <b>color, number, or a combination of both</b>.  
-      If the rule is not satisfied, the trial will result in a loss.</p>
+      <p>A ball can be drawn at random from each of four different urns.
+      Notice that some urns have more colored balls than others.
+      This makes some urns more likely to produce a colored ball than others.
+      </p>
       <br>
       ${staticUrns}
     </div>
@@ -212,19 +212,27 @@ timeline.push({
     `
   <div class="instructions-container">
   <h2>Instructions 2/2</h2>
-  <p>When you click the <b>Draw sample</b> button, one ball will be drawn at random from each of the four urns. This set of four draws is called a trial.
-  Note that some combinations of draws may appear more than once across trials, as certain urns contain more colored balls than others, making some draw patterns more likely.</p>
+  <p>In the following task, you will see a <b>Draw sample</b> button. When you press the button, one ball will be drawn at random from each of the four urns.
+  This set of four draws is called a trial.
+  Each trial will produce a result: a <span class="win">win</span> or a <span class="lose">loss</span> which is determined by a certain rule.  
+  If the rule is not satisfied, the trial will result in a loss. 
+  The rule determines what combination of colored balls is needed to win.
+  Sometimes several combinations are possible to make a win, and sometimes only one combination is possible.
+  In the following task you will be introduced to a new rule.
+    
+  </p>
   <p>You will have 10 trials to explore and get a feel for how the rule works. The results of these trials will remain visible until you move on to the next part of the experiment.</p>
   <p> Click 'Next' when you are ready to try drawing samples.</p>
   <br>
   ${staticUrns}
   </div>
-  `
+
+    `
+  
 ],
   show_clickable_nav: true,
   data: { question_id: "instructions_familiarisation" }
 });
-
 // Familiarisation trial
 timeline.push({
   type: jsDrawTable,
@@ -241,15 +249,59 @@ timeline.push({
 
 timeline.push({
   type: jsPsychHtmlButtonResponse,
+  stimulus: `
+  <div class="instructions-container">
+    <h2>Comprehension Check 1/2</h2>
+    <p>
+      Now that you are familiar with how the draws are generated, we will check your understanding of the rule.
+    </p>
+    <p>
+      In the following comprehension check, you will see several samples from the urns.
+      Your job is to determine whether the sample would lead to a <span class="win">win</span> or a <span class="lose">loss</span> based on the rule. 
+      To continue to the experiment you <it>must</it> answer all questions correctly. If you answer incorrectly, you will be prompted to try again.
+    </p>
+    <p>
+      Click <b>Continue</b> to proceed.
+    </p>
+  </div>`,
+  choices: ['Continue'],
+  data: {question_id: "pre_comp_selection"},
+});
+
+const allDraws = generateAllDrawCombinations(urnMap);
+const testDraws = shuffleArray(allDraws.slice()).slice(0, 5);
+
+timeline.push({
+  type: jsPredictionTable,
+  rule_text: `<p id = "rule-text">${ruleText}</p>`,
+  urn_html: renderUrnsHTML(),
+  draws: testDraws,
+  urn_keys: ["A", "B", "C", "D"],
+  rule_fn: rule,
+  question_id: "comprehension_rule",
+  prompt: `<p>Please predict the outcome for every draw below.</p><p>Click the result boxes to switch between <span style='color: green; font-weight: bold;'>WIN</span> and <span style='color: red; font-weight: bold;'>LOSE</span>.</p>`,
+  on_finish: function() {
+    jsPsych.getDisplayElement().innerHTML = '';
+  }
+});
+
+
+timeline.push({
+  type: jsPsychHtmlButtonResponse,
   stimulus: `<div class="instructions-container">
-      <h2>Comprehension Check 1/2</h2>
-      <p>In this experiment you will select the balls that best explain the current sample's results.
-      But beofre that, we'll allso get familiar with the selection process.
-      </p>
-      <p>
-      In the following task you will be asked to select the balls based on the current criteria.
-      You can select multiple balls if needed. Once you are done, click the <b>Continue</b> button to proceed.</p>
-      </p>
+    <h2>Comprehension Check 2/2</h2>
+    <p>
+      In this study your task will be to provide an explanation for the outcome of different scenarios under this rule.
+      Before that however, we'll also get familiar with the selection process.
+    </p>
+    <p>
+      In the following comprehension check, you will be asked to select the ball that matches the given prompt.
+      When a ball is selected, a circle will appear around it to indicate that it has been selected.
+      You can submit the selection by clicking the <b>Submit</b> button. If your selection is incorrect, you will be prompted to try again.
+    </p>
+    <p>
+      Click <b>Continue</b> to proceed.
+    </p>
     </div>`,
   choices: ['Continue'],
   data: {question_id: "pre_comp_selection"},
@@ -299,7 +351,7 @@ timeline.push({
   correct_keys: ["A"],
   allow_multiple: false,
   question_id: "comp_only_colored_ball",
-  prompt: "Select the <b>only colored ball</b> in the observation panel above.",
+  prompt: "Select the <b>only colored ball</b>.",
   on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
@@ -312,7 +364,7 @@ timeline.push({
   correct_keys: ["D"],
   allow_multiple: false,
   question_id: "comp_only_grey_ball",
-  prompt: "Select the <b>only grey ball</b> in the observation panel above.",
+  prompt: "Select the <b>only grey ball</b>.",
   on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
@@ -368,49 +420,20 @@ timeline.push({
   on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
-timeline.push({
-  type: jsPsychHtmlButtonResponse,
-  stimulus: `
-  <div class="instructions-container">
-    <h2>Comprehension Check 2/2</h2>
-    <p>
-      Now that you are familiar with how the draws are generated and how to make selections, we will check your understanding of the rule.
-    </p>
-  </div>`,
-  choices: ['Continue'],
-  data: {question_id: "pre_comp_selection"},
-});
-
-const allDraws = generateAllDrawCombinations(urnMap);
-const testDraws = shuffleArray(allDraws.slice()).slice(0, 5);
-
-timeline.push({
-  type: jsPredictionTable,
-  rule_text: `<p id = "rule-text">${ruleText}</p>`,
-  urn_html: renderUrnsHTML(),
-  draws: testDraws,
-  urn_keys: ["A", "B", "C", "D"],
-  rule_fn: rule,
-  question_id: "comprehension_rule",
-  prompt: `<p>Please predict the outcome for every draw below.</p><p>Click the result boxes to switch between <span style='color: green; font-weight: bold;'>WIN</span> and <span style='color: red; font-weight: bold;'>LOSE</span>.</p>`,
-  on_finish: function() {
-    jsPsych.getDisplayElement().innerHTML = '';
-  }
-});
 
 timeline.push({
   type: jsPsychHtmlButtonResponse,
   stimulus: `
   <div class="instructions-container">
   <h2>You are now ready for the experiment!</h2>
-    <p> In the following task you will draw a sample from the urns and observe the results.
-    Suppose someone who does not know the rule of the game asks you the following question:
+    <p> In the following task you will see several scenarios that are possible from the urns.
+    Since you are not explicitly sampling from the urns, you will see how likely each scenario is to occur based on the proportion of colored balls in the urns.
+    For each of the scenarios you will see a prompt from someone who <it>does not know the rule of the game</it> asking you the following question: "Why did you win or lose?"
     </p>
-    <div class="highlight-box">
-    <p> Why did you <span class="win">win</span> or <span class="lose">lose</span>?</p>
-    </div>
     <p>
-    Your job is to select the balls that best explain the result.
+    Your task is to select the balls that best explain the result.
+    </p>
+    <p>
     When you are ready, click the <b>Start experiment</b> button.</p>
     </div>
     `,
