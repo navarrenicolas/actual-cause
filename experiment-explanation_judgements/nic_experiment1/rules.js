@@ -13,17 +13,17 @@ const rules = {
     evaluate: (draws, keys) => draws[keys.highKey] !== 'lightgrey' || draws[keys.medHighKey] !== 'lightgrey' || draws[keys.lowKey] !== 'lightgrey'
   }, // A or B or D
   rule5: {
-    evaluate: (draws, keys) => (draws[keys.highKey] !== 'lightgrey') !== (draws[keys.lowKey] !== 'lightgrey')
-  } // A xor D
+    evaluate: (draws, keys) => (draws[keys.highKey] !== 'lightgrey') !== (draws[keys.medLowKey] !== 'lightgrey')
+  } // A xor C
 };
 
 // ===== Rule Text Templates =====
 const ruleTemplates = {
-  rule1: "{low} and {high} ball, or {medLow} ball",
-  rule2: "{low} ball and {medLow} ball, or {high} ball and {medLow} ball",
+  rule1: "{low} and {high} ball, or {medLow} ball, or all three",
+  rule2: "{low} ball and {medLow} ball, or {high} ball and {medLow} ball, or all three",
   rule3: "{low} ball, {medHigh} ball, and {high} ball",
   rule4: "at least one {low} ball, {medHigh} ball, or {high} ball",
-  rule5: "either {high} or {low} ball, but not both"
+  rule5: "either {high} or {medLow} ball, but not both"
 };
 
 // ===== Familiarization Patterns =====
@@ -76,7 +76,7 @@ const fixedFamiliarisation = {
     { high: 0, medHigh: 0, medLow: 1, low: 1 }, 
     { high: 1, medHigh: 1, medLow: 1, low: 1 } 
   ],
-  rule5: [ // A xor D (either high or low, not both)
+  rule5: [ // A xor C (either high or medLow, not both)
     { high: 1, medHigh: 0, medLow: 1, low: 0 }, 
     { high: 1, medHigh: 0, medLow: 1, low: 0 }, 
     { high: 1, medHigh: 1, medLow: 0, low: 1 }, 

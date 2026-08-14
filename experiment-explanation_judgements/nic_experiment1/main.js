@@ -199,11 +199,10 @@ timeline.push({
   pages: [`
     <div class="instructions-container">
       <h2>Instructions 1/2</h2>
-      <p>In this study, you will be interacting with four urns, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>.
-      Below is an example of the urns. An <b>urn</b> is simply a container that holds a mix of balls. Some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.</p>
-      <p>A ball can be drawn at random from each of four different urns.
-      Notice that some urns have more colored balls than others.
-      This makes some urns more likely to produce a colored ball than others.
+      <p>In this study, you will be interacting with four boxes, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>.
+      Below is an example of the boxes. The boxes hold a mix of balls. Some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.</p>
+      <p>A ball can be pulled out at random from each of four different boxes.
+      Notice that some boxes have more colored balls than others making the chances of getting a colored ball from each box different.
       </p>
       <br>
       ${staticUrns}
@@ -212,8 +211,8 @@ timeline.push({
     `
   <div class="instructions-container">
   <h2>Instructions 2/2</h2>
-  <p>In the following task, you will see a <b>Draw sample</b> button. When you press the button, one ball will be drawn at random from each of the four urns.
-  This set of four draws is called a trial.
+  <p>In the following task, you will see a <b>Draw sample</b> button. When you press the button, one ball will be pulled out at random from each of the four boxes.
+  This set of four presents a particular trial scenario.
   Each trial will produce a result: a <span class="win">win</span> or a <span class="lose">loss</span> which is determined by a certain rule.  
   If the rule is not satisfied, the trial will result in a loss. 
   The rule determines what combination of colored balls is needed to win.
@@ -221,7 +220,7 @@ timeline.push({
   In the following task you will be introduced to a new rule.
     
   </p>
-  <p>You will have 10 trials to explore and get a feel for how the rule works. The results of these trials will remain visible until you move on to the next part of the experiment.</p>
+  <p>You will have 10 trials to explore and get a feel for how the rule works in differen scenarios. The results of these trials will remain visible until you move on to the next part of the experiment.</p>
   <p> Click 'Next' when you are ready to try drawing samples.</p>
   <br>
   ${staticUrns}
@@ -256,8 +255,8 @@ timeline.push({
       Now that you are familiar with how the draws are generated, we will check your understanding of the rule.
     </p>
     <p>
-      In the following comprehension check, you will see several samples from the urns.
-      Your job is to determine whether the sample would lead to a <span class="win">win</span> or a <span class="lose">loss</span> based on the rule. 
+      In the following comprehension check, you will see several sample draws from the boxes.
+      Your job is to determine whether the scenario would lead to a <span class="win">win</span> or a <span class="lose">loss</span> based on the rule. 
       To continue to the experiment you <it>must</it> answer all questions correctly. If you answer incorrectly, you will be prompted to try again.
     </p>
     <p>
@@ -368,7 +367,7 @@ timeline.push({
   on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
-// 3. Select the ball from the urn that is MOST likely to produce a colored ball
+// 3. Select the ball from the box that is MOST likely to produce a colored ball
 timeline.push({
   type: jsComprehensionSelection,
   draw: standardDraw,
@@ -377,11 +376,11 @@ timeline.push({
   correct_keys: [mostLikelyUrnKey],
   allow_multiple: false,
   question_id: "comp_most_likely_ball",
-  prompt: "Select the ball from the urn that is <b>MOST likely</b> to produce a colored ball.",
+  prompt: "Select the ball from the box that is <b>MOST likely</b> to produce a colored ball.",
   on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
-// 4. Select the ball from the urn that is LEAST likely to produce a colored ball
+// 4. Select the ball from the box that is LEAST likely to produce a colored ball
 timeline.push({
   type: jsComprehensionSelection,
   draw: standardDraw,
@@ -390,11 +389,11 @@ timeline.push({
   correct_keys: [leastLikelyUrnKey],
   allow_multiple: false,
   question_id: "comp_least_likely_ball",
-  prompt: "Select the ball from the urn that is <b>LEAST likely</b> to produce a colored ball.",
+  prompt: "Select the ball from the box that is <b>LEAST likely</b> to produce a colored ball.",
   on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
-// 5. Select the ball from the urn that is the SECOND MOST likely to produce a colored ball
+// 5. Select the ball from the box that is the SECOND MOST likely to produce a colored ball
 timeline.push({
   type: jsComprehensionSelection,
   draw: standardDraw,
@@ -403,11 +402,11 @@ timeline.push({
   correct_keys: [secondMostLikelyUrnKey],
   allow_multiple: false,
   question_id: "comp_second_most_likely_ball",
-  prompt: "Select the ball from the urn that is the <b>SECOND MOST likely</b> to produce a colored ball.",
+  prompt: "Select the ball from the box that is the <b>SECOND MOST likely</b> to produce a colored ball.",
   on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
-// 6. Select the ball from the urn that is the THIRD MOST likely to produce a colored ball
+// 6. Select the ball from the box that is the THIRD MOST likely to produce a colored ball
 timeline.push({
   type: jsComprehensionSelection,
   draw: standardDraw,
@@ -416,7 +415,7 @@ timeline.push({
   correct_keys: [thirdMostLikelyUrnKey],
   allow_multiple: false,
   question_id: "comp_third_most_likely_ball",
-  prompt: "Select the ball from the urn that is the <b>THIRD MOST likely</b> to produce a colored ball.",
+  prompt: "Select the ball from the box that is the <b>THIRD MOST likely</b> to produce a colored ball.",
   on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
@@ -426,12 +425,12 @@ timeline.push({
   stimulus: `
   <div class="instructions-container">
   <h2>You are now ready for the experiment!</h2>
-    <p> In the following task you will see several scenarios that are possible from the urns.
-    Since you are not explicitly sampling from the urns, you will see how likely each scenario is to occur based on the proportion of colored balls in the urns.
-    For each of the scenarios you will see a prompt from someone who <it>does not know the rule of the game</it> asking you the following question: "Why did you win or lose?"
+    <p> In the following task you will see several scenarios that are possible from the boxes.
+    Since you are not explicitly sampling from the boxes, you will see how likely each scenario is to occur based on the proportion of colored balls in the boxes.
+    For each of the scenarios you will see a prompt from someone who <it>does not know the rule of the game</it> asking the following question: "Why did you win or lose?"
     </p>
     <p>
-    Your task is to select the balls that best explain the result.
+    Your task is to select the ball that best explains the result.
     </p>
     <p>
     When you are ready, click the <b>Start experiment</b> button.</p>

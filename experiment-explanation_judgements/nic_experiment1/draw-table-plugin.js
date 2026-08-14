@@ -229,7 +229,7 @@ var jsDrawTable = (function (jspsych) {
                 });
 
                 let feedbackText = `<br><p>You drew:</p><ul class="draw-feedback-list">` +
-                    urnKeys.map(k => `<li>a <span style="color: ${currentDraw[k]}; font-weight: bold;">${currentDraw[k].replace('light', '')}</span> ball from urn ${k}</li>`).join("") +
+                    urnKeys.map(k => `<li>a <span style="color: ${currentDraw[k]}; font-weight: bold;">${currentDraw[k].replace('light', '')}</span> ball from box ${k}</li>`).join("") +
                     `</ul>`;
 
                 if (showResult) {

@@ -1,6 +1,9 @@
 /**
  * jsPsych plugin for Explanation Selection in a 4x4 Grid Format
  * Reveals 4 columns sequentially with 4 scenarios per column.
+ * - Writes a data row immediately on every ball selection click.
+ * - Writes a set-level summary row on submitting each column set.
+ * - Saves all 16 selections in 'detailed_results' upon final submission.
  */
 var jsPsychExplanationGrid = (function (jspsych) {
   "use strict";
@@ -116,6 +119,10 @@ var jsPsychExplanationGrid = (function (jspsych) {
       const totalColumns = 4;
       const selections = {};
 
+      // Time tracking
+      const trialStartTime = performance.now();
+      let setStartTime = performance.now();
+
       let html = `
         <div class="draw-plugin-container explanation-grid-container">
           <!-- TOP SEGMENT: Urn HTML and Rule Text -->
@@ -146,19 +153,43 @@ var jsPsychExplanationGrid = (function (jspsych) {
 
       display_element.innerHTML = html;
 
-      // Initialize Column Visibility
+      // Initialize Column Visibility & Event Listeners
       this.updateGridState(display_element, currentColumnIndex);
-      this.attachBallClickListeners(display_element, currentColumnIndex, selections, trial);
+      this.attachBallClickListeners(display_element, currentColumnIndex, selections, trial, setStartTime, trialStartTime);
       
       // Auto-fit sentences on render and window resize
       setTimeout(() => this.fitAllSentences(display_element), 20);
-      window.addEventListener("resize", () => this.fitAllSentences(display_element));
+      const resizeHandler = () => this.fitAllSentences(display_element);
+      window.addEventListener("resize", resizeHandler);
 
       // Submit Button Event Handler
       const submitBtn = display_element.querySelector("#grid-submit-btn");
       submitBtn.addEventListener("click", () => {
+        const setEndTime = performance.now();
+        const setRt = Math.round(setEndTime - setStartTime);
+
+        // 1. Extract selections for the set being submitted
+        const currentSetSelections = [];
+        for (let r = 0; r < 4; r++) {
+          const idx = currentColumnIndex * 4 + r;
+          if (selections[idx]) {
+            currentSetSelections.push(selections[idx]);
+          }
+        }
+
+        // 2. Save a data row for this set submission
+        this.jsPsych.data.write({
+          event_type: "set_submission",
+          set_number: currentColumnIndex + 1,
+          set_selections: currentSetSelections,
+          set_rt: setRt
+        });
+
+        // 3. Advance to next set or finish trial
         if (currentColumnIndex < totalColumns - 1) {
           currentColumnIndex++;
+          setStartTime = performance.now(); // Reset set timer
+
           display_element.querySelector("#col-counter").textContent = currentColumnIndex + 1;
           submitBtn.textContent = currentColumnIndex === totalColumns - 1 
             ? "Submit & Finish" 
@@ -166,10 +197,11 @@ var jsPsychExplanationGrid = (function (jspsych) {
           submitBtn.disabled = true;
 
           this.updateGridState(display_element, currentColumnIndex);
-          this.attachBallClickListeners(display_element, currentColumnIndex, selections, trial);
+          this.attachBallClickListeners(display_element, currentColumnIndex, selections, trial, setStartTime, trialStartTime);
           setTimeout(() => this.fitAllSentences(display_element), 20);
         } else {
-          this.finishTrial(trial, selections);
+          window.removeEventListener("resize", resizeHandler);
+          this.finishTrial(trial, selections, trialStartTime);
         }
       });
     }
@@ -240,26 +272,29 @@ var jsPsychExplanationGrid = (function (jspsych) {
       });
     }
 
-    attachBallClickListeners(display_element, activeColIndex, selections, trial) {
+    attachBallClickListeners(display_element, activeColIndex, selections, trial, setStartTime, trialStartTime) {
       const activeCol = display_element.querySelector(`.grid-column[data-col="${activeColIndex}"]`);
       if (!activeCol) return;
 
       const cards = activeCol.querySelectorAll(".grid-card");
       cards.forEach(card => {
-        const index = card.getAttribute("data-index");
+        const index = parseInt(card.getAttribute("data-index"), 10);
         const balls = card.querySelectorAll(".grid-selectable-ball");
 
         balls.forEach(ball => {
           ball.addEventListener("click", () => {
+            const clickTime = performance.now();
             const urn = ball.getAttribute("data-urn");
             const color = ball.getAttribute("data-color");
             const sc = trial.scenarios[index];
             const isWin = String(sc.outcome).toLowerCase() === 'win';
+            const rt = Math.round(clickTime - setStartTime);
+            const total_rt = Math.round(clickTime - trialStartTime);
 
-            // Clear previous selection states
+            // Clear previous visual selections for this card
             balls.forEach(b => b.classList.remove("is-selected", "is-selected-win", "is-selected-loss"));
             
-            // Add outcome-specific selection ring (Green for Win, Red for Loss)
+            // Highlight selected ball
             ball.classList.add("is-selected");
             if (isWin) {
               ball.classList.add("is-selected-win");
@@ -267,23 +302,40 @@ var jsPsychExplanationGrid = (function (jspsych) {
               ball.classList.add("is-selected-loss");
             }
 
-            selections[index] = {
-              scenario_id: sc.id,
+            // Track selection object
+            const selectionRecord = {
+              question_id: sc.id,
+              order_index: index,
+              set_number: activeColIndex + 1,
               selected_urn: urn,
               selected_color: color,
-              draw: sc.urns,
-              outcome: sc.outcome,
-              probability: sc.prob
+              draw_A: sc.urns.A,
+              draw_B: sc.urns.B,
+              draw_C: sc.urns.C,
+              draw_D: sc.urns.D,
+              result: isWin ? "win" : "lose",
+              probability: sc.prob,
+              rt: rt,
+              total_rt: total_rt
             };
 
+            selections[index] = selectionRecord;
+
+            // Write selection click directly to jsPsych.data
+            this.jsPsych.data.write({
+              event_type: "ball_selection",
+              ...selectionRecord
+            });
+
+            // Update UI sentence
             const desc = this.describeBall(color, urn);
             const sentenceEl = card.querySelector(`#sentence-${index}`);
             if (sentenceEl) {
               sentenceEl.innerHTML = this.renderSentence(isWin, [desc]);
-              // Auto-adjust font size to keep on a single line
               this.fitText(sentenceEl);
             }
 
+            // Enable column submit button if all 4 cards in current column have selections
             this.checkColumnCompletion(display_element, activeColIndex, selections);
           });
         });
@@ -303,12 +355,18 @@ var jsPsychExplanationGrid = (function (jspsych) {
       }
     }
 
-    finishTrial(trial, selections) {
-      const formattedSelections = Object.keys(selections).map(idx => selections[idx]);
+    finishTrial(trial, selections, trialStartTime) {
+      // Sort all 16 selections in order (0 through 15)
+      const detailedResults = Object.keys(selections)
+        .map(idx => parseInt(idx, 10))
+        .sort((a, b) => a - b)
+        .map(idx => selections[idx]);
 
       const trialData = {
-        grid_selections: formattedSelections,
-        total_judgments: formattedSelections.length
+        event_type: "trial_complete",
+        detailed_results: detailedResults, // All 16 selections array
+        total_judgments: detailedResults.length,
+        total_trial_rt: Math.round(performance.now() - trialStartTime)
       };
 
       this.jsPsych.finishTrial(trialData);
