@@ -19,11 +19,11 @@ html {
     height: 98vh;
     max-height: 100vh;
     width: 80vw;
-    max-width: 1000px;
+    max-width: 900px;
     margin: 0 auto;
     box-sizing: border-box;
-    overflow: hidden;
 }
+
 
 /* Top Segment: Urns display, rule text, top control buttons */
 .draw-top-segment {
@@ -85,6 +85,97 @@ html {
     max-width: 100%;
     box-sizing: border-box;
 }
+
+.urn-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Maintain urn grid layout and empty slot space */
+.urn .ball {
+  transition: opacity 0.2s ease;
+}
+
+/* Leaves an empty placeholder slot in the urn without shifting surrounding balls */
+.ball.drawn-hidden {
+  visibility: hidden !important;
+}
+
+/* Compact Controls: Button and Target Slot side-by-side */
+.urn-controls-compact {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 3D Pushable Red Button */
+.push-draw-btn {
+  background: linear-gradient(to bottom, #ff4d4d 0%, #cc0000 100%);
+  border: 1px solid #990000;
+  border-radius: 6px;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 6px 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #880000, 0 5px 5px rgba(0,0,0,0.2);
+  transition: all 0.05s ease;
+  outline: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.push-draw-btn:hover {
+  background: linear-gradient(to bottom, #ff6666 0%, #dd0000 100%);
+}
+
+.push-draw-btn:active {
+  box-shadow: 0 1px 0 #880000, 0 2px 3px rgba(0,0,0,0.2);
+  transform: translateY(3px);
+}
+
+.push-draw-btn:disabled {
+  background: #cccccc;
+  border-color: #aaaaaa;
+  color: #666666;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Empty Grey Target Slot */
+.urn-slot {
+  width: 28px;
+  height: 28px;
+  border: 2px dashed #999999;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.urn-slot .ball {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+/* Single Outcome Segment */
+.draw-outcome-segment {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
 
 .urn-display-below {
     margin-top: 30px;
@@ -161,6 +252,16 @@ html {
     gap: 6px;
     margin-bottom: 8px;
 }
+
+/* Row Grid Centering
+.draw-row {
+    display: grid;
+    justify-content: center;
+    justify-items: center;
+    align-items: center;
+    gap: 6px;
+    margin: 0 auto 8px auto;
+} */
 
 .draw-cell {
     display: flex;
@@ -255,21 +356,26 @@ html {
     overflow: hidden; /* Prevent parent window scroll, force panel inner scroll */
 }
 
+/* .draw-panel-wrapper {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  background-color: #fcfcfc;
+  min-width: 320px;
+  text-align: center;
+} */
+
 .draw-panel-wrapper {
-    text-align: center;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
+    display: inline-block;
+    margin: 0 auto;
 }
 
 .draw-panel-title {
-    font-weight: bold;
-    margin-bottom: 6px;
-    font-size: 1.05em;
-    flex: 0 0 auto;
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 16px;
 }
+
 
 .draw-history-empty {
     color: #777;
@@ -564,7 +670,6 @@ span.lose {
    ========================================================================== */
 
 .draw-history-panel {
-    border: 1px solid rgba(0, 0, 0, 0.15);
     border-radius: 10px;
     padding: 8px 10px;
     background: #ffffff;

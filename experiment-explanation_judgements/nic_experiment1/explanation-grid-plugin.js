@@ -67,7 +67,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
     describeBall(color, urnKey) {
       const readableColor = this.normalizeColor(color);
       const displayColor = (color === "lightgrey" || color === "grey") ? "#666666" : color;
-      return `${this.getArticle(readableColor)}&nbsp;<span style="color: ${displayColor}; font-weight: bold;">${readableColor}</span>&nbsp;ball from urn ${urnKey}`;
+      return `${this.getArticle(readableColor)}&nbsp;<span style="color: ${displayColor}; font-weight: bold;">${readableColor}</span>&nbsp;ball from box ${urnKey}`;
     }
 
     joinDescriptions(descriptions) {

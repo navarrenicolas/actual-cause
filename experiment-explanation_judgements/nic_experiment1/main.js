@@ -81,27 +81,51 @@ function sampleDraw() {
   return draw;
 }
 
-function renderUrnsHTML() {
+function generateUrnBallsData(urnKey, total = 20) {
+  const { color, prob } = urnMap[urnKey];
+  const n_colored = Math.round(prob * total);
+  const n_lightgrey = total - n_colored;
+  const rawColors = shuffleArray(
+    Array(n_colored).fill(color).concat(Array(n_lightgrey).fill('lightgrey'))
+  );
+  
+  return rawColors.map((col, idx) => ({
+    id: `ball-${urnKey}-${idx}`,
+    color: col
+  }));
+}
+
+function renderUrnsHTML(interactive = false) {
   return `<div class="urn-display">
     ${Object.keys(urnMap).map(urnKey => {
-      const balls = generateUrnBalls(urnKey).map(color => {
-        const isGrey = (color === "lightgrey" || color === "grey" || color === "#d3d3d3");
-        const ballColor = isGrey ? "#c0c0c0" : color;
-        
-        return `<div class="ball" style="background-color:${ballColor};"></div>`;
+      const ballsData = generateUrnBallsData(urnKey);
+      
+      const ballsHTML = ballsData.map(b => {
+        const isGrey = (b.color === "lightgrey" || b.color === "grey" || b.color === "#d3d3d3");
+        const ballColor = isGrey ? "#c0c0c0" : b.color;
+        return `<div class="ball" id="${b.id}" data-color="${b.color}" style="background-color:${ballColor};"></div>`;
       }).join('');
 
-      return `<div>
+      return `<div class="urn-column" data-urn="${urnKey}">
                 <div class="urn-label" style="color: ${urnMap[urnKey].color};">
                   ${urnLabels[urnKey]}
                 </div> 
-                <div class="urn">${balls}</div>
+                <div class="urn" id="urn-container-${urnKey}">${ballsHTML}</div>
+                ${interactive ? `
+                  <div class="urn-controls-compact">
+                    <button class="push-draw-btn" data-urn="${urnKey}">DRAW</button>
+                    <div class="urn-slot" id="slot-${urnKey}"></div>
+                  </div>
+                ` : ''}
               </div>`;
     }).join('')}
   </div>`;
 }
 
-const staticUrns = renderUrnsHTML();
+// Interactive version for your new trial
+const interactiveUrns = renderUrnsHTML(true);
+const staticUrns = renderUrnsHTML(false);
+
 
 function generateAllDraws() {
   const options = {};
@@ -199,10 +223,12 @@ timeline.push({
   pages: [`
     <div class="instructions-container">
       <h2>Instructions 1/2</h2>
-      <p>In this study, you will be interacting with four boxes, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>.
-      Below is an example of the boxes. The boxes hold a mix of balls. Some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.</p>
-      <p>A ball can be pulled out at random from each of four different boxes.
+      <p>In this study, you will be interacting with four boxes, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>, pictured below.
+      The boxes hold a mix of balls: in each box, some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.
       Notice that some boxes have more colored balls than others making the chances of getting a colored ball from each box different.
+      </p>
+      <p>
+      One ball can be pulled out at random from each of four different boxes.
       </p>
       <br>
       ${staticUrns}
@@ -211,19 +237,18 @@ timeline.push({
     `
   <div class="instructions-container">
   <h2>Instructions 2/2</h2>
-  <p>In the following task, you will see a <b>Draw sample</b> button. When you press the button, one ball will be pulled out at random from each of the four boxes.
-  This set of four presents a particular trial scenario.
+  <p>In the following task, you will see a <b>Draw</b> button below every box. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next phase.</p>
+  <p>
+  Drawing a ball from all 4 boxes presents a particular trial scenario.
   Each trial will produce a result: a <span class="win">win</span> or a <span class="lose">loss</span> which is determined by a certain rule.  
-  If the rule is not satisfied, the trial will result in a loss. 
   The rule determines what combination of colored balls is needed to win.
-  Sometimes several combinations are possible to make a win, and sometimes only one combination is possible.
-  In the following task you will be introduced to a new rule.
-    
+  If the rule is not satisfied, the trial will result in a loss. 
+  Sometimes several combinations are possible to make a win, and sometimes only one combination is necessary. 
   </p>
-  <p>You will have 10 trials to explore and get a feel for how the rule works in differen scenarios. The results of these trials will remain visible until you move on to the next part of the experiment.</p>
-  <p> Click 'Next' when you are ready to try drawing samples.</p>
+  <p>
+  In the following task you will be introduced to a new rule. You will have 10 trials to try drawing samples and understand how the rule works in different scenarios. Click 'Next' when you are ready to try drawing samples.</p>
   <br>
-  ${staticUrns}
+  ${interactiveUrns}
   </div>
 
     `
@@ -234,16 +259,19 @@ timeline.push({
 });
 // Familiarisation trial
 timeline.push({
-  type: jsDrawTable,
-  rule_text: `<p id = "rule-text">${ruleText}</p>`,
-  urn_html: staticUrns,
+  type: jsInteractiveDrawSingle,
+  rule_text: `<p id="rule-text">${ruleText}</p>`,
+  urn_html: interactiveUrns,
   show_result: true,
   draws: familiarisationDraws,
   urn_keys: ["A", "B", "C", "D"],
   question_id: "familiarisation",
   max_samples: 10,
   rule_fn: rule,
-  data: { question_id: "familiarisation" }
+  data: { question_id: "familiarisation" },
+  on_finish: function() {
+    jsPsych.getDisplayElement().innerHTML = '';
+  }
 });
 
 timeline.push({
@@ -257,7 +285,8 @@ timeline.push({
     <p>
       In the following comprehension check, you will see several sample draws from the boxes.
       Your job is to determine whether the scenario would lead to a <span class="win">win</span> or a <span class="lose">loss</span> based on the rule. 
-      To continue to the experiment you <it>must</it> answer all questions correctly. If you answer incorrectly, you will be prompted to try again.
+      To continue to the experiment you <b>must</b> answer all questions correctly. If you answer incorrectly, you will be prompted to try again.
+      If you fail the comprehension check a second time, you will be exluded from the experiment.
     </p>
     <p>
       Click <b>Continue</b> to proceed.
@@ -296,7 +325,7 @@ timeline.push({
     <p>
       In the following comprehension check, you will be asked to select the ball that matches the given prompt.
       When a ball is selected, a circle will appear around it to indicate that it has been selected.
-      You can submit the selection by clicking the <b>Submit</b> button. If your selection is incorrect, you will be prompted to try again.
+      You can submit the selection by clicking the <b>Submit</b> button. If your selection is incorrect, you will be prompted to try again. If you fail to select the correct ball more than once, you will be excluded from the experiment.
     </p>
     <p>
       Click <b>Continue</b> to proceed.
@@ -425,9 +454,8 @@ timeline.push({
   stimulus: `
   <div class="instructions-container">
   <h2>You are now ready for the experiment!</h2>
-    <p> In the following task you will see several scenarios that are possible from the boxes.
-    Since you are not explicitly sampling from the boxes, you will see how likely each scenario is to occur based on the proportion of colored balls in the boxes.
-    For each of the scenarios you will see a prompt from someone who <it>does not know the rule of the game</it> asking the following question: "Why did you win or lose?"
+    <p> In the following task you will see several scenarios that were drawn by another player, John, who <i>does not know the rule of the game</i>.
+    With each sample draw, John will ask why he won or lost. Your task is to select the ball that best explains the result.
     </p>
     <p>
     Your task is to select the ball that best explains the result.
@@ -472,7 +500,6 @@ function prepareGridScenarios(allDraws, urnMap, ruleFn) {
   return shuffleArray(scenarios);
 }
 
-const staticUrnHTML = renderUrnsHTML();
 const gridScenarios = prepareGridScenarios(allDraws, urnMap, rule);
 
 // Single Explanation Selection Grid Trial

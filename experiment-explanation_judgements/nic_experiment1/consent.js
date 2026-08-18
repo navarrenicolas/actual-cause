@@ -33,7 +33,7 @@ const consentTrial = {
         <p><b>What are my data protection rights?</b> The University of Edinburgh is a Data Controller for the information 
             you provide. You have the right to access information held about you. Your right of access can be exercised 
             in accordance with Data Protection Law. You also have other rights including rights of correction, erasure, and 
-            objection. For more details, including the right to lodge a complaint with the Information Commissioner’s 
+            objection. For more details, including the right to lodge a complaint with the Information Commissioner's 
             Office, please visit <a href="https://www.ico.org.uk" target="_blank">www.ico.org.uk</a>. Questions, comments, and requests about your personal data can also be 
             sent to the University Data Protection Officer at <a href="mailto:dpo@ed.ac.uk">dpo@ed.ac.uk</a>.</p>
   
@@ -45,7 +45,7 @@ const consentTrial = {
   
         <p>If you have any questions about what you've just read, please feel free to ask or contact us later. You
             can contact us by email at 
-            <a href="mailto:ss2518809@ed.ac.uk">s2518809@ed.ac.uk</a>. This project has been approved by PPLS Ethics Committee, RT number TODO. 
+            <a href="mailto:ss2518809@ed.ac.uk">s2518809@ed.ac.uk</a>. This project has been approved by PPLS Ethics Committee, RT number 256-2324/6. 
             If you have questions or comments regarding your rights as a participant, they can be contacted at +44 0131 650 4020 
             or <a href="mailto:ppls.ethics@ed.ac.uk">ppls.ethics@ed.ac.uk</a>.</p>
   
