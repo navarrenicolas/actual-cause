@@ -1,517 +1,280 @@
-var jsExplanationSelection = (function (jspsych) {
-    "use strict";
+/**
+ * jsPsych plugin for Pre-Sampled Urn Outcome Explanation
+ * Matches the feedback text style and formatting of jsInteractiveDrawSingle.
+ */
+var jsPsychInteractiveDrawExplanation = (function (jspsych) {
+  "use strict";
 
-    const info = {
-        name: "explanation-selection",
-        parameters: {
-            rule_text: {
-                type: jspsych.ParameterType.HTML_STRING,
-                default: ""
-            },
-            show_rule: {
-                type: jspsych.ParameterType.BOOL,
-                default: true
-            },
-            show_result: {
-                type: jspsych.ParameterType.BOOL,
-                default: true
-            },
-            allow_multiple: {
-                type: jspsych.ParameterType.BOOL,
-                default: false
-            },
-            urn_html: {
-                type: jspsych.ParameterType.HTML_STRING,
-                default: ""
-            },
-            draws: {
-                type: jspsych.ParameterType.COMPLEX,
-                array: true,
-                default: []
-            },
-            history: {
-                type: jspsych.ParameterType.COMPLEX,
-                array: true,
-                default: []
-            },
-            urn_keys: {
-                type: jspsych.ParameterType.STRING,
-                array: true,
-                default: ["A", "B", "C", "D"]
-            },
-            question_id: {
-                type: jspsych.ParameterType.STRING,
-                default: "explanation_selection"
-            },
-            rule_fn: {
-                type: jspsych.ParameterType.FUNCTION,
-                default: null
-            },
-            selection_prompt: {
-                type: jspsych.ParameterType.STRING,
-                default: "Select the ball(s) that explain the result."
-            },
-            draw_button_label: {
-                type: jspsych.ParameterType.STRING,
-                default: "Draw sample"
-            },
-            submit_button_label: {
-                type: jspsych.ParameterType.STRING,
-                default: "Submit Explanation"
-            },
-            continue_button_label: {
-                type: jspsych.ParameterType.STRING,
-                default: "Continue"
-            },
-            remaining_label: {
-                type: jspsych.ParameterType.STRING,
-                default: "Remaining samples:"
-            },
-            current_title: {
-                type: jspsych.ParameterType.STRING,
-                default: "Current sample"
-            },
-            history_title: {
-                type: jspsych.ParameterType.STRING,
-                default: "History"
-            },
-            history_empty_message: {
-                type: jspsych.ParameterType.STRING,
-                default: "No samples committed yet."
-            },
-            max_samples: {
-                type: jspsych.ParameterType.INT,
-                default: null
-            },
-            auto_draw: {
-                type: jspsych.ParameterType.BOOL,
-                default: false
-            },
-            auto_scroll: {
-                type: jspsych.ParameterType.BOOL,
-                default: true
-            }
-        }
-    };
+  const info = {
+    name: "interactive-draw-explanation",
+    parameters: {
+      rule_text: {
+        type: jspsych.ParameterType.HTML_STRING,
+        default: ""
+      },
+      show_rule: {
+        type: jspsych.ParameterType.BOOL,
+        default: true
+      },
+      urn_html: {
+        type: jspsych.ParameterType.HTML_STRING,
+        default: ""
+      },
+      draws: {
+        type: jspsych.ParameterType.COMPLEX,
+        array: true,
+        default: []
+      },
+      urn_keys: {
+        type: jspsych.ParameterType.STRING,
+        array: true,
+        default: ["A", "B", "C", "D"]
+      },
+      agent_name: {
+        type: jspsych.ParameterType.STRING,
+        default: "John"
+      },
+      question_id: {
+        type: jspsych.ParameterType.STRING,
+        default: "interactive_explanation"
+      },
+      max_samples: {
+        type: jspsych.ParameterType.INT,
+        default: null
+      },
+      next_trial_button_label: {
+        type: jspsych.ParameterType.STRING,
+        default: "Submit Selection & Next Sample"
+      },
+      finish_button_label: {
+        type: jspsych.ParameterType.STRING,
+        default: "Continue to Next Section"
+      },
+      prompt: {
+        type: jspsych.ParameterType.STRING,
+        default: "<b>Why did they win or lose? Select the ball that explains the outcome:</b>"
+      },
+      rule_fn: {
+        type: jspsych.ParameterType.FUNCTION,
+        default: null
+      }
+    }
+  };
 
-    function normalizeColor(color) {
-        if (!color) return "";
-        if (color === "hotpink") return "pink";
-        if (color === "lightgrey") return "grey";
-        return color.replace("light", "");
+  class InteractiveDrawExplanationPlugin {
+    constructor(jsPsych) {
+      this.jsPsych = jsPsych;
     }
 
-    function getArticle(word) {
-        return /^[aeiou]/i.test(word) ? "an" : "a";
+    normalizeColor(color) {
+      if (!color) return "";
+      return color.replace("light", "");
     }
 
-    function describeBall(color, urnKey) {
-        const readableColor = normalizeColor(color);
-        return `${getArticle(readableColor)} <span style="color: ${color}; font-weight: bold;">${readableColor}</span> ball from urn ${urnKey}`;
+    getArticle(word) {
+      return /^[aeiou]/i.test(word) ? "an" : "a";
     }
 
-    function joinDescriptions(descriptions) {
-        if (descriptions.length === 0) return "";
-        if (descriptions.length === 1) return descriptions[0];
-        if (descriptions.length === 2) return `${descriptions[0]} and ${descriptions[1]}`;
-        return `${descriptions.slice(0, -1).join(", ")}, and ${descriptions[descriptions.length - 1]}`;
+    // Dynamic selection explanation text placed directly below the selectable slots
+    renderExplanationSentence(isWin, color, urnKey, agentName) {
+      if (!urnKey) {
+        return `<i>Click one of the drawn balls above to select it as the explanation</i>`;
+      }
+      const readableColor = this.normalizeColor(color);
+      const article = this.getArticle(readableColor);
+      const isGrey = color === "lightgrey" || color === "grey" || color === "#d3d3d3";
+      const displayColor = isGrey ? "#888888" : color;
+      const outcomeText = isWin ? "won" : "lost";
+      const outcomeClass = isWin ? "win" : "lose";
+
+      return `${agentName} <span class="${outcomeClass}">${outcomeText}</span> because they got ${article} <span style="color: ${displayColor}; font-weight: bold;">${readableColor}</span> ball from box ${urnKey}.`;
     }
 
-    function renderSentence(isWin, descriptions, promptText, showResult = true) {
-        if (descriptions.length === 0) return `<p>${promptText}</p>`;
-        if (!showResult) {
-            return `<p>I selected ${joinDescriptions(descriptions)}.</p>`;
-        }
-        const outcomeText = isWin ? "won" : "lost";
-        return `<p>I <span class="${isWin ? 'win' : 'lose'}">${outcomeText}</span> because I got ${joinDescriptions(descriptions)}.</p>`;
+    // Sample summary text structured exactly like jsInteractiveDrawSingle
+    renderSampleDescription(drawObj, urnKeys, agentName, isWin) {
+      let text = `<p>In this trial, <b>${agentName}</b> drew:</p><ul class="draw-feedback-list">`;
+      
+      text += urnKeys.map(k => {
+        const rawColor = drawObj[k];
+        const cleanColor = this.normalizeColor(rawColor);
+        const article = this.getArticle(cleanColor);
+        return `<li>${article} <span style="color: ${rawColor}; font-weight: bold;">${cleanColor}</span> ball from box ${k}</li>`;
+      }).join("");
+
+      text += `</ul>`;
+
+      text += (isWin
+        ? `<p>With this draw ${agentName} <span class="win">WON!</span></p>`
+        : `<p>With this draw ${agentName} <span class="lose">LOST!</span></p>`);
+
+      return text;
     }
 
-    function renderHeader(urnKeys, showResult = true) {
-        return `
-            <div class="draw-row header-row">
-                ${urnKeys.map((urn) => `<div class="draw-cell"><b>${urn}</b></div>`).join("")}
-                ${showResult ? `<div class="draw-cell"><b>Result</b></div>` : ""}
+    trial(display_element, trial) {
+      const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
+      const draws = trial.draws || [];
+      const totalSamples = trial.max_samples || draws.length;
+      const questionId = trial.question_id || "interactive_explanation";
+      const showRule = trial.show_rule !== false;
+      const agentName = trial.agent_name || "John";
+
+      let sampleIndex = 0;
+      let currentTrialDraw = {};
+      let currentSelection = null;
+      let sampleStartTime = performance.now();
+      const trialStartTime = performance.now();
+      const allSampleSelections = [];
+
+      display_element.innerHTML = `
+        <div id="draw-plugin-container" class="draw-plugin-container interactive-explanation-container">
+          
+          <!-- TOP SEGMENT: Urns & Rules -->
+          <div id="top-segment" class="draw-top-segment">
+            ${showRule && trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
+            <div id="urns-wrapper">${trial.urn_html || ""}</div>
+          </div>
+
+          <!-- OUTCOME DISPLAY & EXPLANATION PANEL -->
+          <div id="outcome-segment" class="draw-outcome-segment">
+            <div class="draw-panel-wrapper">
+            <!-- Dynamic Selection Explanation Output -->
+            <div id="explanation-sentence" class="explanation-sentence-box" style="margin-top: 8px;">
+            <i>Click one of the drawn balls above to select it as the explanation</i>
             </div>
-        `;
-    }
-
-    // Current Interactive Row Renderer
-    function renderCurrentSampleRow(draw, urnKeys, selectedUrns, result, showResult = true) {
-        const isWin = typeof result === "boolean" ? result : result === "win";
-        const selectedSet = new Set(selectedUrns);
-
-        const slotsHTML = urnKeys.map(key => {
-            const color = draw[key] || "";
-            const isSelected = selectedSet.has(key);
             
-            // Red highlight for loss when selected
-            let selectClass = "";
-            let inlineStyle = color ? `background-color: ${color};` : "";
+            <!-- Sample Summary Text (Matches jsInteractiveDrawSingle) -->
+              <div id="feedback-box" class="draw-feedback-text"></div>
+              <div class="explanation-prompt-text" style="margin-top: 12px;">${trial.prompt}</div>
+              
+            </div>
+          </div>
+
+          <!-- ACTION CONTROL SEGMENT -->
+          <div id="action-segment" class="draw-action-segment">
+            <button id="next-sample-btn" class="jspsych-btn" disabled>${trial.next_trial_button_label}</button>
+            <button id="continue-btn" class="jspsych-btn is-hidden">${trial.finish_button_label}</button>
+          </div>
+        </div>
+      `;
+
+      const sentenceEl = display_element.querySelector("#explanation-sentence");
+      const feedbackBox = display_element.querySelector("#feedback-box");
+      const nextSampleBtn = display_element.querySelector("#next-sample-btn");
+      const continueBtn = display_element.querySelector("#continue-btn");
+
+      const finishTrial = () => {
+        display_element.innerHTML = "";
+        this.jsPsych.finishTrial({
+          questionID: questionId,
+          total_samples: totalSamples,
+          completed_samples: sampleIndex,
+          detailed_results: allSampleSelections,
+          total_trial_rt: Math.round(performance.now() - trialStartTime)
+        });
+      };
+
+      const loadAndPopulateSample = () => {
+        currentTrialDraw = draws[sampleIndex];
+        const isWin = trial.rule_fn ? trial.rule_fn(currentTrialDraw) : false;
+
+        // Reset visual selection states on target slots
+        urnKeys.forEach(k => {
+          const slotEl = display_element.querySelector(`#slot-${k}`);
+          if (slotEl) {
+            slotEl.innerHTML = "";
+            slotEl.classList.remove("is-selectable", "is-selected", "is-selected-win", "is-selected-loss");
+          }
+        });
+
+        // Inject sample outcome text (Matches jsInteractiveDrawSingle)
+        feedbackBox.innerHTML = this.renderSampleDescription(currentTrialDraw, urnKeys, agentName, isWin);
+        sentenceEl.innerHTML = `<i>Click one of the drawn balls above to select it as the explanation</i>`;
+        
+        nextSampleBtn.disabled = true;
+        currentSelection = null;
+        sampleStartTime = performance.now();
+
+        // Populate drawn balls into urn slots automatically
+        urnKeys.forEach((urnKey) => {
+          const drawnColor = currentTrialDraw[urnKey];
+          const slotEl = display_element.querySelector(`#slot-${urnKey}`);
+
+          if (slotEl) {
+            const isGrey = (drawnColor === "lightgrey" || drawnColor === "grey" || drawnColor === "#d3d3d3");
+            const displayColor = isGrey ? "#c0c0c0" : drawnColor;
             
-            if (isSelected) {
-                if (showResult && !isWin) {
-                    selectClass = "is-selected is-selected-loss";
-                    inlineStyle += " outline: 3px solid #dc3545; border-color: #dc3545;";
-                } else {
-                    selectClass = "is-selected";
-                }
-            }
+            slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
+            slotEl.classList.add("is-selectable");
+            slotEl.onclick = () => handleExplanationSelection(urnKey, drawnColor, isWin);
+          }
+        });
+      };
 
-            return `
-                <div class="draw-cell">
-                    <div class="ball explanation-selectable-ball ${selectClass}" 
-                         data-urn-key="${key}" 
-                         data-color="${color}" 
-                         role="button" 
-                         tabindex="0" 
-                         aria-pressed="${isSelected}"
-                         title="Click to select or deselect ball ${key}"
-                         style="${inlineStyle}"></div>
-                </div>
-            `;
-        }).join("");
+      const handleExplanationSelection = (urnKey, color, isWin) => {
+        const clickTime = performance.now();
+        const rt = Math.round(clickTime - sampleStartTime);
 
-        const outcomeHTML = showResult 
-            ? `<div class="draw-cell"><b><span class="${isWin ? 'win' : 'lose'}">${isWin ? 'WIN' : 'LOSE'}</span></b></div>` 
-            : "";
+        // Clear target slot visual selection rings
+        urnKeys.forEach(k => {
+          const s = display_element.querySelector(`#slot-${k}`);
+          if (s) s.classList.remove("is-selected", "is-selected-win", "is-selected-loss");
+        });
 
-        return `
-            <div class="draw-table">
-                ${renderHeader(urnKeys, showResult)}
-                <div class="draw-row current-row">
-                    ${slotsHTML}
-                    ${outcomeHTML}
-                </div>
-            </div>
-        `;
-    }
-
-    // History List Renderer with Sticky Header & Explanations included
-    function renderHistoryList(historyEntries, urnKeys, title, showResult, emptyMsg) {
-        if (!historyEntries || historyEntries.length === 0) {
-            return `
-                <div class="draw-panel-wrapper draw-history-panel">
-                    ${title ? `<div class="draw-panel-title">${title}</div>` : ""}
-                    <div class="draw-history-empty">${emptyMsg}</div>
-                </div>
-            `;
+        // Highlight chosen slot
+        const activeSlot = display_element.querySelector(`#slot-${urnKey}`);
+        if (activeSlot) {
+          activeSlot.classList.add("is-selected");
+          activeSlot.classList.add(isWin ? "is-selected-win" : "is-selected-loss");
         }
 
-        const rowsHTML = historyEntries.map((entry, idx) => {
-            const isWin = typeof entry.result === "boolean" ? entry.result : entry.result === "win";
-            const selectedSet = new Set(entry.selected_urns || []);
+        currentSelection = {
+          question_id: questionId,
+          sample_number: sampleIndex + 1,
+          agent_name: agentName,
+          selected_urn: urnKey,
+          selected_color: color,
+          draw_A: currentTrialDraw.A,
+          draw_B: currentTrialDraw.B,
+          draw_C: currentTrialDraw.C,
+          draw_D: currentTrialDraw.D,
+          result: isWin ? "win" : "lose",
+          sample_rt: rt
+        };
 
-            const slotsHTML = urnKeys.map(key => {
-                const color = entry.draw[key] || "";
-                const isSelected = selectedSet.has(key);
-                
-                let selectClass = "";
-                let inlineStyle = color ? `background-color: ${color};` : "";
+        this.jsPsych.data.write({
+          event_type: "ball_selection",
+          ...currentSelection
+        });
 
-                if (isSelected) {
-                    if (showResult && !isWin) {
-                        selectClass = "is-selected is-selected-loss";
-                        inlineStyle += " outline: 3px solid #dc3545; border-color: #dc3545;";
-                    } else {
-                        selectClass = "is-selected";
-                    }
-                }
+        sentenceEl.innerHTML = this.renderExplanationSentence(isWin, color, urnKey, agentName);
+        nextSampleBtn.disabled = false;
+      };
 
-                return `
-                    <div class="draw-cell">
-                        <div class="ball ${selectClass}" style="${inlineStyle}"></div>
-                    </div>
-                `;
-            }).join("");
+      const submitSampleSelection = () => {
+        if (!currentSelection) return;
 
-            const outcomeHTML = showResult 
-                ? `<div class="draw-cell"><b><span class="${isWin ? 'win' : 'lose'}">${isWin ? 'WIN' : 'LOSE'}</span></b></div>` 
-                : "";
+        allSampleSelections.push(currentSelection);
+        sampleIndex += 1;
 
-            const explanationHTML = entry.explanation_text 
-                ? `<div class="history-explanation-text" style="font-size: 0.85em; margin: 4px 8px 8px 8px; color: #555;">${entry.explanation_text}</div>` 
-                : "";
-
-            return `
-                <div class="draw-history-item" data-row-label="history-${idx}">
-                    <div class="draw-row history-row">
-                        ${slotsHTML}
-                        ${outcomeHTML}
-                    </div>
-                    ${explanationHTML}
-                </div>
-            `;
-        }).join("");
-
-        return `
-            <div class="draw-panel-wrapper draw-history-panel">
-                ${title ? `<div class="draw-panel-title">${title} (${historyEntries.length})</div>` : ""}
-                <div class="draw-table">
-                    ${renderHeader(urnKeys, showResult)}
-                    <div class="draw-history-scroll-body">
-                        ${rowsHTML}
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    class ExplanationSelectionPlugin {
-        constructor(jsPsych) {
-            this.jsPsych = jsPsych;
+        if (typeof this.jsPsych.increaseTrialIndex === "function") {
+          this.jsPsych.increaseTrialIndex();
         }
 
-        trial(display_element, trial) {
-            const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
-            const draws = trial.draws || [];
-            const historyEntries = [...(trial.history || [])];
-            const questionId = trial.question_id || "explanation_selection";
-            const autoScroll = trial.auto_scroll !== false;
-            const autoDraw = trial.auto_draw === true;
-            const showRule = trial.show_rule !== false;
-            const showResult = trial.show_result !== false;
-            const allowMultiple = trial.allow_multiple === true; // Default false
-            const totalSamples = trial.max_samples || draws.length;
-
-            let sampleIndex = 0;
-            let currentDraw = null;
-            let currentResult = false;
-            let sampleStartTime = performance.now();
-            const selectedUrns = new Set();
-
-            display_element.innerHTML = `
-                <div id="draw-plugin-container" class="draw-plugin-container">
-                    <div id="top-segment" class="draw-top-segment">
-                        ${trial.urn_html || ""}
-                        ${showRule && trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
-                        
-                        <div class="center-button" id="draw-sample-btn-container" style="${autoDraw ? 'display:none;' : 'display:block;'}">
-                            <button id="draw-btn" class="jspsych-btn">${trial.draw_button_label || "Draw sample"}</button>  
-                            <p id="remaining-samples">${trial.remaining_label || "Remaining samples:"} ${totalSamples}</p>
-                        </div>
-                    </div>
-
-                    <div id="bottom-segment" class="draw-bottom-segment is-hidden">
-                        <div id="bottom-left-plane" class="draw-bottom-left">
-                            <div id="current-draw-container" class="draw-panel-wrapper"></div>
-                            <div id="feedback-box" class="draw-feedback-text"></div>
-                            <div id="explanation-sentence" class="explanation-sentence"></div>
-                            <div id="submit-explanation-container" class="draw-action-segment" style="margin-top: 15px;">
-                                <button id="submit-explanation-btn" class="jspsych-btn" disabled>${trial.submit_button_label || "Submit Explanation"}</button>  
-                            </div>
-                        </div>
-
-                        <div id="bottom-right-plane" class="draw-bottom-right">
-                            <div id="history-container" class="draw-panel-wrapper"></div>
-                        </div>
-                    </div>
-
-                    <div id="action-segment" class="draw-action-segment">
-                        <button id="continue-btn" class="jspsych-btn" style="display: none;">${trial.continue_button_label || "Continue"}</button>  
-                    </div>
-                </div>
-            `;
-
-            const drawBtn = display_element.querySelector("#draw-btn");
-            const drawBtnContainer = display_element.querySelector("#draw-sample-btn-container");
-            const submitExplanationBtn = display_element.querySelector("#submit-explanation-btn");
-            const continueBtn = display_element.querySelector("#continue-btn");
-            const bottomSegment = display_element.querySelector("#bottom-segment");
-            const currentDrawContainer = display_element.querySelector("#current-draw-container");
-            const feedbackBox = display_element.querySelector("#feedback-box");
-            const sentenceBox = display_element.querySelector("#explanation-sentence");
-            const historyContainer = display_element.querySelector("#history-container");
-            const remainingSamples = display_element.querySelector("#remaining-samples");
-
-            historyContainer.innerHTML = renderHistoryList(
-                historyEntries, 
-                urnKeys, 
-                trial.history_title, 
-                showResult, 
-                trial.history_empty_message
-            );
-
-            const updateSelectionSentence = () => {
-                if (!currentDraw) return;
-
-                const descriptions = urnKeys
-                    .filter((urnKey) => selectedUrns.has(urnKey))
-                    .map((urnKey) => describeBall(currentDraw[urnKey], urnKey));
-
-                let feedbackText = `<p>You drew:</p><ul class="draw-feedback-list">` +
-                    urnKeys.map(k => `<li>a <span style="color: ${currentDraw[k]}; font-weight: bold;">${normalizeColor(currentDraw[k])}</span> ball from urn ${k}</li>`).join("") +
-                    `</ul>`;
-
-                if (showResult) {
-                    feedbackText += (currentResult
-                        ? `<p>With this draw <span class="win">YOU WIN!</span></p>`
-                        : `<p>With this draw <span class="lose">YOU LOSE!</span></p>`);
-                    feedbackText += `<p><strong>Why did you ${currentResult ? '<span class="win">win</span>' : '<span class="lose">lose</span>'}?</strong></p>`;
-                } else {
-                    feedbackText += `<p><strong>Which ball(s) explain this draw?</strong></p>`;
-                }
-
-                feedbackBox.innerHTML = feedbackText;
-                sentenceBox.innerHTML = renderSentence(
-                    currentResult,
-                    descriptions,
-                    trial.selection_prompt,
-                    showResult
-                );
-
-                submitExplanationBtn.disabled = selectedUrns.size === 0;
-            };
-
-            const loadSample = () => {
-                if (sampleIndex >= totalSamples) {
-                    finishTrial();
-                    return;
-                }
-
-                currentDraw = draws[sampleIndex];
-                currentResult = trial.rule_fn ? trial.rule_fn(currentDraw) : false;
-                selectedUrns.clear();
-                sampleStartTime = performance.now();
-
-                bottomSegment.classList.remove("is-hidden");
-                if (drawBtnContainer) drawBtnContainer.style.display = "none";
-
-                currentDrawContainer.innerHTML = `
-                    ${trial.current_title ? `<div class="draw-panel-title">${trial.current_title}</div>` : ""}
-                    ${renderCurrentSampleRow(currentDraw, urnKeys, selectedUrns, currentResult, showResult)}
-                `;
-
-                updateSelectionSentence();
-
-                if (autoScroll) {
-                    requestAnimationFrame(() => {
-                        sentenceBox.scrollIntoView({ block: "center", behavior: "smooth" });
-                    });
-                }
-            };
-
-            currentDrawContainer.addEventListener("click", (event) => {
-                const ballElement = event.target.closest(".explanation-selectable-ball");
-                if (!ballElement) return;
-
-                const urnKey = ballElement.dataset.urnKey;
-                if (!urnKey) return;
-
-                if (allowMultiple) {
-                    if (selectedUrns.has(urnKey)) {
-                        selectedUrns.delete(urnKey);
-                    } else {
-                        selectedUrns.add(urnKey);
-                    }
-                } else {
-                    if (selectedUrns.has(urnKey)) {
-                        selectedUrns.clear();
-                    } else {
-                        selectedUrns.clear();
-                        selectedUrns.add(urnKey);
-                    }
-                }
-
-                currentDrawContainer.innerHTML = `
-                    ${trial.current_title ? `<div class="draw-panel-title">${trial.current_title}</div>` : ""}
-                    ${renderCurrentSampleRow(currentDraw, urnKeys, selectedUrns, currentResult, showResult)}
-                `;
-
-                updateSelectionSentence();
-            });
-
-            currentDrawContainer.addEventListener("keydown", (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    const ballElement = event.target.closest(".explanation-selectable-ball");
-                    if (ballElement) {
-                        event.preventDefault();
-                        ballElement.click();
-                    }
-                }
-            });
-
-            if (!autoDraw && drawBtn) {
-                drawBtn.addEventListener("click", loadSample);
-            }
-
-            submitExplanationBtn.addEventListener("click", () => {
-                if (selectedUrns.size === 0) return;
-
-                const drawTime = performance.now();
-                const rt = Math.round(drawTime - sampleStartTime);
-                const selectedKeys = urnKeys.filter((k) => selectedUrns.has(k));
-                const selectedDescriptions = selectedKeys.map((k) => describeBall(currentDraw[k], k));
-                const generatedExplanation = renderSentence(currentResult, selectedDescriptions, trial.selection_prompt, showResult);
-
-                this.jsPsych.data.write({
-                    questionID: questionId,
-                    sample_index: sampleIndex + 1,
-                    draw: currentDraw,
-                    result: showResult ? (currentResult ? "win" : "lose") : undefined,
-                    selected_urns: selectedKeys,
-                    allow_multiple: allowMultiple,
-                    selected_explanation: generatedExplanation,
-                    rt: rt
-                });
-
-                historyEntries.unshift({
-                    draw: currentDraw,
-                    result: currentResult,
-                    selected_urns: selectedKeys,
-                    explanation_text: generatedExplanation
-                });
-
-                historyContainer.innerHTML = renderHistoryList(
-                    historyEntries, 
-                    urnKeys, 
-                    trial.history_title, 
-                    showResult, 
-                    trial.history_empty_message
-                );
-
-                sampleIndex += 1;
-
-                if (sampleIndex >= totalSamples) {
-                    currentDrawContainer.innerHTML = "";
-                    feedbackBox.innerHTML = "<p>All samples completed.</p>";
-                    sentenceBox.innerHTML = "";
-                    submitExplanationBtn.style.display = "none";
-                    if (drawBtnContainer) drawBtnContainer.style.display = "none";
-                    continueBtn.style.display = "inline-block";
-                } else {
-                    if (autoDraw) {
-                        loadSample();
-                    } else {
-                        currentDrawContainer.innerHTML = "";
-                        feedbackBox.innerHTML = "";
-                        sentenceBox.innerHTML = "";
-                        submitExplanationBtn.disabled = true;
-                        if (drawBtnContainer) drawBtnContainer.style.display = "block";
-                        if (remainingSamples) {
-                            remainingSamples.textContent = `${trial.remaining_label || "Remaining samples:"} ${totalSamples - sampleIndex}`;
-                        }
-                    }
-                }
-            });
-
-            const finishTrial = () => {
-                display_element.innerHTML = "";
-                this.jsPsych.finishTrial({
-                    questionID: questionId,
-                    completed_samples: sampleIndex,
-                    total_samples: totalSamples,
-                    history: historyEntries
-                });
-            };
-
-            continueBtn.addEventListener("click", finishTrial);
-
-            if (autoDraw) {
-                loadSample();
-            }
+        if (sampleIndex >= totalSamples) {
+          nextSampleBtn.classList.add("is-hidden");
+          continueBtn.classList.remove("is-hidden");
+          continueBtn.onclick = finishTrial;
+        } else {
+          loadAndPopulateSample();
         }
-    }
+      };
 
-    ExplanationSelectionPlugin.info = info;
-    return ExplanationSelectionPlugin;
+      nextSampleBtn.onclick = submitSampleSelection;
+      loadAndPopulateSample();
+    }
+  }
+
+  InteractiveDrawExplanationPlugin.info = info;
+
+  return InteractiveDrawExplanationPlugin;
 })(jsPsychModule);

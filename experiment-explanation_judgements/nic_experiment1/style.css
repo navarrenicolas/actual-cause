@@ -253,16 +253,6 @@ html {
     margin-bottom: 8px;
 }
 
-/* Row Grid Centering
-.draw-row {
-    display: grid;
-    justify-content: center;
-    justify-items: center;
-    align-items: center;
-    gap: 6px;
-    margin: 0 auto 8px auto;
-} */
-
 .draw-cell {
     display: flex;
     justify-content: center;
@@ -356,15 +346,6 @@ html {
     overflow: hidden; /* Prevent parent window scroll, force panel inner scroll */
 }
 
-/* .draw-panel-wrapper {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
-  background-color: #fcfcfc;
-  min-width: 320px;
-  text-align: center;
-} */
-
 .draw-panel-wrapper {
     display: inline-block;
     margin: 0 auto;
@@ -414,6 +395,56 @@ html {
 .history-row .ball {
     cursor: default;
     pointer-events: none; /* Prevents click/hover interactions on committed history */
+}
+
+/* Selectable Target Slots for Interactive Draw Explanation */
+.urn-slot.is-selectable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.urn-slot.is-selectable:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Selection Highlights for Drawn Slots */
+.urn-slot.is-selected {
+  border-style: solid;
+  border-width: 3px;
+}
+
+.urn-slot.is-selected-win {
+  border-color: #2e7d32;
+  box-shadow: 0 0 10px rgba(46, 125, 50, 0.6);
+}
+
+.urn-slot.is-selected-loss {
+  border-color: #c62828;
+  box-shadow: 0 0 10px rgba(198, 40, 40, 0.6);
+}
+
+/* Dynamic Explanation Sentence Container */
+.explanation-prompt-text {
+  font-size: 14px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.explanation-sentence-box {
+  min-height: 24px;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.explanation-sentence-box .win {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.explanation-sentence-box .lose {
+  color: #c62828;
+  font-weight: bold;
 }
 
 
@@ -569,10 +600,6 @@ span.lose {
 .highlight-box p {
     margin-top: 0;
 }
-
-
-
-
 
 /* ==========================================================================
    9. Buttons & Likert Scale Controls
