@@ -546,28 +546,33 @@ span.lose {
 }
 
 .highlight-box {
-    padding: 25px;
+    width: fit-content;      /* Shrinks the width to fit the content */
+    margin: 20px auto 0;     /* Centers the shrink-wrapped box horizontally */
+    padding: 2px 10px;      /* Adds padding inside the box */
     font-family: Arial, sans-serif;
     line-height: 1.6;
     text-align: center;
     border: 2px solid black;
     background-color: rgb(255, 254, 239);
-    margin: 10px auto 0;  
     border-radius: 8px;  
+    margin-bottom: 20px;
+
 }
 
 .highlight-box h2 {
     text-align: center;
     font-weight: bold;
-    margin-top: 0;
-    margin-bottom: 10px;
     font-size: 20px;
+    margin-bottom: 0;
 }
 
 .highlight-box p {
-    margin-top: 20px;
-    margin-bottom: 0;
+    margin-top: 0;
 }
+
+
+
+
 
 /* ==========================================================================
    9. Buttons & Likert Scale Controls

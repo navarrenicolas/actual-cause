@@ -58,8 +58,23 @@ const fixedFamiliarisationDraws = fixedFamiliarisation[selectedRuleKey].map(draw
 }));
 
 const familiarisationDraws = shuffleArray(fixedFamiliarisationDraws.slice());
+
+// ===== Prediction Draws =====
+// order the map with the probability order
+const fixedPredictionDraws = fixedPrediction[selectedRuleKey].map(draw => ({
+  [highKey]: draw.high ? urnMap[highKey].color : 'lightgrey',
+  [medHighKey]: draw.medHigh ? urnMap[medHighKey].color : 'lightgrey',
+  [medLowKey]: draw.medLow ? urnMap[medLowKey].color : 'lightgrey',
+  [lowKey]: draw.low ? urnMap[lowKey].color : 'lightgrey'
+}));
+
+const predictionDraws = shuffleArray(fixedPredictionDraws.slice());
+
+
 const rawRuleDescription = fillRuleTemplate(ruleTemplates[selectedRuleKey], labelByRole);
-const ruleText = `<b>RULE:</b> To win, you must draw <strong>${colorizeWithSpans(rawRuleDescription)}.</strong>`;
+const ruleText = `<h2> RULE </h2>  <p> <strong>  To win, you must draw ${colorizeWithSpans(rawRuleDescription)}</strong> </p>`;
+
+const ruleBox = `<div class="highlight-box"> ${ruleText} </div>`;
 
 // ===== Helper Functions =====
 function rule(draw) {
@@ -95,11 +110,24 @@ function generateUrnBallsData(urnKey, total = 20) {
   }));
 }
 
-function renderUrnsHTML(interactive = false) {
+// Step 1: Pre-generate or centralize the state elsewhere
+function getOrCreateUrnsData() {
+  const urnsData = {};
+  Object.keys(urnMap).forEach(urnKey => {
+    urnsData[urnKey] = generateUrnBallsData(urnKey);
+  });
+  return urnsData;
+}
+
+// Global or shared state instance
+const sharedUrnsData = getOrCreateUrnsData();
+
+// Step 2: Accept the shared data in your render function
+function renderUrnsHTML(urnsData = sharedUrnsData, interactive = false) {
   return `<div class="urn-display">
     ${Object.keys(urnMap).map(urnKey => {
-      const ballsData = generateUrnBallsData(urnKey);
-      
+      // Use the shared data passed into the function instead of calling generateUrnBallsData()
+      const ballsData = urnsData[urnKey] || [];
       const ballsHTML = ballsData.map(b => {
         const isGrey = (b.color === "lightgrey" || b.color === "grey" || b.color === "#d3d3d3");
         const ballColor = isGrey ? "#c0c0c0" : b.color;
@@ -111,20 +139,20 @@ function renderUrnsHTML(interactive = false) {
                   ${urnLabels[urnKey]}
                 </div> 
                 <div class="urn" id="urn-container-${urnKey}">${ballsHTML}</div>
-                ${interactive ? `
-                  <div class="urn-controls-compact">
-                    <button class="push-draw-btn" data-urn="${urnKey}">DRAW</button>
-                    <div class="urn-slot" id="slot-${urnKey}"></div>
-                  </div>
-                ` : ''}
+                <div class="urn-controls-compact">
+                  <button class="push-draw-btn" data-urn="${urnKey}" ${interactive ? '' : 'disabled'}>DRAW</button>
+                  <div class="urn-slot" id="slot-${urnKey}"></div>
+                </div>
               </div>`;
     }).join('')}
   </div>`;
 }
 
 // Interactive version for your new trial
-const interactiveUrns = renderUrnsHTML(true);
-const staticUrns = renderUrnsHTML(false);
+const staticUrns = renderUrnsHTML(sharedUrnsData, false);
+const interactiveUrns = renderUrnsHTML(sharedUrnsData, true);
+
+
 
 
 function generateAllDraws() {
@@ -199,68 +227,69 @@ jsPsych.data.addProperties({
 const timeline = [];
 
 // Consent
-timeline.push(consentTrial);
+// timeline.push(consentTrial);
   
-// Prolific ID
-timeline.push({
-  type: jsPsychSurveyText,
-  questions: [
-    {
-      prompt: "Please enter your Prolific ID:",
-      name: "prolific_id",
-      required: true
-    }
-  ],
-  data: { question_id: "prolific_entry" },
-  on_finish: function(data) {
-    jsPsych.getDisplayElement().innerHTML = ''; 
-  }
-});
+// // Prolific ID
+// timeline.push({
+//   type: jsPsychSurveyText,
+//   questions: [
+//     {
+//       prompt: "Please enter your Prolific ID:",
+//       name: "prolific_id",
+//       required: true
+//     }
+//   ],
+//   data: { question_id: "prolific_entry" },
+//   on_finish: function(data) {
+//     jsPsych.getDisplayElement().innerHTML = ''; 
+//   }
+// });
 
-// Instruction trial
-timeline.push({
-  type: jsPsychInstructions,
-  pages: [`
-    <div class="instructions-container">
-      <h2>Instructions 1/2</h2>
-      <p>In this study, you will be interacting with four boxes, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>, pictured below.
-      The boxes hold a mix of balls: in each box, some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.
-      Notice that some boxes have more colored balls than others making the chances of getting a colored ball from each box different.
-      </p>
-      <p>
-      One ball can be pulled out at random from each of four different boxes.
-      </p>
-      <br>
-      ${staticUrns}
-    </div>
-  `,
-    `
-  <div class="instructions-container">
-  <h2>Instructions 2/2</h2>
-  <p>In the following task, you will see a <b>Draw</b> button below every box. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next phase.</p>
-  <p>
-  Drawing a ball from all 4 boxes presents a particular trial scenario.
-  Each trial will produce a result: a <span class="win">win</span> or a <span class="lose">loss</span> which is determined by a certain rule.  
-  The rule determines what combination of colored balls is needed to win.
-  If the rule is not satisfied, the trial will result in a loss. 
-  Sometimes several combinations are possible to make a win, and sometimes only one combination is necessary. 
-  </p>
-  <p>
-  In the following task you will be introduced to a new rule. You will have 10 trials to try drawing samples and understand how the rule works in different scenarios. Click 'Next' when you are ready to try drawing samples.</p>
-  <br>
-  ${interactiveUrns}
-  </div>
+// // Instruction trial
+// timeline.push({
+//   type: jsPsychInstructions,
+//   pages: [`
+//     <div class="instructions-container">
+//       <h2>Instructions 1/2</h2>
+//       <p>In this study, you will be interacting with four boxes, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>, pictured below.
+//       The boxes hold a mix of balls: in each box, some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.
+//       Notice that some boxes have more colored balls than others making the chances of getting a colored ball from each box different.
+//       </p>
+//       <p>
+//       One ball can be pulled out at random from each of four different boxes.
+//       </p>
+//       <br>
+//       ${staticUrns}
+//     </div>
+//   `,
+//     `
+//   <div class="instructions-container">
+//   <h2>Instructions 2/2</h2>
+//   <p>In the following task, you will see a <b>Draw</b> button below every box. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next phase.</p>
+//   <p>
+//   Drawing a ball from all 4 boxes presents a particular trial scenario.
+//   Each trial will produce a result: a <span class="win">win</span> or a <span class="lose">loss</span> which is determined by a certain rule.  
+//   The rule determines what combination of colored balls is needed to win.
+//   If the rule is not satisfied, the trial will result in a loss. 
+//   Sometimes several combinations are possible to make a win, and sometimes only one combination is necessary. 
+//   </p>
+//   <p>
+//   In the following task you will be introduced to a new rule. You will have 10 trials to try drawing samples and understand how the rule works in different scenarios. Click 'Next' when you are ready to try drawing samples.</p>
+//   <br>
+//   ${interactiveUrns}
+//   </div>
 
-    `
+//     `
   
-],
-  show_clickable_nav: true,
-  data: { question_id: "instructions_familiarisation" }
-});
+// ],
+//   show_clickable_nav: true,
+//   data: { question_id: "instructions_familiarisation" }
+// });
+
 // Familiarisation trial
 timeline.push({
   type: jsInteractiveDrawSingle,
-  rule_text: `<p id="rule-text">${ruleText}</p>`,
+  rule_text: ruleBox,
   urn_html: interactiveUrns,
   show_result: true,
   draws: familiarisationDraws,
@@ -303,7 +332,7 @@ timeline.push({
   type: jsPredictionTable,
   rule_text: `<p id = "rule-text">${ruleText}</p>`,
   urn_html: renderUrnsHTML(),
-  draws: testDraws,
+  draws: predictionDraws,
   urn_keys: ["A", "B", "C", "D"],
   rule_fn: rule,
   question_id: "comprehension_rule",
@@ -455,7 +484,7 @@ timeline.push({
   <div class="instructions-container">
   <h2>You are now ready for the experiment!</h2>
     <p> In the following task you will see several scenarios that were drawn by another player, John, who <i>does not know the rule of the game</i>.
-    With each sample draw, John will ask why he won or lost. Your task is to select the ball that best explains the result.
+    With each sample draw, John will ask why he won or lost.
     </p>
     <p>
     Your task is to select the ball that best explains the result.

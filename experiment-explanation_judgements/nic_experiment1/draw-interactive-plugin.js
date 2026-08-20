@@ -105,8 +105,8 @@ var jsInteractiveDrawSingle = (function (jspsych) {
           
           <!-- TOP SEGMENT: Urns & Rules -->
           <div id="top-segment" class="draw-top-segment">
-            <div id="urns-wrapper">${trial.urn_html || ""}</div>
             ${showRule && trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
+            <div id="urns-wrapper">${trial.urn_html || ""}</div>
             
             <div class="counter-display">
               <p id="remaining-samples">${trial.remaining_label} ${totalSamples - sampleIndex}</p>

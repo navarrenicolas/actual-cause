@@ -90,6 +90,44 @@ const fixedFamiliarisation = {
   ]
 };
 
+const fixedPrediction = {
+  rule1: [ // (A and D) or C
+    { high: 1, medHigh: 1, medLow: 0, low: 1 }, 
+    { high: 0, medHigh: 0, medLow: 0, low: 1 }, 
+    { high: 1, medHigh: 1, medLow: 1, low: 1 }, 
+    { high: 0, medHigh: 0, medLow: 0, low: 0 }, 
+    { high: 1, medHigh: 1, medLow: 1, low: 0 } 
+  ],
+  rule2: [ // (A and C) or (D and C)
+    { high: 1, medHigh: 0, medLow: 1, low: 1 }, 
+    { high: 0, medHigh: 1, medLow: 1, low: 0 }, 
+    { high: 1, medHigh: 1, medLow: 1, low: 0 }, 
+    { high: 1, medHigh: 1, medLow: 0, low: 1 }, 
+    { high: 0, medHigh: 0, medLow: 1, low: 1 }
+  ],
+  rule3: [ // A and B and D
+    { high: 1, medHigh: 1, medLow: 0, low: 1 }, 
+    { high: 0, medHigh: 1, medLow: 1, low: 1 }, 
+    { high: 1, medHigh: 1, medLow: 1, low: 0 }, 
+    { high: 1, medHigh: 0, medLow: 0, low: 0 }, 
+    { high: 1, medHigh: 0, medLow: 0, low: 1 } 
+  ],
+  rule4: [ // A or B or D (high, medHigh, or low)
+    { high: 1, medHigh: 1, medLow: 0, low: 0 }, 
+    { high: 1, medHigh: 0, medLow: 0, low: 0 }, 
+    { high: 0, medHigh: 0, medLow: 1, low: 0 },  
+    { high: 1, medHigh: 1, medLow: 0, low: 1 }, 
+    { high: 1, medHigh: 1, medLow: 0, low: 0 } 
+  ],
+  rule5: [ // A xor C (either high or medLow, not both)
+    { high: 1, medHigh: 0, medLow: 1, low: 0 }, 
+    { high: 1, medHigh: 1, medLow: 0, low: 1 }, 
+    { high: 0, medHigh: 1, medLow: 1, low: 0 }, 
+    { high: 0, medHigh: 1, medLow: 0, low: 0 }, 
+    { high: 1, medHigh: 1, medLow: 1, low: 0 } 
+  ]
+};
+
 // ===== Text Formatting Helpers =====
 const getArticle = (word) => {
   const vowels = ['a', 'e', 'i', 'o', 'u'];
