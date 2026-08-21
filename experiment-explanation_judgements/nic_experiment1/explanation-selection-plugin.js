@@ -1,6 +1,6 @@
 /**
  * jsPsych plugin for Pre-Sampled Urn Outcome Explanation
- * Matches the feedback text style and formatting of jsInteractiveDrawSingle.
+ * Strictly relies on window.UrnUtils for color matching, probability calculation, and summary rendering.
  */
 var jsPsychInteractiveDrawExplanation = (function (jspsych) {
   "use strict";
@@ -22,7 +22,7 @@ var jsPsychInteractiveDrawExplanation = (function (jspsych) {
       },
       urn_map: {
         type: jspsych.ParameterType.OBJECT,
-        default: null // e.g. { A: { color: "yellow", prob: 0.8 }, B: { color: "blue", prob: 0.5 }, ... }
+        default: null
       },
       draws: {
         type: jspsych.ParameterType.COMPLEX,
@@ -66,105 +66,18 @@ var jsPsychInteractiveDrawExplanation = (function (jspsych) {
       this.jsPsych = jsPsych;
     }
 
-    normalizeColor(color) {
-      if (!color) return "";
-      let clean = color.replace("light", "").replace("hot", "").toLowerCase().trim();
-      if (clean === "grey" || clean === "#d3d3d3") return "grey";
-      return clean;
-    }
-
-    getArticle(word) {
-      return /^[aeiou]/i.test(word) ? "an" : "a";
-    }
-
-    // Compute joint probability percentage for the current draw combination
-    computeDrawProbability(draw, urnMap) {
-      if (!urnMap) return null;
-      let jointProb = 1.0;
-      for (const urnKey in urnMap) {
-        const urnColor = this.normalizeColor(urnMap[urnKey].color);
-        const urnProb = urnMap[urnKey].prob;
-        const drawColor = this.normalizeColor(draw[urnKey]);
-        const isColored = drawColor === urnColor;
-        jointProb *= isColored ? urnProb : (1 - urnProb);
-      }
-      return Math.round(jointProb * 100);
-    }
-
-    // Dynamic selection explanation text placed directly below the urns
     renderExplanationSentence(isWin, color, urnKey, agentName) {
-      const readableColor = this.normalizeColor(color);
-      const article = this.getArticle(readableColor);
-      const isGrey = readableColor === "grey";
-      const displayColor = isGrey ? "#888888" : color;
+      const utils = window.UrnUtils;
+      const readableColor = utils.normalizeColor(color);
+      const displayColor = readableColor === "grey" ? "#888888" : readableColor;
       const outcomeText = isWin ? "won" : "lost";
       const outcomeClass = isWin ? "win" : "lose";
 
       return `${agentName} <span class="${outcomeClass}">${outcomeText}</span> because of the <span style="color: ${displayColor}; font-weight: bold;">${readableColor}</span> ball from box ${urnKey}.`;
     }
 
-    // Sample summary formatted as a single sentence string
-    renderSampleDescription(drawObj, urnKeys, agentName, isWin, urnMap) {
-      const items = urnKeys.map(k => {
-        const rawColor = drawObj[k];
-        const cleanColor = this.normalizeColor(rawColor);
-        const article = this.getArticle(cleanColor);
-        const isGrey = cleanColor === "grey";
-        const displayColor = isGrey ? "#888888" : rawColor;
-
-        return `${article} <span style="color: ${displayColor}; font-weight: bold;">${cleanColor}</span> ball from box ${k}`;
-      });
-
-      // Join items with commas and "and"
-      let drawListSentence = "";
-      if (items.length === 1) {
-        drawListSentence = items[0];
-      } else if (items.length === 2) {
-        drawListSentence = items.join(" and ");
-      } else {
-        drawListSentence = items.slice(0, -1).join(", ") + ", and " + items[items.length - 1];
-      }
-
-      let text = ``;
-      
-      
-      
-      
-      // Append probability calculation if urnMap parameter is provided
-      const probPct = this.computeDrawProbability(drawObj, urnMap);
-      if (probPct !== null) {
-          text += `<p style= "text-align: center;"> The probability of drawing these balls from the boxes is <b>${probPct}</b>%. <p>`;
-        }
-        
-        text += `<p>In this trial, ${agentName} drew ${drawListSentence}. 
-          With this draw ${agentName} ${isWin ? '<span class="win">won</span>' : '<span class="lose">lost</span>'}.
-          </p>`;
-
-      return text;
-    }
-
-    // Utility to match drawn color values against element styles/attributes
-    matchesColor(element, targetColor) {
-      const cleanTarget = this.normalizeColor(targetColor);
-      
-      const inlineStyle = (element.style.backgroundColor || "").toLowerCase();
-      const dataColor = (element.getAttribute("data-color") || "").toLowerCase();
-      const className = (element.className || "").toLowerCase();
-
-      if (inlineStyle.includes(cleanTarget) || dataColor.includes(cleanTarget) || className.includes(cleanTarget)) {
-        return true;
-      }
-
-      if (cleanTarget === "grey") {
-        if (inlineStyle.includes("rgb(211, 211, 211)") || inlineStyle.includes("d3d3d3") || inlineStyle.includes("c0c0c0")) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
     trial(display_element, trial) {
+      const utils = window.UrnUtils;
       const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
       const draws = trial.draws || [];
       const totalSamples = trial.max_samples || draws.length;
@@ -180,37 +93,26 @@ var jsPsychInteractiveDrawExplanation = (function (jspsych) {
       const allSampleSelections = [];
 
       display_element.innerHTML = `
-        
-
         <div id="draw-plugin-container" class="draw-plugin-container interactive-explanation-container">
           
-          <!-- TOP SEGMENT: Urns & Dynamic Large Explanation -->
           <div id="top-segment" class="draw-top-segment">
             ${showRule && trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
             <div id="urns-wrapper">${trial.urn_html || ""}</div>
-            
           </div>
 
-          <!-- OUTCOME DISPLAY & EXPLANATION PANEL -->
           <div id="outcome-segment" class="draw-outcome-segment">
             <div class="draw-panel-wrapper">
-              
-              <!-- Sample Summary Text -->
               <div id="feedback-box" class="draw-feedback-text"></div>
-              
-              <!-- Dynamic Large Win/Loss Prompt Heading -->
               <div id="prompt-heading" class="explanation-prompt-heading"></div>
               
-              <!-- SMALL ITALIC SELECTION PROMPT -->
               <div id="prompt-italic-hint" class="explanation-hint-small">
                 Click one of the drawn balls above to select it as the explanation
               </div>
-              <!-- LARGE EXPLANATION SENTENCE (Appears directly below Urns upon selection) -->
-            <div id="explanation-sentence" class="explanation-sentence" is-hidden"></div>
+
+              <div id="explanation-sentence" class="explanation-sentence is-hidden"></div>
             </div>
           </div>
 
-          <!-- ACTION CONTROL SEGMENT -->
           <div id="action-segment" class="draw-action-segment">
             <button id="next-sample-btn" class="jspsych-btn" disabled>${trial.next_trial_button_label}</button>
             <button id="continue-btn" class="jspsych-btn is-hidden">${trial.finish_button_label}</button>
@@ -240,12 +142,10 @@ var jsPsychInteractiveDrawExplanation = (function (jspsych) {
         currentTrialDraw = draws[sampleIndex];
         const isWin = trial.rule_fn ? trial.rule_fn(currentTrialDraw) : false;
 
-        // Restore hidden balls from previous samples
         display_element.querySelectorAll(".drawn-hidden").forEach(el => {
           el.classList.remove("drawn-hidden");
         });
 
-        // Reset visual selection states on target slots
         urnKeys.forEach(k => {
           const slotEl = display_element.querySelector(`#slot-${k}`);
           if (slotEl) {
@@ -254,15 +154,12 @@ var jsPsychInteractiveDrawExplanation = (function (jspsych) {
           }
         });
 
-        // Inject sample outcome sentence & probability
-        feedbackBox.innerHTML = this.renderSampleDescription(currentTrialDraw, urnKeys, agentName, isWin, trial.urn_map);
+        feedbackBox.innerHTML = utils.renderSampleDescription(currentTrialDraw, urnKeys, agentName, isWin, trial.urn_map, true);
         
-        // Dynamically format prompt heading in large text matching explanation font size
         promptHeadingEl.innerHTML = isWin 
           ? `Why did ${agentName} <span class="win">win</span>?`
           : `Why did ${agentName} <span class="lose">lose</span>?`;
 
-        // Reset explanation sentence & show initial bottom hint
         sentenceEl.innerHTML = "";
         sentenceEl.classList.add("is-hidden");
         hintEl.innerHTML = "Click one of the drawn balls above to select it as the explanation";
@@ -272,29 +169,26 @@ var jsPsychInteractiveDrawExplanation = (function (jspsych) {
         currentSelection = null;
         sampleStartTime = performance.now();
 
-        // Populate drawn balls into slots & visually remove matching ball from urn
         urnKeys.forEach((urnKey) => {
           const drawnColor = currentTrialDraw[urnKey];
           const slotEl = display_element.querySelector(`#slot-${urnKey}`);
 
           if (slotEl) {
-            const cleanColor = this.normalizeColor(drawnColor);
-            const isGrey = cleanColor === "grey";
-            const displayColor = isGrey ? "#c0c0c0" : drawnColor;
+            const cleanColor = utils.normalizeColor(drawnColor);
+            const displayColor = cleanColor === "grey" ? "#c0c0c0" : cleanColor;
             
             slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
             slotEl.classList.add("is-selectable");
             slotEl.onclick = () => handleExplanationSelection(urnKey, drawnColor, isWin);
           }
 
-          // Search urn container scope for matching balls inside the urn grid
           let urnContainer = display_element.querySelector(`#urn-${urnKey}`) || 
                              display_element.querySelector(`[data-urn="${urnKey}"]`) ||
                              display_element.querySelectorAll(".urn")[urnKeys.indexOf(urnKey)];
 
           if (urnContainer) {
             const candidateBalls = Array.from(urnContainer.querySelectorAll(".ball")).filter(b => 
-              this.matchesColor(b, drawnColor) && 
+              utils.matchesColor(b, drawnColor) && 
               !b.classList.contains("drawn-hidden") &&
               !b.closest(".urn-slot")
             );
@@ -311,13 +205,11 @@ var jsPsychInteractiveDrawExplanation = (function (jspsych) {
         const clickTime = performance.now();
         const rt = Math.round(clickTime - sampleStartTime);
 
-        // Clear target slot visual selection rings
         urnKeys.forEach(k => {
           const s = display_element.querySelector(`#slot-${k}`);
           if (s) s.classList.remove("is-selected", "is-selected-win", "is-selected-loss");
         });
 
-        // Highlight chosen slot
         const activeSlot = display_element.querySelector(`#slot-${urnKey}`);
         if (activeSlot) {
           activeSlot.classList.add("is-selected");
@@ -343,7 +235,6 @@ var jsPsychInteractiveDrawExplanation = (function (jspsych) {
           ...currentSelection
         });
 
-        // Render explanation sentence in large text below urns & hide bottom hint
         sentenceEl.innerHTML = this.renderExplanationSentence(isWin, color, urnKey, agentName);
         sentenceEl.classList.remove("is-hidden");
         hintEl.innerHTML = "";

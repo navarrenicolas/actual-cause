@@ -1,3 +1,7 @@
+/**
+ * jsPsych plugin for Interactive Single Urn Draw Trial
+ * Uses shared UrnUtils to calculate probability and render draw summary descriptions.
+ */
 var jsInteractiveDrawSingle = (function (jspsych) {
   "use strict";
 
@@ -20,6 +24,10 @@ var jsInteractiveDrawSingle = (function (jspsych) {
         type: jspsych.ParameterType.HTML_STRING,
         default: ""
       },
+      urn_map: {
+        type: jspsych.ParameterType.OBJECT,
+        default: null
+      },
       draws: {
         type: jspsych.ParameterType.COMPLEX,
         array: true,
@@ -29,6 +37,10 @@ var jsInteractiveDrawSingle = (function (jspsych) {
         type: jspsych.ParameterType.STRING,
         array: true,
         default: ["A", "B", "C", "D"]
+      },
+      agent_name: {
+        type: jspsych.ParameterType.STRING,
+        default: "You"
       },
       question_id: {
         type: jspsych.ParameterType.STRING,
@@ -61,40 +73,20 @@ var jsInteractiveDrawSingle = (function (jspsych) {
     }
   };
 
-  function renderHeader(urnKeys, showResult = true) {
-    return `
-      <div class="draw-row">
-        ${urnKeys.map((urn) => `<div class="draw-cell"><b>${urn}</b></div>`).join("")}
-        ${showResult ? `<div class="draw-cell"><b>Result</b></div>` : ""}
-      </div>
-    `;
-  }
-
-  function renderRow(draw, urnKeys, result, showResult = true) {
-    return `
-      <div class="draw-row" data-row-label="current">
-        ${urnKeys.map((urn) => {
-          const isGrey = (draw[urn] === 'lightgrey' || draw[urn] === 'grey' || draw[urn] === '#d3d3d3');
-          const col = isGrey ? '#c0c0c0' : draw[urn];
-          return `<div class="draw-cell"><div class="ball" style="background-color:${col}"></div></div>`;
-        }).join("")}
-        ${showResult ? `<div class="draw-cell"><b><span class="${result ? 'win' : 'lose'}">${result ? 'WIN' : 'LOSE'}</span></b></div>` : ""}
-      </div>
-    `;
-  }
-
   class InteractiveDrawSinglePlugin {
     constructor(jsPsych) {
       this.jsPsych = jsPsych;
     }
 
     trial(display_element, trial) {
+      const utils = window.UrnUtils;
       const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
       const draws = trial.draws || [];
       const totalSamples = trial.max_samples || draws.length;
       const questionId = trial.question_id || "familiarisation";
       const showRule = trial.show_rule !== false;
       const showResult = trial.show_result !== false;
+      const agentName = trial.agent_name || "You";
 
       let sampleIndex = 0;
       let currentTrialDraw = {};
@@ -103,7 +95,6 @@ var jsInteractiveDrawSingle = (function (jspsych) {
       display_element.innerHTML = `
         <div id="draw-plugin-container" class="draw-plugin-container">
           
-          <!-- TOP SEGMENT: Urns & Rules -->
           <div id="top-segment" class="draw-top-segment">
             ${showRule && trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
             <div id="urns-wrapper">${trial.urn_html || ""}</div>
@@ -113,16 +104,13 @@ var jsInteractiveDrawSingle = (function (jspsych) {
             </div>
           </div>
 
-          <!-- SINGLE OUTCOME DISPLAY PANEL -->
           <div id="outcome-segment" class="draw-outcome-segment is-hidden">
             <div class="draw-panel-wrapper">
-              <div class="draw-panel-title">${trial.current_title}</div>
-              <div id="current-draw-table" class="draw-table"></div>
+              ${trial.current_title ? `<div class="draw-panel-title">${trial.current_title}</div>` : ""}
               <div id="feedback-box" class="draw-feedback-text"></div>
             </div>
           </div>
 
-          <!-- ACTION CONTROL SEGMENT -->
           <div id="action-segment" class="draw-action-segment">
             <button id="next-sample-btn" class="jspsych-btn is-hidden">${trial.next_trial_button_label}</button>
             <button id="continue-btn" class="jspsych-btn is-hidden">${trial.finish_button_label}</button>
@@ -131,7 +119,6 @@ var jsInteractiveDrawSingle = (function (jspsych) {
       `;
 
       const outcomeSegment = display_element.querySelector("#outcome-segment");
-      const currentDrawTable = display_element.querySelector("#current-draw-table");
       const feedbackBox = display_element.querySelector("#feedback-box");
       const nextSampleBtn = display_element.querySelector("#next-sample-btn");
       const continueBtn = display_element.querySelector("#continue-btn");
@@ -148,7 +135,16 @@ var jsInteractiveDrawSingle = (function (jspsych) {
 
       const resetUrnsForNextTrial = () => {
         const urnsWrapper = display_element.querySelector("#urns-wrapper");
-        urnsWrapper.innerHTML = renderUrnsHTML(true);
+        urnsWrapper.innerHTML = trial.urn_html || "";
+
+        urnKeys.forEach(k => {
+          const slotEl = display_element.querySelector(`#slot-${k}`);
+          if (slotEl) slotEl.innerHTML = "";
+        });
+
+        display_element.querySelectorAll(".drawn-hidden").forEach(el => {
+          el.classList.remove("drawn-hidden");
+        });
 
         bindButtonHandlers();
 
@@ -167,28 +163,22 @@ var jsInteractiveDrawSingle = (function (jspsych) {
         const drawnColor = targetDraw[urnKey];
         currentTrialDraw[urnKey] = drawnColor;
 
-        const urnContainer = display_element.querySelector(`#urn-container-${urnKey}`);
+        const urnContainer = display_element.querySelector(`#urn-container-${urnKey}`) || 
+                             display_element.querySelector(`#urn-${urnKey}`) ||
+                             display_element.querySelector(`[data-urn="${urnKey}"]`);
         const slotEl = display_element.querySelector(`#slot-${urnKey}`);
 
         if (urnContainer && slotEl) {
           const balls = Array.from(urnContainer.querySelectorAll(".ball"));
           
-          // Randomly select one matching ball from all currently visible/available options
           const matchingBalls = balls.filter(b => {
-            if (b.classList.contains("drawn-hidden")) return false;
-            const bCol = b.getAttribute("data-color");
-            return bCol === drawnColor || (drawnColor === "lightgrey" && (bCol === "grey" || bCol === "#d3d3d3"));
+            if (b.classList.contains("drawn-hidden") || b.closest(".urn-slot")) return false;
+            return utils.matchesColor(b, drawnColor);
           });
 
-          let targetBall = null;
-          if (matchingBalls.length > 0) {
-            targetBall = matchingBalls[Math.floor(Math.random() * matchingBalls.length)];
-          } else {
-            const remainingBalls = balls.filter(b => !b.classList.contains("drawn-hidden"));
-            if (remainingBalls.length > 0) {
-              targetBall = remainingBalls[Math.floor(Math.random() * remainingBalls.length)];
-            }
-          }
+          let targetBall = matchingBalls.length > 0 
+            ? matchingBalls[Math.floor(Math.random() * matchingBalls.length)]
+            : balls.find(b => !b.classList.contains("drawn-hidden") && !b.closest(".urn-slot"));
 
           if (targetBall) {
             const ballRect = targetBall.getBoundingClientRect();
@@ -214,9 +204,10 @@ var jsInteractiveDrawSingle = (function (jspsych) {
 
             setTimeout(() => {
               clone.remove();
-              const isGrey = (drawnColor === "lightgrey" || drawnColor === "grey" || drawnColor === "#d3d3d3");
-              const displayColor = isGrey ? "#c0c0c0" : drawnColor;
-              slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};"></div>`;
+              const cleanColor = utils.normalizeColor(drawnColor);
+              const displayColor = cleanColor === "grey" ? "#c0c0c0" : cleanColor;
+
+              slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
 
               checkTrialCompletion();
             }, 450);
@@ -253,21 +244,16 @@ var jsInteractiveDrawSingle = (function (jspsych) {
             rt: rt
           });
 
-          currentDrawTable.innerHTML = renderHeader(urnKeys, showResult) + renderRow(completedDraw, urnKeys, result, showResult);
+          feedbackBox.innerHTML = utils.renderSampleDescription(
+            completedDraw, 
+            urnKeys, 
+            agentName, 
+            result, 
+            trial.urn_map, 
+            showResult
+          );
 
-          let feedbackText = `<br><p>You drew:</p><ul class="draw-feedback-list">` +
-            urnKeys.map(k => `<li>a <span style="color: ${completedDraw[k]}; font-weight: bold;">${completedDraw[k].replace('light', '')}</span> ball from box ${k}</li>`).join("") +
-            `</ul>`;
-
-          if (showResult) {
-            feedbackText += (result
-              ? `<p>With this draw <span class="win">YOU WIN!</span></p>`
-              : `<p>With this draw <span class="lose">YOU LOSE!</span></p>`);
-          }
-
-          feedbackBox.innerHTML = feedbackText;
           remainingSamples.textContent = `${trial.remaining_label} ${Math.max(totalSamples - sampleIndex, 0)}`;
-
           outcomeSegment.classList.remove("is-hidden");
 
           if (sampleIndex >= totalSamples) {

@@ -289,6 +289,7 @@ timeline.push({
   type: jsInteractiveDrawSingle,
   rule_text: ruleBox,
   urn_html: interactiveUrns,
+  urn_map: urnMap,
   show_result: true,
   draws: familiarisationDraws,
   urn_keys: ["A", "B", "C", "D"],
