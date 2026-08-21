@@ -536,11 +536,11 @@ timeline.push({
   urn_html: staticUrns, // Pre-rendered Urns with static target slots
   agent_name: "John", // Sets subject name for narrative text
   rule_text: ruleBox,
-  draws: allDraws, // Array of draw objects e.g., [{A: "hotpink", B: "lightgrey", C: "lightgrey", D: "lightgrey"}, ...]
+  draws: allDraws, 
+  urn_map: urnMap,
   urn_keys: ["A", "B", "C", "D"],
   max_samples: allDraws.length,
   rule_fn: rule,
-  prompt: `<b>Why did John win or lose? Select the ball that explains the outcome:</b>`,
   data: {
     question_id: "interactive_explanation_selection"
   }
