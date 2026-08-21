@@ -129,16 +129,16 @@ var jsPsychInteractiveDrawExplanation = (function (jspsych) {
       
       
       
-      text += `<p>In this trial, ${agentName} drew ${drawListSentence}. 
-        With this draw ${agentName} ${isWin ? '<span class="win">won</span>' : '<span class="lose">lost</span>'}.
-        </p>`;
-
-        // Append probability calculation if urnMap parameter is provided
-        const probPct = this.computeDrawProbability(drawObj, urnMap);
-        if (probPct !== null) {
-            text += `<p style= "text-align: center;"> The probability of drawing these balls from the boxes is <b>${probPct}</b>%. <p>`;
+      
+      // Append probability calculation if urnMap parameter is provided
+      const probPct = this.computeDrawProbability(drawObj, urnMap);
+      if (probPct !== null) {
+          text += `<p style= "text-align: center;"> The probability of drawing these balls from the boxes is <b>${probPct}</b>%. <p>`;
         }
         
+        text += `<p>In this trial, ${agentName} drew ${drawListSentence}. 
+          With this draw ${agentName} ${isWin ? '<span class="win">won</span>' : '<span class="lose">lost</span>'}.
+          </p>`;
 
       return text;
     }

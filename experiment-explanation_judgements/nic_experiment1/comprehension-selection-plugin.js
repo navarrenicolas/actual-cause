@@ -1,3 +1,7 @@
+/**
+ * jsPsych plugin for Comprehension Ball Selection
+ * Uses interactive pre-sampled urn slots and provides draw description & probability feedback.
+ */
 var jsComprehensionSelection = (function (jspsych) {
   "use strict";
 
@@ -8,9 +12,17 @@ var jsComprehensionSelection = (function (jspsych) {
         type: jspsych.ParameterType.HTML_STRING,
         default: ""
       },
+      show_rule: {
+        type: jspsych.ParameterType.BOOL,
+        default: true
+      },
       urn_html: {
         type: jspsych.ParameterType.HTML_STRING,
         default: ""
+      },
+      urn_map: {
+        type: jspsych.ParameterType.OBJECT,
+        default: null // e.g., { A: { color: "yellow", prob: 0.8 }, B: { color: "blue", prob: 0.5 }, ... }
       },
       draw: {
         type: jspsych.ParameterType.COMPLEX,
@@ -30,17 +42,17 @@ var jsComprehensionSelection = (function (jspsych) {
         type: jspsych.ParameterType.BOOL,
         default: false
       },
+      agent_name: {
+        type: jspsych.ParameterType.STRING,
+        default: "John"
+      },
       question_id: {
         type: jspsych.ParameterType.STRING,
         default: "comprehension_selection"
       },
       prompt: {
         type: jspsych.ParameterType.STRING,
-        default: "Select the required balls."
-      },
-      current_title: {
-        type: jspsych.ParameterType.STRING,
-        default: ""
+        default: "Select the required ball(s)."
       },
       submit_button_label: {
         type: jspsych.ParameterType.STRING,
@@ -57,32 +69,68 @@ var jsComprehensionSelection = (function (jspsych) {
     }
   };
 
-  // Render header strictly for the urn keys (no result column)
-  function renderHeader(urnKeys) {
-    return `
-      <div class="draw-row">
-        ${urnKeys.map((urn) => `<div class="draw-cell"><b>${urn}</b></div>`).join("")}
-      </div>
-    `;
-  }
-
-  // Render row strictly for urn keys (no result cell)
-  function renderRow(draw, urnKeys) {
-    return `
-      <div class="draw-row" data-row-label="current">
-        ${urnKeys.map((urn) => {
-          const color = draw[urn];
-          const isGrey = (color === "lightgrey" || color === "grey" || color === "#d3d3d3");
-          const displayColor = isGrey ? "#c0c0c0" : (color || "transparent");
-          return `<div class="draw-cell"><div class="ball" data-urn-key="${urn}" style="background-color:${displayColor}"></div></div>`;
-        }).join("")}
-      </div>
-    `;
-  }
-
   class ComprehensionSelectionPlugin {
     constructor(jsPsych) {
       this.jsPsych = jsPsych;
+    }
+
+
+    getArticle(word) {
+      return /^[aeiou]/i.test(word) ? "an" : "a";
+    }
+
+
+    // Render draw sentence description and probability (without win/loss outcome)
+    renderSampleDescription(drawObj, urnKeys, agentName, urnMap) {
+      const items = urnKeys.map(k => {
+        const rawColor = drawObj[k];
+        const cleanColor = window.UrnUtils.normalizeColor(rawColor);
+        const article = this.getArticle(cleanColor);
+        const isGrey = cleanColor === "grey";
+        const displayColor = isGrey ? "#888888" : rawColor;
+
+        return `${article} <span style="color: ${displayColor}; font-weight: bold;">${cleanColor}</span> ball from box ${k}`;
+      });
+
+      let drawListSentence = "";
+      if (items.length === 1) {
+        drawListSentence = items[0];
+      } else if (items.length === 2) {
+        drawListSentence = items.join(" and ");
+      } else {
+        drawListSentence = items.slice(0, -1).join(", ") + ", and " + items[items.length - 1];
+      }
+
+      let text = ``
+      
+      
+      const probPct = window.UrnUtils.computeDrawProbability(drawObj, urnMap);
+      if (probPct !== null) {
+          text += `<p style="text-align: center;">The probability of drawing these balls from the boxes is <b>${probPct}</b>%.</p>`;
+        };
+      text += `<p>In this trial, ${agentName} drew ${drawListSentence}.</p>`;
+      return text;
+    }
+
+    // Utility to match drawn color values against element styles/attributes
+    matchesColor(element, targetColor) {
+      const cleanTarget = window.UrnUtils.normalizeColor(targetColor);
+      
+      const inlineStyle = (element.style.backgroundColor || "").toLowerCase();
+      const dataColor = (element.getAttribute("data-color") || "").toLowerCase();
+      const className = (element.className || "").toLowerCase();
+
+      if (inlineStyle.includes(cleanTarget) || dataColor.includes(cleanTarget) || className.includes(cleanTarget)) {
+        return true;
+      }
+
+      if (cleanTarget === "grey") {
+        if (inlineStyle.includes("rgb(211, 211, 211)") || inlineStyle.includes("d3d3d3") || inlineStyle.includes("c0c0c0")) {
+          return true;
+        }
+      }
+
+      return false;
     }
 
     trial(display_element, trial) {
@@ -91,113 +139,109 @@ var jsComprehensionSelection = (function (jspsych) {
       const correctKeys = (trial.correct_keys || []).sort();
       const questionId = trial.question_id || "comprehension_selection";
       const allowMultiple = trial.allow_multiple;
+      const showRule = trial.show_rule !== false;
+      const agentName = trial.agent_name || "John";
+
       const selectedUrns = new Set();
-
-      // Validation check for multi-item solutions in single-select mode
-      if (!allowMultiple && correctKeys.length > 1) {
-        console.error(
-          `[jsComprehensionSelection Error] Trial "${questionId}" has allow_multiple set to false, but correct_keys contains ${correctKeys.length} items: [${correctKeys.join(", ")}].`
-        );
-      }
-
       let attemptCount = 0;
       let lastAttemptTime = performance.now();
 
       display_element.innerHTML = `
-        <div id="comprehension-plugin-container" class="draw-plugin-container">
+        <div id="draw-plugin-container" class="draw-plugin-container comprehension-selection-container">
           
           <!-- TOP SEGMENT: Urns & Rule Text -->
           <div id="top-segment" class="draw-top-segment">
+            ${showRule && trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
             <div id="urns-wrapper">${trial.urn_html || ""}</div>
-            ${trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
           </div>
 
-          <!-- OUTCOME / SELECTION DISPLAY SEGMENT -->
+          <!-- OUTCOME DISPLAY & SELECTION PANEL -->
           <div id="outcome-segment" class="draw-outcome-segment">
             <div class="draw-panel-wrapper">
-              ${trial.current_title ? `<div class="draw-panel-title">${trial.current_title}</div>` : ""}
-              <div id="comprehension-draw-table" class="draw-table">
-                ${renderHeader(urnKeys)}
-                ${renderRow(draw, urnKeys)}
+              
+              <!-- Draw Summary Text & Probability -->
+              <div id="feedback-box" class="draw-feedback-text">
+                ${this.renderSampleDescription(draw, urnKeys, agentName, trial.urn_map)}
               </div>
-              <div class="draw-feedback-text">
-                <p>${trial.prompt}</p>
-                <div id="feedback-box"></div>
-              </div>
+              
+              <!-- Prompt Text -->
+              ${trial.prompt ? `<div class="explanation-prompt-heading">${trial.prompt}</div>` : ""}
+              
+              <!-- Dynamic Incorrect Feedback Display -->
+              <div id="validation-feedback" style="min-height: 1.5em; text-align: center; margin-top: 8px;"></div>
             </div>
           </div>
 
-          <!-- ACTION SEGMENT -->
+          <!-- ACTION CONTROL SEGMENT -->
           <div id="action-segment" class="draw-action-segment">
             <button id="submit-btn" class="jspsych-btn">${trial.submit_button_label || "Submit"}</button>
           </div>
-
         </div>
       `;
 
-      const sampleContainer = display_element.querySelector("#comprehension-draw-table");
       const submitBtn = display_element.querySelector("#submit-btn");
-      const feedbackBox = display_element.querySelector("#feedback-box");
-      const ballElements = sampleContainer.querySelectorAll(".ball");
+      const validationFeedback = display_element.querySelector("#validation-feedback");
 
-      ballElements.forEach((ballElement) => {
-        ballElement.classList.add("explanation-selectable-ball");
-        ballElement.setAttribute("role", "button");
-        ballElement.setAttribute("tabindex", "0");
-        ballElement.setAttribute("aria-pressed", "false");
+      // Populate target slot balls and visually hide matching balls inside urns
+      urnKeys.forEach((urnKey) => {
+        const drawnColor = draw[urnKey];
+        const slotEl = display_element.querySelector(`#slot-${urnKey}`);
+
+        if (slotEl && drawnColor) {
+          const cleanColor = window.UrnUtils.normalizeColor(drawnColor);
+          const isGrey = cleanColor === "grey";
+          const displayColor = isGrey ? "#c0c0c0" : drawnColor;
+
+          slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
+          slotEl.classList.add("is-selectable");
+          slotEl.onclick = () => toggleSelection(urnKey);
+        }
+
+        // Hide corresponding ball inside urn grid
+        let urnContainer = display_element.querySelector(`#urn-${urnKey}`) || 
+                           display_element.querySelector(`[data-urn="${urnKey}"]`) ||
+                           display_element.querySelectorAll(".urn")[urnKeys.indexOf(urnKey)];
+
+        if (urnContainer && drawnColor) {
+          const candidateBalls = Array.from(urnContainer.querySelectorAll(".ball")).filter(b => 
+            this.matchesColor(b, drawnColor) && 
+            !b.classList.contains("drawn-hidden") &&
+            !b.closest(".urn-slot")
+          );
+
+          if (candidateBalls.length > 0) {
+            const randomIndex = Math.floor(Math.random() * candidateBalls.length);
+            candidateBalls[randomIndex].classList.add("drawn-hidden");
+          }
+        }
       });
 
-      const toggleBall = (urnKey, ballElement) => {
-        if (!urnKey || !ballElement) return;
-
-        const isSelected = selectedUrns.has(urnKey);
+      // Toggle slot visual selection state
+      const toggleSelection = (urnKey) => {
+        validationFeedback.innerHTML = "";
+        submitBtn.textContent = trial.submit_button_label || "Submit";
 
         if (allowMultiple) {
-          if (isSelected) {
+          if (selectedUrns.has(urnKey)) {
             selectedUrns.delete(urnKey);
           } else {
             selectedUrns.add(urnKey);
           }
-          ballElement.classList.toggle("is-selected", !isSelected);
-          ballElement.setAttribute("aria-pressed", !isSelected ? "true" : "false");
         } else {
-          if (isSelected) {
-            selectedUrns.clear();
-            ballElement.classList.remove("is-selected");
-            ballElement.setAttribute("aria-pressed", "false");
-          } else {
-            selectedUrns.clear();
-            ballElements.forEach((el) => {
-              el.classList.remove("is-selected");
-              el.setAttribute("aria-pressed", "false");
-            });
-            selectedUrns.add(urnKey);
-            ballElement.classList.add("is-selected");
-            ballElement.setAttribute("aria-pressed", "true");
-          }
+          selectedUrns.clear();
+          selectedUrns.add(urnKey);
         }
 
-        feedbackBox.innerHTML = "";
-        submitBtn.textContent = trial.submit_button_label || "Submit";
+        // Update CSS classes on all target slots
+        urnKeys.forEach(k => {
+          const slot = display_element.querySelector(`#slot-${k}`);
+          if (slot) {
+            slot.classList.toggle("is-selected", selectedUrns.has(k));
+          }
+        });
       };
 
-      // Event Listeners
-      sampleContainer.addEventListener("click", (event) => {
-        const ballElement = event.target.closest(".explanation-selectable-ball");
-        if (ballElement && sampleContainer.contains(ballElement)) {
-          toggleBall(ballElement.dataset.urnKey, ballElement);
-        }
-      });
-
-      sampleContainer.addEventListener("keydown", (event) => {
-        const ballElement = event.target.closest(".explanation-selectable-ball");
-        if (ballElement && sampleContainer.contains(ballElement) && (event.key === "Enter" || event.key === " ")) {
-          event.preventDefault();
-          toggleBall(ballElement.dataset.urnKey, ballElement);
-        }
-      });
-
-      // Submit Handler
+      // Submit Button Click Event
       submitBtn.addEventListener("click", () => {
         attemptCount += 1;
         const now = performance.now();
@@ -233,7 +277,7 @@ var jsComprehensionSelection = (function (jspsych) {
             passed: true
           });
         } else {
-          feedbackBox.innerHTML = `<p class="lose" style="margin: 4px 0 !important;">${
+          validationFeedback.innerHTML = `<p class="lose" style="margin: 4px 0 !important;">${
             trial.incorrect_feedback_text || "Incorrect selection. Please try again."
           }</p>`;
           submitBtn.textContent = trial.retry_button_label || "Try again";
@@ -243,5 +287,6 @@ var jsComprehensionSelection = (function (jspsych) {
   }
 
   ComprehensionSelectionPlugin.info = info;
+
   return ComprehensionSelectionPlugin;
 })(jsPsychModule);

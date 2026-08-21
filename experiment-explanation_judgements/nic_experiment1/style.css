@@ -80,7 +80,7 @@ html {
     justify-content: center;
     align-items: flex-start;
     gap: clamp(8px, 1.5vw, 16px);
-    margin-bottom: 15px;
+    margin-bottom: 5px;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -476,6 +476,7 @@ html {
 .draw-feedback-text p,
 #feedback-box p {
     margin: 4px 10px;
+    margin-bottom: 10px;  
     line-height: 1.3;
 }
 
