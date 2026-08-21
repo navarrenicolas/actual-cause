@@ -40,7 +40,7 @@ var jsInteractiveDrawSingle = (function (jspsych) {
       },
       agent_name: {
         type: jspsych.ParameterType.STRING,
-        default: "You"
+        default: "you"
       },
       question_id: {
         type: jspsych.ParameterType.STRING,
@@ -86,7 +86,7 @@ var jsInteractiveDrawSingle = (function (jspsych) {
       const questionId = trial.question_id || "familiarisation";
       const showRule = trial.show_rule !== false;
       const showResult = trial.show_result !== false;
-      const agentName = trial.agent_name || "You";
+      const agentName = trial.agent_name || "you";
 
       let sampleIndex = 0;
       let currentTrialDraw = {};

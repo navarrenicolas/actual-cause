@@ -328,9 +328,10 @@ const allDraws = generateAllDrawCombinations(urnMap);
 const testDraws = shuffleArray(allDraws.slice()).slice(0, 5);
 
 timeline.push({
-  type: jsPredictionTable,
-  rule_text: `<p id = "rule-text">${ruleText}</p>`,
+  type: jsPredictionTask,
+  rule_text: ruleBox,
   urn_html: renderUrnsHTML(),
+  urn_map: urnMap,
   draws: predictionDraws,
   urn_keys: ["A", "B", "C", "D"],
   rule_fn: rule,
