@@ -1185,3 +1185,15 @@ span.lose {
   color: #555555;
   white-space: nowrap;
 }
+
+/* Selection sentence styling in comprehension cards */
+.comp-selection-sentence {
+  font-size: 0.85rem;
+  margin-top: 4px;
+  color: #333333;
+  line-height: 1.3;
+}
+
+.comp-selection-sentence.is-hidden {
+  display: none;
+}

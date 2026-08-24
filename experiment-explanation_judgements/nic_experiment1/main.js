@@ -394,31 +394,89 @@ const standardDraw = {
   D: urnMap.D.color
 };
 
+const multiColorDraw = {
+  A: urnMap.A.color,
+  B: urnMap.B.color,
+  C: 'lightgrey',
+  D: urnMap.D.color
+};
 
-const comprehensionTrials = [
-  { id: "comp_only_colored_ball", draw: singleColoredDraw, correct: ["A"], prompt: "Select the <b>only colored ball</b>." },
-  { id: "comp_only_grey_ball", draw: singleGreyDraw, correct: ["D"], prompt: "Select the <b>only grey ball</b>." },
-  { id: "comp_most_likely_ball", draw: standardDraw, correct: [mostLikelyUrnKey], prompt: "Select the ball from the box that is <b>MOST likely</b> to produce a colored ball." },
-  { id: "comp_least_likely_ball", draw: standardDraw, correct: [leastLikelyUrnKey], prompt: "Select the ball from the box that is <b>LEAST likely</b> to produce a colored ball." },
-  { id: "comp_second_most_likely_ball", draw: standardDraw, correct: [secondMostLikelyUrnKey], prompt: "Select the ball from the box that is the <b>SECOND MOST likely</b> to produce a colored ball." },
-  { id: "comp_third_most_likely_ball", draw: standardDraw, correct: [thirdMostLikelyUrnKey], prompt: "Select the ball from the box that is the <b>THIRD MOST likely</b> to produce a colored ball." }
-];
 
-comprehensionTrials.forEach(t => {
-  timeline.push({
-    type: jsComprehensionSelection,
-    draw: t.draw,
-    urn_html: staticUrns,
-    rule_text: ruleBox,
-    urn_map: urnMap,
-    urn_keys: ["A", "B", "C", "D"],
-    correct_keys: t.correct,
-    allow_multiple: false,
-    question_id: t.id,
-    prompt: t.prompt,
-    on_finish: () => { jsPsych.getDisplayElement().innerHTML = ''; }
-  });
-});
+// TRIAL 1: Identification Tasks Grid (4 Scenarios)
+const compTrial1 = {
+  type: jsComprehensionGridSelection,
+  question_id: "comp_grid_identification",
+  rule_text: ruleBox,
+  urn_html: staticUrns,
+  urn_map: urnMap,
+  submit_button_label: "Submit Selections",
+  scenarios: [
+    {
+      id: "comp_only_colored_ball",
+      draw: singleColoredDraw,
+      correct: ["A"],
+      prompt: "Select the <b>only colored ball</b>."
+    },
+    {
+      id: "comp_only_grey_ball",
+      draw: singleGreyDraw,
+      correct: ["D"],
+      prompt: "Select the <b>only grey ball</b>."
+    },
+    {
+      id: "comp_any_colored_ball",
+      draw: multiColorDraw,
+      correct: [["A"], ["B"], ["D"]], // or specify accepted key
+      prompt: "Select <b>any colored ball</b>."
+    },
+    {
+      id: "comp_any_grey_ball",
+      draw: singleColoredDraw,
+      correct: [["B"], ["C"], ["D"]], // or specify accepted key
+      prompt: "Select <b>any grey ball</b>."
+    }
+  ]
+};
+
+// TRIAL 2: Probability Ranking Tasks Grid (4 Tasks, Same Sample)
+const compTrial2 = {
+  type: jsComprehensionGridSelection,
+  question_id: "comp_grid_probability_ranking",
+  rule_text: ruleBox,
+  urn_html: staticUrns,
+  urn_map: urnMap,
+  submit_button_label: "Submit Selections",
+  scenarios: [
+    {
+      id: "comp_most_likely_ball",
+      draw: standardDraw,
+      correct: [mostLikelyUrnKey],
+      prompt: "Select the ball <b>MOST likely</b> to produce a colored ball."
+    },
+    {
+      id: "comp_second_most_likely_ball",
+      draw: standardDraw,
+      correct: [secondMostLikelyUrnKey],
+      prompt: "Select the ball <b>SECOND MOST likely</b> to produce a colored ball."
+    },
+    {
+      id: "comp_third_most_likely_ball",
+      draw: standardDraw,
+      correct: [thirdMostLikelyUrnKey],
+      prompt: "Select the ball <b>THIRD MOST likely</b> to produce a colored ball."
+    },
+    {
+      id: "comp_least_likely_ball",
+      draw: standardDraw,
+      correct: [leastLikelyUrnKey],
+      prompt: "Select the ball <b>LEAST likely</b> to produce a colored ball."
+    }
+  ]
+};
+
+// Push to jsPsych Timeline
+timeline.push(compTrial1);
+timeline.push(compTrial2);
 
 
 timeline.push({
