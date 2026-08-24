@@ -499,26 +499,9 @@ scenarioBatches.forEach((batch, batchIdx) => {
     scenarios: batch,
     rule_fn: rule,
     question_id: `explanation_batch_${batchIdx + 1}`,
-    button_label: batchIdx === scenarioBatches.length - 1 ? "Submit & Continue" : "Submit Batch Selections"
   });
 });
 
-
-// Pre-Sampled Explanation Selection Trial
-timeline.push({
-  type: jsPsychInteractiveDrawExplanation,
-  urn_html: staticUrns, // Pre-rendered Urns with static target slots
-  agent_name: "John", // Sets subject name for narrative text
-  rule_text: ruleBox,
-  draws: allDraws,
-  urn_map: urnMap,
-  urn_keys: ["A", "B", "C", "D"],
-  max_samples: allDraws.length,
-  rule_fn: rule,
-  data: {
-    question_id: "interactive_explanation_selection"
-  }
-});
 
 // Save data & finish
 timeline.push({

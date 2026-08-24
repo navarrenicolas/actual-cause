@@ -2,7 +2,8 @@
  * jsPsych plugin for 2x2 Batch Explanation Selection
  * Displays 4 pre-sampled scenarios at a time in a tight 2x2 grid format.
  * - Shows full urns with drawn balls in slots and removed from urn bodies.
- * - Generates outcome feedback & sentence transitions per sample.
+ * - Uses a separate block footer for scenario probability to guarantee ZERO overlap.
+ * - Generates outcome feedback & sentence transitions per sample (keeps question visible).
  * - Forces selection on all 4 scenarios before allowing batch submission.
  * - Namespaced to `.explanation-2x2-container` to prevent CSS leakage to other plugins.
  */
@@ -55,7 +56,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
       /** Label for the submit button */
       button_label: {
         type: jspsych.ParameterType.STRING,
-        default: "Submit Selections"
+        default: "Submit Explanations"
       }
     }
   };
@@ -99,12 +100,33 @@ var jsPsychExplanationGrid = (function (jspsych) {
         const draw = sc.urns || sc;
         const isWin = trial.rule_fn ? trial.rule_fn(draw) : (String(sc.outcome).toLowerCase() === 'win');
 
+        // Resolve scenario probability
+        let probText = "";
+        if (sc.prob !== undefined) {
+          probText = sc.prob.includes("%") ? sc.prob : `${sc.prob}%`;
+        } else if (utils && trial.urn_map) {
+          const calculatedProb = utils.computeDrawProbability(draw, trial.urn_map);
+          probText = calculatedProb ? `${calculatedProb}%` : "";
+        }
+
         html += `
           <div class="explanation-card-item" data-sample-idx="${idx}">
             <div class="grid-card-scaling-wrapper">
-              <!-- Urns HTML Container -->
+              <!-- Urns Container with Separate Top & Bottom Blocks -->
               <div class="urns-card-wrapper" id="urns-card-${idx}">
-                ${trial.urn_html}
+                
+                <!-- TOP BLOCK: Urns & Slots Display -->
+                <div class="urns-display-container">
+                  ${trial.urn_html}
+                </div>
+
+                <!-- BOTTOM BLOCK: Probability Footer Bar -->
+                <div class="urns-card-footer">
+                  <span class="card-probability-text">
+                    ${probText ? `Scenario Probability ${probText}` : ""}
+                  </span>
+                </div>
+
               </div>
 
               <!-- Feedback & Question Block -->
@@ -193,12 +215,10 @@ var jsPsychExplanationGrid = (function (jspsych) {
                 ...selectionRecord
               });
 
-              // Toggle UI Text from Question to Sentence
-              const questionEl = cardEl.querySelector(`#card-question-${idx}`);
+              // Update Explanation Sentence below question without hiding question
               const sentenceEl = cardEl.querySelector(`#card-explanation-${idx}`);
 
-              if (questionEl && sentenceEl) {
-                questionEl.classList.add("is-hidden");
+              if (sentenceEl) {
                 sentenceEl.innerHTML = this.renderExplanationSentence(isWin, drawnColor, urnKey, agentName);
                 sentenceEl.classList.remove("is-hidden");
               }

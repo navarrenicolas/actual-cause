@@ -1152,5 +1152,36 @@ span.lose {
     margin-bottom: 2px !important;
     padding: 4px 18px !important;
     font-size: 0.85em !important;
-    font-weight: bold;
+}
+
+/* Container wrapper as a vertical flex column */
+.urns-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Top block holding urns and slot buttons */
+.urns-display-container {
+  width: 100%;
+  flex-grow: 1;
+}
+
+/* Bottom block footer reserved solely for probability */
+.urns-card-footer {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end; /* Aligns text to bottom-right */
+  align-items: center;
+  padding: 4px 8px 2px 0;
+  min-height: 20px; /* Reserves space even if empty */
+}
+
+/* Probability text styling */
+.card-probability-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #555555;
+  white-space: nowrap;
 }
