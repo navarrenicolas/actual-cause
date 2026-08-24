@@ -1,6 +1,7 @@
 /**
  * jsPsych plugin for Comprehension Ball Selection
- * Uses interactive pre-sampled urn slots and provides draw description & probability feedback.
+ * Features rule_text, full draw description with probabilities, win/loss outcome feedback,
+ * and interactive urn slot ball selection. Strictly relies on window.UrnUtils.
  */
 var jsComprehensionSelection = (function (jspsych) {
   "use strict";
@@ -22,7 +23,7 @@ var jsComprehensionSelection = (function (jspsych) {
       },
       urn_map: {
         type: jspsych.ParameterType.OBJECT,
-        default: null // e.g., { A: { color: "yellow", prob: 0.8 }, B: { color: "blue", prob: 0.5 }, ... }
+        default: null
       },
       draw: {
         type: jspsych.ParameterType.COMPLEX,
@@ -45,6 +46,10 @@ var jsComprehensionSelection = (function (jspsych) {
       agent_name: {
         type: jspsych.ParameterType.STRING,
         default: "John"
+      },
+      rule_fn: {
+        type: jspsych.ParameterType.FUNCTION,
+        default: null
       },
       question_id: {
         type: jspsych.ParameterType.STRING,
@@ -74,66 +79,8 @@ var jsComprehensionSelection = (function (jspsych) {
       this.jsPsych = jsPsych;
     }
 
-
-    getArticle(word) {
-      return /^[aeiou]/i.test(word) ? "an" : "a";
-    }
-
-
-    // Render draw sentence description and probability (without win/loss outcome)
-    renderSampleDescription(drawObj, urnKeys, agentName, urnMap) {
-      const items = urnKeys.map(k => {
-        const rawColor = drawObj[k];
-        const cleanColor = window.UrnUtils.normalizeColor(rawColor);
-        const article = this.getArticle(cleanColor);
-        const isGrey = cleanColor === "grey";
-        const displayColor = isGrey ? "#888888" : rawColor;
-
-        return `${article} <span style="color: ${displayColor}; font-weight: bold;">${cleanColor}</span> ball from box ${k}`;
-      });
-
-      let drawListSentence = "";
-      if (items.length === 1) {
-        drawListSentence = items[0];
-      } else if (items.length === 2) {
-        drawListSentence = items.join(" and ");
-      } else {
-        drawListSentence = items.slice(0, -1).join(", ") + ", and " + items[items.length - 1];
-      }
-
-      let text = ``
-      
-      
-      const probPct = window.UrnUtils.computeDrawProbability(drawObj, urnMap);
-      if (probPct !== null) {
-          text += `<p style="text-align: center;">The probability of drawing these balls from the boxes is <b>${probPct}</b>%.</p>`;
-        };
-      text += `<p>In this trial, ${agentName} drew ${drawListSentence}.</p>`;
-      return text;
-    }
-
-    // Utility to match drawn color values against element styles/attributes
-    matchesColor(element, targetColor) {
-      const cleanTarget = window.UrnUtils.normalizeColor(targetColor);
-      
-      const inlineStyle = (element.style.backgroundColor || "").toLowerCase();
-      const dataColor = (element.getAttribute("data-color") || "").toLowerCase();
-      const className = (element.className || "").toLowerCase();
-
-      if (inlineStyle.includes(cleanTarget) || dataColor.includes(cleanTarget) || className.includes(cleanTarget)) {
-        return true;
-      }
-
-      if (cleanTarget === "grey") {
-        if (inlineStyle.includes("rgb(211, 211, 211)") || inlineStyle.includes("d3d3d3") || inlineStyle.includes("c0c0c0")) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
     trial(display_element, trial) {
+      const utils = window.UrnUtils;
       const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
       const draw = trial.draw || {};
       const correctKeys = (trial.correct_keys || []).sort();
@@ -141,10 +88,22 @@ var jsComprehensionSelection = (function (jspsych) {
       const allowMultiple = trial.allow_multiple;
       const showRule = trial.show_rule !== false;
       const agentName = trial.agent_name || "John";
+      const ruleFn = trial.rule_fn || (() => false);
 
+      const actualWin = !!ruleFn(draw);
       const selectedUrns = new Set();
       let attemptCount = 0;
       let lastAttemptTime = performance.now();
+
+      // Render 2-paragraph outcome text (probabilities + draw description with win/loss)
+      const fullFeedbackText = utils.renderSampleDescription(
+        draw,
+        urnKeys,
+        agentName,
+        actualWin,
+        trial.urn_map,
+        true
+      );
 
       display_element.innerHTML = `
         <div id="draw-plugin-container" class="draw-plugin-container comprehension-selection-container">
@@ -159,9 +118,9 @@ var jsComprehensionSelection = (function (jspsych) {
           <div id="outcome-segment" class="draw-outcome-segment">
             <div class="draw-panel-wrapper">
               
-              <!-- Draw Summary Text & Probability -->
+              <!-- Draw Summary Text, Probabilities & Result Outcome -->
               <div id="feedback-box" class="draw-feedback-text">
-                ${this.renderSampleDescription(draw, urnKeys, agentName, trial.urn_map)}
+                ${fullFeedbackText}
               </div>
               
               <!-- Prompt Text -->
@@ -188,7 +147,7 @@ var jsComprehensionSelection = (function (jspsych) {
         const slotEl = display_element.querySelector(`#slot-${urnKey}`);
 
         if (slotEl && drawnColor) {
-          const cleanColor = window.UrnUtils.normalizeColor(drawnColor);
+          const cleanColor = utils.normalizeColor(drawnColor);
           const isGrey = cleanColor === "grey";
           const displayColor = isGrey ? "#c0c0c0" : drawnColor;
 
@@ -204,7 +163,7 @@ var jsComprehensionSelection = (function (jspsych) {
 
         if (urnContainer && drawnColor) {
           const candidateBalls = Array.from(urnContainer.querySelectorAll(".ball")).filter(b => 
-            this.matchesColor(b, drawnColor) && 
+            utils.matchesColor(b, drawnColor) && 
             !b.classList.contains("drawn-hidden") &&
             !b.closest(".urn-slot")
           );

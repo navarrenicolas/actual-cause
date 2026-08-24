@@ -9,11 +9,23 @@ window.UrnUtils = (function () {
    * @param {string} color 
    * @returns {string}
    */
-    function normalizeColor(color) {
-        if (!color) return "";
-        let clean = color.replace("light", "").replace("hot", "").toLowerCase().trim();
-        if (clean === "grey" || clean === "#d3d3d3") return "grey";
-        return clean;}
+  function normalizeColor(color) {
+    if (!color) return "";
+    let clean = color.replace("light", "").replace("hot", "").toLowerCase().trim();
+    if (clean === "grey" || clean === "#d3d3d3") return "grey";
+    return clean;
+  }
+
+  /**
+   * Maps color strings to display hexadecimal or named colors.
+   * @param {string} color 
+   * @returns {string}
+   */
+  function getDisplayColor(color) {
+    const clean = normalizeColor(color);
+    if (clean === "grey") return "#888888";
+    return clean;
+  }
 
   /**
    * Returns the appropriate indefinite article ("a" or "an") for a given word
@@ -93,8 +105,30 @@ window.UrnUtils = (function () {
   }
 
   /**
+   * Joins an array of items into a natural English list with proper Oxford comma usage.
+   * @param {Array<string>} items 
+   * @returns {string}
+   */
+  function formatGrammarList(items) {
+    if (!items || items.length === 0) return "";
+    if (items.length === 1) return items[0];
+    if (items.length === 2) return items.join(" and ");
+    return items.slice(0, -1).join(", ") + ", and " + items[items.length - 1];
+  }
+
+  /**
+   * Renders a outcome badge element ("WON!" or "LOST!").
+   * @param {boolean} isWin 
+   * @returns {string}
+   */
+  function renderOutcomeBadge(isWin) {
+    const label = isWin ? "WIN" : "LOSS";
+    const cssClass = isWin ? "win-badge" : "lose-badge";
+    return `<span class="outcome-badge ${cssClass}">${label}</span>`;
+  }
+
+  /**
    * Formats a draw summary text description matching the ExplanationSelection format.
-   * Normalizes color string first so inline styles handle gray/grey variants properly.
    * @param {Object} drawObj - E.g. { A: "yellow", B: "blue" }
    * @param {Array<string>} urnKeys - E.g. ["A", "B"]
    * @param {string} agentName - E.g. "You" or "Participant"
@@ -110,26 +144,17 @@ window.UrnUtils = (function () {
       const rawColor = drawObj[k];
       const cleanColor = normalizeColor(rawColor);
       const article = getArticle(cleanColor);
-      const isGrey = cleanColor === "grey";
-      const displayColor = isGrey ? "#888888" : cleanColor;
+      const displayColor = getDisplayColor(cleanColor);
 
-      return `${article} <span style="color: ${displayColor}; font-weight: bold;">${cleanColor}</span> ball from box ${k}`;
+      return `${article} <span class="urn-ball-text" style="color: ${displayColor};">${cleanColor}</span> ball from box ${k}`;
     });
 
-    let drawListSentence = "";
-    if (items.length === 1) {
-      drawListSentence = items[0];
-    } else if (items.length === 2) {
-      drawListSentence = items.join(" and ");
-    } else {
-      drawListSentence = items.slice(0, -1).join(", ") + ", and " + items[items.length - 1];
-    }
-
+    const drawListSentence = formatGrammarList(items);
     let text = ``;
 
     const probPct = computeDrawProbability(drawObj, urnMap);
     if (probPct !== null) {
-      text += `<p style="text-align: center;">The probability of drawing these balls from the boxes is <b>${probPct}</b>%.</p>`;
+      text += `<p class="draw-prob-text">The probability of drawing these balls from the boxes is <b>${probPct}</b>%.</p>`;
     }
 
     text += `<p>In this trial, ${agentName} drew ${drawListSentence}.`;
@@ -147,9 +172,12 @@ window.UrnUtils = (function () {
   // Publicly exposed methods
   return {
     normalizeColor: normalizeColor,
+    getDisplayColor: getDisplayColor,
     getArticle: getArticle,
     matchesColor: matchesColor,
     computeDrawProbability: computeDrawProbability,
+    formatGrammarList: formatGrammarList,
+    renderOutcomeBadge: renderOutcomeBadge,
     renderSampleDescription: renderSampleDescription
   };
 })();

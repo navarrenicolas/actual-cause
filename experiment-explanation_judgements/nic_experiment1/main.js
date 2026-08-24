@@ -103,7 +103,7 @@ function generateUrnBallsData(urnKey, total = 20) {
   const rawColors = shuffleArray(
     Array(n_colored).fill(color).concat(Array(n_lightgrey).fill('lightgrey'))
   );
-  
+
   return rawColors.map((col, idx) => ({
     id: `ball-${urnKey}-${idx}`,
     color: col
@@ -126,15 +126,15 @@ const sharedUrnsData = getOrCreateUrnsData();
 function renderUrnsHTML(urnsData = sharedUrnsData, interactive = false) {
   return `<div class="urn-display">
     ${Object.keys(urnMap).map(urnKey => {
-      // Use the shared data passed into the function instead of calling generateUrnBallsData()
-      const ballsData = urnsData[urnKey] || [];
-      const ballsHTML = ballsData.map(b => {
-        const isGrey = (b.color === "lightgrey" || b.color === "grey" || b.color === "#d3d3d3");
-        const ballColor = isGrey ? "#c0c0c0" : b.color;
-        return `<div class="ball" id="${b.id}" data-color="${b.color}" style="background-color:${ballColor};"></div>`;
-      }).join('');
+    // Use the shared data passed into the function instead of calling generateUrnBallsData()
+    const ballsData = urnsData[urnKey] || [];
+    const ballsHTML = ballsData.map(b => {
+      const isGrey = (b.color === "lightgrey" || b.color === "grey" || b.color === "#d3d3d3");
+      const ballColor = isGrey ? "#c0c0c0" : b.color;
+      return `<div class="ball" id="${b.id}" data-color="${b.color}" style="background-color:${ballColor};"></div>`;
+    }).join('');
 
-      return `<div class="urn-column" data-urn="${urnKey}">
+    return `<div class="urn-column" data-urn="${urnKey}">
                 <div class="urn-label" style="color: ${urnMap[urnKey].color};">
                   ${urnLabels[urnKey]}
                 </div> 
@@ -144,7 +144,7 @@ function renderUrnsHTML(urnsData = sharedUrnsData, interactive = false) {
                   <div class="urn-slot" id="slot-${urnKey}"></div>
                 </div>
               </div>`;
-    }).join('')}
+  }).join('')}
   </div>`;
 }
 
@@ -178,7 +178,7 @@ function generateAllDrawCombinations(urnMap) {
     }
     const key = urnKeys[depth];
     const coloredBall = urnMap[key].color;
-    
+
     currentDraw[key] = coloredBall;
     helper(depth + 1, currentDraw);
 
@@ -214,7 +214,7 @@ for (const urnKey in urnMap) {
   urnProbs[urnKey] = parseFloat(urnMap[urnKey].prob.toFixed(2));
 }
 
-const jsPsych = initJsPsych(); 
+const jsPsych = initJsPsych();
 
 const subject_id = 'subj_' + Math.random().toString(36).substring(2, 10);
 
@@ -228,7 +228,7 @@ const timeline = [];
 
 // // Consent
 // timeline.push(consentTrial);
-  
+
 // // Prolific ID
 // timeline.push({
 //   type: jsPsychSurveyText,
@@ -250,36 +250,39 @@ timeline.push({
   type: jsPsychInstructions,
   pages: [`
     <div class="instructions-container">
-      <h2>Instructions 1/2</h2>
-      <p>In this study, you will be interacting with four boxes, <span style="color: orange;"><b>A</b></span>, <span style="color: blue;"><b>B</b></span>, <span style="color: purple;"><b>C</b></span>, and <span style="color: hotpink;"><b>D</b></span>, pictured below.
-      The boxes hold a mix of balls: in each box, some balls are <b>colored</b> (e.g., orange, blue, purple, or pink), and others are <b>grey</b>.
-      Notice that some boxes have more colored balls than others making the chances of getting a colored ball from each box different.
+    <h2>Instructions 1/2</h2>
+    ${staticUrns}
+      <p>In this study, you will be interacting with four boxes with a mix of colored and uncolored balls.
+      Each box contains some proportion of grey balls and some proportion of colored balls unique to each urn:</p>
+      <p style = "text-align: center;">
+      <span style="color: orange;"><b>A (orange)</b></span>, <span style="color: blue;"><b>B (blue)</b></span>, <span style="color: purple;"><b>C (purple)</b></span>, and <span style="color: hotpink;"><b>D (pink)</b></span>.
       </p>
       <p>
-      One ball can be pulled out at random from each of four different boxes.
+      Notice that some boxes have more colored balls than others making the chances of getting a colored ball different from each box.
       </p>
       <br>
-      ${staticUrns}
+      
     </div>
   `,
-    `
+  `
   <div class="instructions-container">
   <h2>Instructions 2/2</h2>
-  <p>In the following task, you will see a <b>Draw</b> button below every box. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next phase.</p>
+  ${staticUrns}
   <p>
-  Drawing a ball from all 4 boxes presents a particular trial scenario.
-  Each trial will produce a result: a <span class="win">win</span> or a <span class="lose">loss</span> which is determined by a certain rule.  
-  The rule determines what combination of colored balls is needed to win.
+  Here you are playing a game where you will be drawing balls from each of the boxes.
+  Each of the boxes has a <b>Draw</b> button below it. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next section.</p>
+  <p>
+  Once all the balls are drawn from each of the boxes, the rule of the game will determine the result of the draws as a <span class="win">win</span> or a <span class="lose">loss</span>.  
   If the rule is not satisfied, the trial will result in a loss. 
   Sometimes several combinations are possible to make a win, and sometimes only one combination is necessary. 
   </p>
   <p>
-  In the following task you will be introduced to a new rule. You will have 10 trials to try drawing samples and understand how the rule works in different scenarios. Click 'Next' when you are ready to try drawing samples.</p>
-  <br>
-  ${staticUrns}
+  In the following task you will be introduced to a new rule. You will have 10 rounds to draw samples and understand how the rule works in different scenarios. 
+  </p>
+  <p>Click 'Next' when you are ready to continue.</p>
   </div>
     `
-],
+  ],
   show_clickable_nav: true,
   data: { question_id: "instructions_familiarisation" }
 });
@@ -297,7 +300,7 @@ timeline.push({
   max_samples: 10,
   rule_fn: rule,
   data: { question_id: "familiarisation" },
-  on_finish: function() {
+  on_finish: function () {
     jsPsych.getDisplayElement().innerHTML = '';
   }
 });
@@ -308,20 +311,19 @@ timeline.push({
   <div class="instructions-container">
     <h2>Comprehension Check 1/2</h2>
     <p>
-      Now that you are familiar with how the draws are generated, we will check your understanding of the rule.
+      Now that you are familiar with the game, we will check your understanding of the rule.
     </p>
     <p>
-      In the following comprehension check, you will see several sample draws from the boxes.
+      In the following comprehension check, you will see several sample draws from the boxes from another player.
       Your job is to determine whether the scenario would lead to a <span class="win">win</span> or a <span class="lose">loss</span> based on the rule. 
-      To continue to the experiment you <b>must</b> answer all questions correctly. If you answer incorrectly, you will be prompted to try again.
-      If you fail the comprehension check a second time, you will be exluded from the experiment.
+      To continue to the experiment you must answer all questions correctly. If you answer incorrectly, you will be prompted to try again.
     </p>
     <p>
       Click <b>Continue</b> to proceed.
     </p>
   </div>`,
   choices: ['Continue'],
-  data: {question_id: "pre_comp_selection"},
+  data: { question_id: "pre_comp_selection" },
 });
 
 const allDraws = generateAllDrawCombinations(urnMap);
@@ -337,7 +339,7 @@ timeline.push({
   rule_fn: rule,
   question_id: "comprehension_rule",
   prompt: `<p>Please predict the outcome for every draw below.</p><p>Click the result boxes to switch between <span style='color: green; font-weight: bold;'>WIN</span> and <span style='color: red; font-weight: bold;'>LOSE</span>.</p>`,
-  on_finish: function() {
+  on_finish: function () {
     jsPsych.getDisplayElement().innerHTML = '';
   }
 });
@@ -354,14 +356,15 @@ timeline.push({
     <p>
       In the following comprehension check, you will be asked to select the ball that matches the given prompt.
       When a ball is selected, a circle will appear around it to indicate that it has been selected.
-      You can submit the selection by clicking the <b>Submit</b> button. If your selection is incorrect, you will be prompted to try again. If you fail to select the correct ball more than once, you will be excluded from the experiment.
+      You can submit the selection by clicking the <b>Submit</b> button. 
+      You must get all the questions correct to proceed to the next section. If you answer incorrectly, you will be prompted to try again.
     </p>
     <p>
       Click <b>Continue</b> to proceed.
     </p>
     </div>`,
   choices: ['Continue'],
-  data: {question_id: "pre_comp_selection"},
+  data: { question_id: "pre_comp_selection" },
 });
 
 // ===== Dynamically Rank Urns by Probability =====
@@ -404,27 +407,31 @@ timeline.push({
   type: jsComprehensionSelection,
   draw: singleColoredDraw,
   urn_html: staticUrns,
+  rule_text: ruleBox,
+  urn_map: urnMap,
   urn_keys: ["A", "B", "C", "D"],
   correct_keys: ["A"],
   urn_map: urnMap,
   allow_multiple: false,
   question_id: "comp_only_colored_ball",
   prompt: "Select the <b>only colored ball</b>.",
-  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
 // 2. Select the only grey ball
 timeline.push({
   type: jsComprehensionSelection,
-  draw: singleGreyDraw,
   urn_html: staticUrns,
+  urn_map: urnMap,
+  rule_text: ruleBox,
+  draw: singleGreyDraw,
   urn_keys: ["A", "B", "C", "D"],
   correct_keys: ["D"],
   urn_map: urnMap,
   allow_multiple: false,
   question_id: "comp_only_grey_ball",
   prompt: "Select the <b>only grey ball</b>.",
-  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
 // 3. Select the ball from the box that is MOST likely to produce a colored ball
@@ -433,12 +440,13 @@ timeline.push({
   draw: standardDraw,
   urn_html: staticUrns,
   urn_map: urnMap,
+  rule_text: ruleBox,
   urn_keys: ["A", "B", "C", "D"],
   correct_keys: [mostLikelyUrnKey],
   allow_multiple: false,
   question_id: "comp_most_likely_ball",
   prompt: "Select the ball from the box that is <b>MOST likely</b> to produce a colored ball.",
-  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
 // 4. Select the ball from the box that is LEAST likely to produce a colored ball
@@ -446,13 +454,14 @@ timeline.push({
   type: jsComprehensionSelection,
   draw: standardDraw,
   urn_html: staticUrns,
+  rule_text: ruleBox,
   urn_map: urnMap,
   urn_keys: ["A", "B", "C", "D"],
   correct_keys: [leastLikelyUrnKey],
   allow_multiple: false,
   question_id: "comp_least_likely_ball",
   prompt: "Select the ball from the box that is <b>LEAST likely</b> to produce a colored ball.",
-  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
 // 5. Select the ball from the box that is the SECOND MOST likely to produce a colored ball
@@ -460,13 +469,15 @@ timeline.push({
   type: jsComprehensionSelection,
   draw: standardDraw,
   urn_html: staticUrns,
+  rule_text: ruleBox,
+  urn_map: urnMap,
   urn_keys: ["A", "B", "C", "D"],
   urn_map: urnMap,
   correct_keys: [secondMostLikelyUrnKey],
   allow_multiple: false,
   question_id: "comp_second_most_likely_ball",
   prompt: "Select the ball from the box that is the <b>SECOND MOST likely</b> to produce a colored ball.",
-  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
 // 6. Select the ball from the box that is the THIRD MOST likely to produce a colored ball
@@ -474,13 +485,15 @@ timeline.push({
   type: jsComprehensionSelection,
   draw: standardDraw,
   urn_html: staticUrns,
+  rule_text: ruleBox,
+  urn_map: urnMap,
   urn_keys: ["A", "B", "C", "D"],
   urn_map: urnMap,
   correct_keys: [thirdMostLikelyUrnKey],
   allow_multiple: false,
   question_id: "comp_third_most_likely_ball",
   prompt: "Select the ball from the box that is the <b>THIRD MOST likely</b> to produce a colored ball.",
-  on_finish: function() { jsPsych.getDisplayElement().innerHTML = ''; }
+  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
 });
 
 
@@ -489,11 +502,11 @@ timeline.push({
   stimulus: `
   <div class="instructions-container">
   <h2>You are now ready for the experiment!</h2>
-    <p> In the following task you will see several scenarios that were drawn by another player, John, who <i>does not know the rule of the game</i>.
-    With each sample draw, John will ask why he won or lost.
+    <p> In the following task you will see several several scenarios that were drawn by another player, John, who does not know the rule of the game.
+    John is trying to learn the rule of the game based on the scenarios that appear, and will also be requesting specific explanations for each of the outcomes.
     </p>
     <p>
-    Your task is to select the ball that best explains the result.
+    Your task is to select the ball that best explains the result to John.
     </p>
     <p>
     When you are ready, click the <b>Start experiment</b> button.</p>
@@ -535,7 +548,36 @@ function prepareGridScenarios(allDraws, urnMap, ruleFn) {
   return shuffleArray(scenarios);
 }
 
+
+// 1. Prepare and shuffle all 16 scenarios
 const gridScenarios = prepareGridScenarios(allDraws, urnMap, rule);
+
+// 2. Chunk scenarios into arrays of 4
+function chunkArray(arr, chunkSize) {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += chunkSize) {
+    chunks.push(arr.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+const scenarioBatches = chunkArray(gridScenarios, 4);
+
+// 3. Push 4 trials (1 for each 2x2 batch) to timeline
+scenarioBatches.forEach((batch, batchIdx) => {
+  timeline.push({
+    type: jsPsychExplanationGrid,
+    urn_html: staticUrns,
+    rule_text: ruleBox,
+    urn_map: urnMap,
+    urn_keys: ["A", "B", "C", "D"],
+    agent_name: "John",
+    scenarios: batch,
+    rule_fn: rule,
+    question_id: `explanation_batch_${batchIdx + 1}`,
+    button_label: batchIdx === scenarioBatches.length - 1 ? "Submit & Continue" : "Submit Batch Selections"
+  });
+});
 
 
 // Pre-Sampled Explanation Selection Trial
@@ -544,7 +586,7 @@ timeline.push({
   urn_html: staticUrns, // Pre-rendered Urns with static target slots
   agent_name: "John", // Sets subject name for narrative text
   rule_text: ruleBox,
-  draws: allDraws, 
+  draws: allDraws,
   urn_map: urnMap,
   urn_keys: ["A", "B", "C", "D"],
   max_samples: allDraws.length,
