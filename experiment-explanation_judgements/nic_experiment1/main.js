@@ -239,65 +239,65 @@ const timeline = [];
 //   }
 // });
 
-// Instruction trial
-timeline.push({
-  type: jsPsychInstructions,
-  pages: [`
-    <div class="instructions-container">
-    <h2>Instructions 1/2</h2>
-    ${staticUrns}
-      <p>In this study, you will be interacting with four boxes with a mix of colored and uncolored balls.
-      Each box contains some proportion of grey balls and some proportion of colored balls unique to each urn:</p>
-      <p style = "text-align: center;">
-      <span style="color: orange;"><b>A (orange)</b></span>, <span style="color: blue;"><b>B (blue)</b></span>, <span style="color: purple;"><b>C (purple)</b></span>, and <span style="color: hotpink;"><b>D (pink)</b></span>.
-      </p>
-      <p>
-      Notice that some boxes have more colored balls than others making the chances of getting a colored ball different from each box.
-      </p>
-      <br>
+// // Instruction trial
+// timeline.push({
+//   type: jsPsychInstructions,
+//   pages: [`
+//     <div class="instructions-container">
+//     <h2>Instructions 1/2</h2>
+//     ${staticUrns}
+//       <p>In this study, you will be interacting with four boxes with a mix of colored and uncolored balls.
+//       Each box contains some proportion of grey balls and some proportion of colored balls unique to each urn:</p>
+//       <p style = "text-align: center;">
+//       <span style="color: orange;"><b>A (orange)</b></span>, <span style="color: blue;"><b>B (blue)</b></span>, <span style="color: purple;"><b>C (purple)</b></span>, and <span style="color: hotpink;"><b>D (pink)</b></span>.
+//       </p>
+//       <p>
+//       Notice that some boxes have more colored balls than others making the chances of getting a colored ball different from each box.
+//       </p>
+//       <br>
       
-    </div>
-  `,
-  `
-  <div class="instructions-container">
-  <h2>Instructions 2/2</h2>
-  ${staticUrns}
-  <p>
-  Here you are playing a game where you will be drawing balls from each of the boxes.
-  Each of the boxes has a <b>Draw</b> button below it. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next section.</p>
-  <p>
-  Once all the balls are drawn from each of the boxes, the rule of the game will determine the result of the draws as a <span class="win">win</span> or a <span class="lose">loss</span>.  
-  If the rule is not satisfied, the trial will result in a loss. 
-  Sometimes several combinations are possible to make a win, and sometimes only one combination is necessary. 
-  </p>
-  <p>
-  In the following task you will be introduced to a new rule. You will have 10 rounds to draw samples and understand how the rule works in different scenarios. 
-  </p>
-  <p>Click 'Next' when you are ready to continue.</p>
-  </div>
-    `
-  ],
-  show_clickable_nav: true,
-  data: { question_id: "instructions_familiarisation" }
-});
+//     </div>
+//   `,
+//   `
+//   <div class="instructions-container">
+//   <h2>Instructions 2/2</h2>
+//   ${staticUrns}
+//   <p>
+//   Here you are playing a game where you will be drawing balls from each of the boxes.
+//   Each of the boxes has a <b>Draw</b> button below it. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next section.</p>
+//   <p>
+//   Once all the balls are drawn from each of the boxes, the rule of the game will determine the result of the draws as a <span class="win">win</span> or a <span class="lose">loss</span>.  
+//   If the rule is not satisfied, the trial will result in a loss. 
+//   Sometimes several combinations are possible to make a win, and sometimes only one combination is necessary. 
+//   </p>
+//   <p>
+//   In the following task you will be introduced to a new rule. You will have 10 rounds to draw samples and understand how the rule works in different scenarios. 
+//   </p>
+//   <p>Click 'Next' when you are ready to continue.</p>
+//   </div>
+//     `
+//   ],
+//   show_clickable_nav: true,
+//   data: { question_id: "instructions_familiarisation" }
+// });
 
-// Familiarisation trial
-timeline.push({
-  type: jsInteractiveDrawSingle,
-  rule_text: ruleBox,
-  urn_html: interactiveUrns,
-  urn_map: urnMap,
-  show_result: true,
-  draws: familiarisationDraws,
-  urn_keys: ["A", "B", "C", "D"],
-  question_id: "familiarisation",
-  max_samples: 10,
-  rule_fn: rule,
-  data: { question_id: "familiarisation" },
-  on_finish: function () {
-    jsPsych.getDisplayElement().innerHTML = '';
-  }
-});
+// // Familiarisation trial
+// timeline.push({
+//   type: jsInteractiveDrawSingle,
+//   rule_text: ruleBox,
+//   urn_html: interactiveUrns,
+//   urn_map: urnMap,
+//   show_result: true,
+//   draws: familiarisationDraws,
+//   urn_keys: ["A", "B", "C", "D"],
+//   question_id: "familiarisation",
+//   max_samples: 10,
+//   rule_fn: rule,
+//   data: { question_id: "familiarisation" },
+//   on_finish: function () {
+//     jsPsych.getDisplayElement().innerHTML = '';
+//   }
+// });
 
 timeline.push({
   type: jsPsychHtmlButtonResponse,
@@ -324,19 +324,36 @@ const allDraws = generateAllDrawCombinations(urnMap);
 const testDraws = shuffleArray(allDraws.slice()).slice(0, 5);
 
 timeline.push({
-  type: jsPredictionTask,
+  type: jsComprehensionGridPrediction,
   rule_text: ruleBox,
   urn_html: renderUrnsHTML(),
   urn_map: urnMap,
-  draws: predictionDraws,
+  scenarios: predictionDraws.slice(0, 4), 
   urn_keys: ["A", "B", "C", "D"],
-  rule_fn: rule,
-  question_id: "comprehension_rule",
-  prompt: `<p>Please predict the outcome for every draw below.</p><p>Click the result boxes to switch between <span style='color: green; font-weight: bold;'>WIN</span> and <span style='color: red; font-weight: bold;'>LOSE</span>.</p>`,
+  agent_name: "John",
+  rule_fn: rule, // Evaluation function returning true (win) or false (lose)
+  question_id: "comprehension_rule_prediction_grid",
+  submit_button_label: "Submit All",
+  continue_button_label: "Continue to Next Section",
   on_finish: function () {
     jsPsych.getDisplayElement().innerHTML = '';
   }
 });
+
+// timeline.push({
+//   type: jsPredictionTask,
+//   rule_text: ruleBox,
+//   urn_html: renderUrnsHTML(),
+//   urn_map: urnMap,
+//   draws: predictionDraws,
+//   urn_keys: ["A", "B", "C", "D"],
+//   rule_fn: rule,
+//   question_id: "comprehension_rule",
+//   prompt: `<p>Please predict the outcome for every draw below.</p><p>Click the result boxes to switch between <span style='color: green; font-weight: bold;'>WIN</span> and <span style='color: red; font-weight: bold;'>LOSE</span>.</p>`,
+//   on_finish: function () {
+//     jsPsych.getDisplayElement().innerHTML = '';
+//   }
+// });
 
 
 timeline.push({
