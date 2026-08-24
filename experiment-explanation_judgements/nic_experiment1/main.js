@@ -96,20 +96,6 @@ function sampleDraw() {
   return draw;
 }
 
-function generateUrnBallsData(urnKey, total = 20) {
-  const { color, prob } = urnMap[urnKey];
-  const n_colored = Math.round(prob * total);
-  const n_lightgrey = total - n_colored;
-  const rawColors = shuffleArray(
-    Array(n_colored).fill(color).concat(Array(n_lightgrey).fill('lightgrey'))
-  );
-
-  return rawColors.map((col, idx) => ({
-    id: `ball-${urnKey}-${idx}`,
-    color: col
-  }));
-}
-
 // Step 1: Pre-generate or centralize the state elsewhere
 function getOrCreateUrnsData() {
   const urnsData = {};
@@ -122,36 +108,44 @@ function getOrCreateUrnsData() {
 // Global or shared state instance
 const sharedUrnsData = getOrCreateUrnsData();
 
-// Step 2: Accept the shared data in your render function
+
+function generateUrnBallsData(urnKey, total = 20) {
+  const { color, prob } = urnMap[urnKey];
+  const nColored = Math.round(prob * total);
+  const rawColors = shuffleArray(Array(nColored).fill(color).concat(Array(total - nColored).fill('lightgrey')));
+
+  return rawColors.map((col, idx) => ({
+    id: `ball-${urnKey}-${idx}`,
+    color: col
+  }));
+}
+
 function renderUrnsHTML(urnsData = sharedUrnsData, interactive = false) {
-  return `<div class="urn-display">
-    ${Object.keys(urnMap).map(urnKey => {
-    // Use the shared data passed into the function instead of calling generateUrnBallsData()
+  const columns = Object.keys(urnMap).map(urnKey => {
     const ballsData = urnsData[urnKey] || [];
     const ballsHTML = ballsData.map(b => {
-      const isGrey = (b.color === "lightgrey" || b.color === "grey" || b.color === "#d3d3d3");
-      const ballColor = isGrey ? "#c0c0c0" : b.color;
-      return `<div class="ball" id="${b.id}" data-color="${b.color}" style="background-color:${ballColor};"></div>`;
+      const isGrey = ["lightgrey", "grey", "#d3d3d3"].includes(b.color);
+      return `<div class="ball" id="${b.id}" data-color="${b.color}" style="background-color:${isGrey ? '#c0c0c0' : b.color};"></div>`;
     }).join('');
 
-    return `<div class="urn-column" data-urn="${urnKey}">
-                <div class="urn-label" style="color: ${urnMap[urnKey].color};">
-                  ${urnLabels[urnKey]}
-                </div> 
-                <div class="urn" id="urn-container-${urnKey}">${ballsHTML}</div>
-                <div class="urn-controls-compact">
-                  <button class="push-draw-btn" data-urn="${urnKey}" ${interactive ? '' : 'disabled'}>DRAW</button>
-                  <div class="urn-slot" id="slot-${urnKey}"></div>
-                </div>
-              </div>`;
-  }).join('')}
-  </div>`;
+    return `
+      <div class="urn-column" data-urn="${urnKey}">
+        <div class="urn-label" style="color: ${urnMap[urnKey].color};">${urnLabels[urnKey]}</div> 
+        <div class="urn" id="urn-container-${urnKey}">${ballsHTML}</div>
+        <div class="urn-controls-compact">
+          <button class="push-draw-btn" data-urn="${urnKey}" ${interactive ? '' : 'disabled'}>DRAW</button>
+          <div class="urn-slot" id="slot-${urnKey}"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `<div class="urn-display">${columns}</div>`;
 }
+
 
 // Interactive version for your new trial
 const staticUrns = renderUrnsHTML(sharedUrnsData, false);
 const interactiveUrns = renderUrnsHTML(sharedUrnsData, true);
-
 
 
 
@@ -400,100 +394,30 @@ const standardDraw = {
   D: urnMap.D.color
 };
 
-// ===== Comprehension Check Trials =====
 
-// 1. Select the only colored ball
-timeline.push({
-  type: jsComprehensionSelection,
-  draw: singleColoredDraw,
-  urn_html: staticUrns,
-  rule_text: ruleBox,
-  urn_map: urnMap,
-  urn_keys: ["A", "B", "C", "D"],
-  correct_keys: ["A"],
-  urn_map: urnMap,
-  allow_multiple: false,
-  question_id: "comp_only_colored_ball",
-  prompt: "Select the <b>only colored ball</b>.",
-  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
-});
+const comprehensionTrials = [
+  { id: "comp_only_colored_ball", draw: singleColoredDraw, correct: ["A"], prompt: "Select the <b>only colored ball</b>." },
+  { id: "comp_only_grey_ball", draw: singleGreyDraw, correct: ["D"], prompt: "Select the <b>only grey ball</b>." },
+  { id: "comp_most_likely_ball", draw: standardDraw, correct: [mostLikelyUrnKey], prompt: "Select the ball from the box that is <b>MOST likely</b> to produce a colored ball." },
+  { id: "comp_least_likely_ball", draw: standardDraw, correct: [leastLikelyUrnKey], prompt: "Select the ball from the box that is <b>LEAST likely</b> to produce a colored ball." },
+  { id: "comp_second_most_likely_ball", draw: standardDraw, correct: [secondMostLikelyUrnKey], prompt: "Select the ball from the box that is the <b>SECOND MOST likely</b> to produce a colored ball." },
+  { id: "comp_third_most_likely_ball", draw: standardDraw, correct: [thirdMostLikelyUrnKey], prompt: "Select the ball from the box that is the <b>THIRD MOST likely</b> to produce a colored ball." }
+];
 
-// 2. Select the only grey ball
-timeline.push({
-  type: jsComprehensionSelection,
-  urn_html: staticUrns,
-  urn_map: urnMap,
-  rule_text: ruleBox,
-  draw: singleGreyDraw,
-  urn_keys: ["A", "B", "C", "D"],
-  correct_keys: ["D"],
-  urn_map: urnMap,
-  allow_multiple: false,
-  question_id: "comp_only_grey_ball",
-  prompt: "Select the <b>only grey ball</b>.",
-  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
-});
-
-// 3. Select the ball from the box that is MOST likely to produce a colored ball
-timeline.push({
-  type: jsComprehensionSelection,
-  draw: standardDraw,
-  urn_html: staticUrns,
-  urn_map: urnMap,
-  rule_text: ruleBox,
-  urn_keys: ["A", "B", "C", "D"],
-  correct_keys: [mostLikelyUrnKey],
-  allow_multiple: false,
-  question_id: "comp_most_likely_ball",
-  prompt: "Select the ball from the box that is <b>MOST likely</b> to produce a colored ball.",
-  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
-});
-
-// 4. Select the ball from the box that is LEAST likely to produce a colored ball
-timeline.push({
-  type: jsComprehensionSelection,
-  draw: standardDraw,
-  urn_html: staticUrns,
-  rule_text: ruleBox,
-  urn_map: urnMap,
-  urn_keys: ["A", "B", "C", "D"],
-  correct_keys: [leastLikelyUrnKey],
-  allow_multiple: false,
-  question_id: "comp_least_likely_ball",
-  prompt: "Select the ball from the box that is <b>LEAST likely</b> to produce a colored ball.",
-  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
-});
-
-// 5. Select the ball from the box that is the SECOND MOST likely to produce a colored ball
-timeline.push({
-  type: jsComprehensionSelection,
-  draw: standardDraw,
-  urn_html: staticUrns,
-  rule_text: ruleBox,
-  urn_map: urnMap,
-  urn_keys: ["A", "B", "C", "D"],
-  urn_map: urnMap,
-  correct_keys: [secondMostLikelyUrnKey],
-  allow_multiple: false,
-  question_id: "comp_second_most_likely_ball",
-  prompt: "Select the ball from the box that is the <b>SECOND MOST likely</b> to produce a colored ball.",
-  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
-});
-
-// 6. Select the ball from the box that is the THIRD MOST likely to produce a colored ball
-timeline.push({
-  type: jsComprehensionSelection,
-  draw: standardDraw,
-  urn_html: staticUrns,
-  rule_text: ruleBox,
-  urn_map: urnMap,
-  urn_keys: ["A", "B", "C", "D"],
-  urn_map: urnMap,
-  correct_keys: [thirdMostLikelyUrnKey],
-  allow_multiple: false,
-  question_id: "comp_third_most_likely_ball",
-  prompt: "Select the ball from the box that is the <b>THIRD MOST likely</b> to produce a colored ball.",
-  on_finish: function () { jsPsych.getDisplayElement().innerHTML = ''; }
+comprehensionTrials.forEach(t => {
+  timeline.push({
+    type: jsComprehensionSelection,
+    draw: t.draw,
+    urn_html: staticUrns,
+    rule_text: ruleBox,
+    urn_map: urnMap,
+    urn_keys: ["A", "B", "C", "D"],
+    correct_keys: t.correct,
+    allow_multiple: false,
+    question_id: t.id,
+    prompt: t.prompt,
+    on_finish: () => { jsPsych.getDisplayElement().innerHTML = ''; }
+  });
 });
 
 
