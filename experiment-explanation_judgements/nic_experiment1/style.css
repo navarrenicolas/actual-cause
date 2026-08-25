@@ -586,7 +586,7 @@ span.lose {
 }
 
 .highlight-box {
-    width: 80%;
+    width: 70%;
     margin: 20px auto;
     padding: 18px 24px;
     font-family: Arial, sans-serif;
@@ -1286,14 +1286,13 @@ button.comp-stacked-btn.predict-lose-btn.is-selected {
 }
 
 .explanation-2x2-container .explanation-instruction-hint {
-    font-size: 0.8em;
+    font-size: 1em;
     color: #555;
     margin-bottom: 2px;
 }
 
 .explanation-2x2-container .grid-submit-btn {
-    margin-top: 0 !important;
+    margin-top: 2px !important;
     margin-bottom: 2px !important;
     padding: 3px 14px !important;
-    font-size: 0.82em !important;
 }

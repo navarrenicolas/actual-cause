@@ -73,7 +73,7 @@ window.UrnUtils = (function () {
       ? `<span class="win">${agentName === "You" ? "WON!" : "won."}</span>` 
       : `<span class="lose">${agentName === "You" ? "LOST!" : "lost."}</span>`;
 
-    const resultHTML = showResult ? ` With this draw ${agentName} ${outcomeMarkup}` : "";
+    const resultHTML = showResult ? ` <b>With this draw ${agentName} ${outcomeMarkup}</b>` : "";
 
     return `${probHTML}<p>In this trial, ${agentName} drew ${formatGrammarList(items)}.${resultHTML}</p>`;
   }

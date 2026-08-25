@@ -172,7 +172,7 @@ var jsComprehensionGridPrediction = (function (jspsych) {
           <!-- BOTTOM PANEL: ACTION CONTROL -->
           <div class="draw-action-segment explanation-action-segment">
             <div id="instruction-hint" class="explanation-instruction-hint">
-              Select WON or LOST for each task in the grid, then submit your answers.
+              Select <span class="win">WON</span> or <span class="lose">LOST</span> for each scenario above.
             </div>
             
             <button id="grid-submit-btn" class="jspsych-btn grid-submit-btn">
@@ -308,6 +308,12 @@ var jsComprehensionGridPrediction = (function (jspsych) {
           submitBtn.style.display = "none";
           continueBtn.style.display = "inline-block";
           if (hintEl) hintEl.textContent = "All predictions correct! Click Continue to proceed.";
+
+          // Disable all prediction buttons across all cards
+          const allPredictBtns = display_element.querySelectorAll(".predict-btn");
+          allPredictBtns.forEach((btn) => {
+            btn.disabled = true;
+          });
         }
       });
 

@@ -1,6 +1,8 @@
 /**
  * jsPsych plugin for Interactive Single Urn Draw Trial
  * Uses shared UrnUtils to calculate probability and render draw summary descriptions.
+ * - Wraps urn display with grid-style card wrapper and card footer.
+ * - Dynamically updates scenario probability matching grid trial styling.
  */
 var jsInteractiveDrawSingle = (function (jspsych) {
   "use strict";
@@ -97,7 +99,16 @@ var jsInteractiveDrawSingle = (function (jspsych) {
           
           <div id="top-segment" class="draw-top-segment">
             ${showRule && trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
-            <div id="urns-wrapper">${trial.urn_html || ""}</div>
+            
+            <!-- Urns Container Grid-Style Wrapper -->
+            <div class="urns-card-wrapper" id="urns-card-single">
+              <div class="urns-display-container" id="urns-wrapper">
+                ${trial.urn_html || ""}
+              </div>
+              <div class="urns-card-footer">
+                <span class="card-probability-text" id="scenario-prob-text"></span>
+              </div>
+            </div>
             
             <div class="counter-display">
               <p id="remaining-samples">${trial.remaining_label} ${totalSamples - sampleIndex}</p>
@@ -123,6 +134,23 @@ var jsInteractiveDrawSingle = (function (jspsych) {
       const nextSampleBtn = display_element.querySelector("#next-sample-btn");
       const continueBtn = display_element.querySelector("#continue-btn");
       const remainingSamples = display_element.querySelector("#remaining-samples");
+      const probTextEl = display_element.querySelector("#scenario-prob-text");
+
+      const updateScenarioProbability = (drawData) => {
+        if (!probTextEl) return;
+        
+        const targetDraw = draws[sampleIndex] || drawData;
+        let probText = "";
+
+        if (targetDraw && targetDraw.prob !== undefined) {
+          probText = String(targetDraw.prob).includes("%") ? targetDraw.prob : `${targetDraw.prob}%`;
+        } else if (utils && trial.urn_map && drawData && Object.keys(drawData).length > 0) {
+          const calculatedProb = utils.computeDrawProbability(drawData, trial.urn_map);
+          probText = calculatedProb ? `${calculatedProb}%` : "";
+        }
+
+        probTextEl.textContent = probText ? `Scenario Probability ${probText}` : "";
+      };
 
       const finishTrial = () => {
         display_element.innerHTML = "";
@@ -137,14 +165,16 @@ var jsInteractiveDrawSingle = (function (jspsych) {
         const urnsWrapper = display_element.querySelector("#urns-wrapper");
         urnsWrapper.innerHTML = trial.urn_html || "";
 
-        urnKeys.forEach(k => {
+        urnKeys.forEach((k) => {
           const slotEl = display_element.querySelector(`#slot-${k}`);
           if (slotEl) slotEl.innerHTML = "";
         });
 
-        display_element.querySelectorAll(".drawn-hidden").forEach(el => {
+        display_element.querySelectorAll(".drawn-hidden").forEach((el) => {
           el.classList.remove("drawn-hidden");
         });
+
+        if (probTextEl) probTextEl.textContent = "";
 
         bindButtonHandlers();
 
@@ -171,14 +201,14 @@ var jsInteractiveDrawSingle = (function (jspsych) {
         if (urnContainer && slotEl) {
           const balls = Array.from(urnContainer.querySelectorAll(".ball"));
           
-          const matchingBalls = balls.filter(b => {
+          const matchingBalls = balls.filter((b) => {
             if (b.classList.contains("drawn-hidden") || b.closest(".urn-slot")) return false;
             return utils.matchesColor(b, drawnColor);
           });
 
           let targetBall = matchingBalls.length > 0 
             ? matchingBalls[Math.floor(Math.random() * matchingBalls.length)]
-            : balls.find(b => !b.classList.contains("drawn-hidden") && !b.closest(".urn-slot"));
+            : balls.find((b) => !b.classList.contains("drawn-hidden") && !b.closest(".urn-slot"));
 
           if (targetBall) {
             const ballRect = targetBall.getBoundingClientRect();
@@ -227,6 +257,8 @@ var jsInteractiveDrawSingle = (function (jspsych) {
           const completedDraw = { ...currentTrialDraw };
           const result = trial.rule_fn ? trial.rule_fn(completedDraw) : false;
 
+          updateScenarioProbability(completedDraw);
+
           sampleIndex += 1;
 
           if (typeof this.jsPsych.increaseTrialIndex === "function") {
@@ -249,7 +281,7 @@ var jsInteractiveDrawSingle = (function (jspsych) {
             urnKeys, 
             agentName, 
             result, 
-            trial.urn_map, 
+            null, 
             showResult
           );
 
@@ -267,7 +299,7 @@ var jsInteractiveDrawSingle = (function (jspsych) {
       };
 
       const bindButtonHandlers = () => {
-        display_element.querySelectorAll(".push-draw-btn").forEach(btn => {
+        display_element.querySelectorAll(".push-draw-btn").forEach((btn) => {
           btn.addEventListener("click", (e) => {
             const urnKey = e.currentTarget.getAttribute("data-urn");
             handleUrnDraw(urnKey, e.currentTarget);

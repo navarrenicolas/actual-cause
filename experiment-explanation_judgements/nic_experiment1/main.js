@@ -220,66 +220,66 @@ jsPsych.data.addProperties({
 
 const timeline = [];
 
-// // Consent
-// timeline.push(consentTrial);
+// Consent
+timeline.push(consentTrial);
 
-// // Prolific ID
-// timeline.push({
-//   type: jsPsychSurveyText,
-//   questions: [
-//     {
-//       prompt: "Please enter your Prolific ID:",
-//       name: "prolific_id",
-//       required: true
-//     }
-//   ],
-//   data: { question_id: "prolific_entry" },
-//   on_finish: function(data) {
-//     jsPsych.getDisplayElement().innerHTML = ''; 
-//   }
-// });
+// Prolific ID
+timeline.push({
+  type: jsPsychSurveyText,
+  questions: [
+    {
+      prompt: "Please enter your Prolific ID:",
+      name: "prolific_id",
+      required: true
+    }
+  ],
+  data: { question_id: "prolific_entry" },
+  on_finish: function(data) {
+    jsPsych.getDisplayElement().innerHTML = ''; 
+  }
+});
 
-// // Instruction trial
-// timeline.push({
-//   type: jsPsychInstructions,
-//   pages: [`
-//     <div class="instructions-container">
-//     <h2>Instructions 1/2</h2>
-//     ${staticUrns}
-//       <p>In this study, you will be interacting with four boxes with a mix of colored and uncolored balls.
-//       Each box contains some proportion of grey balls and some proportion of colored balls unique to each urn:</p>
-//       <p style = "text-align: center;">
-//       <span style="color: orange;"><b>A (orange)</b></span>, <span style="color: blue;"><b>B (blue)</b></span>, <span style="color: purple;"><b>C (purple)</b></span>, and <span style="color: hotpink;"><b>D (pink)</b></span>.
-//       </p>
-//       <p>
-//       Notice that some boxes have more colored balls than others making the chances of getting a colored ball different from each box.
-//       </p>
-//       <br>
+// Instruction trial
+timeline.push({
+  type: jsPsychInstructions,
+  pages: [`
+    <div class="instructions-container">
+    <h2>Instructions 1/2</h2>
+    ${staticUrns}
+      <p>In this study, you will be interacting with four boxes with a mix of colored and uncolored balls.
+      Each box contains some proportion of grey balls and some proportion of colored balls unique to each urn:</p>
+      <p style = "text-align: center;">
+      <span style="color: orange;"><b>A (orange)</b></span>, <span style="color: blue;"><b>B (blue)</b></span>, <span style="color: purple;"><b>C (purple)</b></span>, and <span style="color: hotpink;"><b>D (pink)</b></span>.
+      </p>
+      <p>
+      Notice that some boxes have more colored balls than others making the chances of getting a colored ball different from each box.
+      </p>
+      <br>
       
-//     </div>
-//   `,
-//   `
-//   <div class="instructions-container">
-//   <h2>Instructions 2/2</h2>
-//   ${staticUrns}
-//   <p>
-//   Here you are playing a game where you will be drawing balls from each of the boxes.
-//   Each of the boxes has a <b>Draw</b> button below it. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next section.</p>
-//   <p>
-//   Once all the balls are drawn from each of the boxes, the rule of the game will determine the result of the draws as a <span class="win">win</span> or a <span class="lose">loss</span>.  
-//   If the rule is not satisfied, the trial will result in a loss. 
-//   Sometimes several combinations are possible to make a win, and sometimes only one combination is necessary. 
-//   </p>
-//   <p>
-//   In the following task you will be introduced to a new rule. You will have 10 rounds to draw samples and understand how the rule works in different scenarios. 
-//   </p>
-//   <p>Click 'Next' when you are ready to continue.</p>
-//   </div>
-//     `
-//   ],
-//   show_clickable_nav: true,
-//   data: { question_id: "instructions_familiarisation" }
-// });
+    </div>
+  `,
+  `
+  <div class="instructions-container">
+  <h2>Instructions 2/2</h2>
+  ${staticUrns}
+  <p>
+  Here you are playing a game where you will be drawing balls from each of the boxes.
+  Each of the boxes has a <b>Draw</b> button below it. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next section.</p>
+  <p>
+  Once all the balls are drawn from each of the boxes, the rule of the game will determine the result of the draws as a <span class="win">win</span> or a <span class="lose">loss</span>.  
+  If the rule is not satisfied, the trial will result in a loss. 
+  Sometimes several combinations are possible to make a win, and sometimes only one combination is necessary. 
+  </p>
+  <p>
+  In the following task you will be introduced to a new rule. You will have 10 rounds to draw samples and understand how the rule works in different scenarios. 
+  </p>
+  <p>Click 'Next' when you are ready to continue.</p>
+  </div>
+    `
+  ],
+  show_clickable_nav: true,
+  data: { question_id: "instructions_familiarisation" }
+});
 
 // Familiarisation trial
 timeline.push({
@@ -452,7 +452,11 @@ const compTrial1 = {
       correct: [["B"], ["C"], ["D"]], // or specify accepted key
       prompt: "Select <b>any grey ball</b>:"
     }
-  ]
+  ],
+  on_finish: function () {
+    jsPsych.getDisplayElement().innerHTML = '';
+  }
+
 };
 
 // TRIAL 2: Probability Ranking Tasks Grid (4 Tasks, Same Sample)
@@ -488,7 +492,10 @@ const compTrial2 = {
       correct: [leastLikelyUrnKey],
       prompt: "Select the ball <b>least likely</b> to produce a colored ball."
     }
-  ]
+  ],
+  on_finish: function () {
+    jsPsych.getDisplayElement().innerHTML = '';
+  }
 };
 
 // Push to jsPsych Timeline

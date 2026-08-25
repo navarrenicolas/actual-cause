@@ -194,7 +194,7 @@ var jsComprehensionGridSelection = (function (jspsych) {
           <!-- BOTTOM PANEL: ACTION CONTROL -->
           <div class="draw-action-segment explanation-action-segment">
             <div id="instruction-hint" class="explanation-instruction-hint">
-              Select the correct ball for each task in the grid.
+              Select the correct ball for each scenario above.
             </div>
             
             <!-- Phase 1 Button: Submit All -->

@@ -150,7 +150,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
           <!-- BOTTOM PANEL: ACTION & SUBMIT BUTTON -->
           <div class="draw-action-segment explanation-action-segment">
             <div class="explanation-instruction-hint">
-              Click the balls to select an explanation for each of the 4 scenarios.
+              Click the balls to select an explanation for each scenario above.
             </div>
             <button id="grid-submit-btn" class="jspsych-btn grid-submit-btn" disabled>
               ${trial.button_label}
