@@ -137,7 +137,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
                 <div class="card-question-text" id="card-question-${idx}">
                   Why did ${agentName} <span class="${isWin ? 'win' : 'lose'}">${isWin ? 'win' : 'lose'}</span>?
                 </div>
-                <div class="card-explanation-sentence is-hidden" id="card-explanation-${idx}"></div>
+                <div class="card-explanation-sentence is-hidden" id="card-explanation-${idx}">&nbsp;</div>
               </div>
             </div>
           </div>

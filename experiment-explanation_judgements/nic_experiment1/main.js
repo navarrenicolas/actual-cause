@@ -281,23 +281,23 @@ const timeline = [];
 //   data: { question_id: "instructions_familiarisation" }
 // });
 
-// // Familiarisation trial
-// timeline.push({
-//   type: jsInteractiveDrawSingle,
-//   rule_text: ruleBox,
-//   urn_html: interactiveUrns,
-//   urn_map: urnMap,
-//   show_result: true,
-//   draws: familiarisationDraws,
-//   urn_keys: ["A", "B", "C", "D"],
-//   question_id: "familiarisation",
-//   max_samples: 10,
-//   rule_fn: rule,
-//   data: { question_id: "familiarisation" },
-//   on_finish: function () {
-//     jsPsych.getDisplayElement().innerHTML = '';
-//   }
-// });
+// Familiarisation trial
+timeline.push({
+  type: jsInteractiveDrawSingle,
+  rule_text: ruleBox,
+  urn_html: interactiveUrns,
+  urn_map: urnMap,
+  show_result: true,
+  draws: familiarisationDraws,
+  urn_keys: ["A", "B", "C", "D"],
+  question_id: "familiarisation",
+  max_samples: 10,
+  rule_fn: rule,
+  data: { question_id: "familiarisation" },
+  on_finish: function () {
+    jsPsych.getDisplayElement().innerHTML = '';
+  }
+});
 
 timeline.push({
   type: jsPsychHtmlButtonResponse,
@@ -432,25 +432,25 @@ const compTrial1 = {
       id: "comp_only_colored_ball",
       draw: singleColoredDraw,
       correct: ["A"],
-      prompt: "Select the <b>only colored ball</b>."
+      prompt: "Select the <b>only colored ball</b>:"
     },
     {
       id: "comp_only_grey_ball",
       draw: singleGreyDraw,
       correct: ["D"],
-      prompt: "Select the <b>only grey ball</b>."
+      prompt: "Select the <b>only grey ball</b>:"
     },
     {
       id: "comp_any_colored_ball",
       draw: multiColorDraw,
       correct: [["A"], ["B"], ["D"]], // or specify accepted key
-      prompt: "Select <b>any colored ball</b>."
+      prompt: "Select <b>any colored ball</b>:"
     },
     {
       id: "comp_any_grey_ball",
       draw: singleColoredDraw,
       correct: [["B"], ["C"], ["D"]], // or specify accepted key
-      prompt: "Select <b>any grey ball</b>."
+      prompt: "Select <b>any grey ball</b>:"
     }
   ]
 };
@@ -468,25 +468,25 @@ const compTrial2 = {
       id: "comp_most_likely_ball",
       draw: standardDraw,
       correct: [mostLikelyUrnKey],
-      prompt: "Select the ball <b>MOST likely</b> to produce a colored ball."
+      prompt: "Select the ball <b>most likely</b> to produce a colored ball."
     },
     {
       id: "comp_second_most_likely_ball",
       draw: standardDraw,
       correct: [secondMostLikelyUrnKey],
-      prompt: "Select the ball <b>SECOND MOST likely</b> to produce a colored ball."
+      prompt: "Select the ball <b>second most likely</b> to produce a colored ball."
     },
     {
       id: "comp_third_most_likely_ball",
       draw: standardDraw,
       correct: [thirdMostLikelyUrnKey],
-      prompt: "Select the ball <b>THIRD MOST likely</b> to produce a colored ball."
+      prompt: "Select the ball <b>third most likely</b> to produce a colored ball."
     },
     {
       id: "comp_least_likely_ball",
       draw: standardDraw,
       correct: [leastLikelyUrnKey],
-      prompt: "Select the ball <b>LEAST likely</b> to produce a colored ball."
+      prompt: "Select the ball <b>least likely</b> to produce a colored ball."
     }
   ]
 };

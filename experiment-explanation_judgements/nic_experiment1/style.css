@@ -18,8 +18,7 @@ html {
     align-items: center;     /* Centers trial segments horizontally */
     height: 98vh;
     max-height: 100vh;
-    width: 80vw;
-    max-width: 900px;
+    width: 90vw;
     margin: 0 auto;
     box-sizing: border-box;
 }
@@ -81,7 +80,6 @@ html {
     gap: clamp(8px, 1.5vw, 16px);
     margin-bottom: 5px;
     width: 100%;
-    max-width: 100%;
     box-sizing: border-box;
 }
 
@@ -1001,16 +999,16 @@ span.lose {
    ========================================================================== */
 
 /* Namespaced outer container override */
-.draw-plugin-container.explanation-2x2-container {
-    height: 98vh;
+.explanation-2x2-container {
+    height: fit-content;
     max-height: 100vh;
-    width: 95vw;
-    max-width: 1050px;
-    margin: 0 auto;
-    padding: 4px;
+    width: 100%;
+    max-width: 95vw;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
+    margin: 0 auto;
     box-sizing: border-box;
 }
 
@@ -1022,9 +1020,9 @@ span.lose {
 }
 
 .explanation-2x2-container .grid-rule-text {
-    font-size: 0.95em;
+    font-size: 0.9em;
     font-weight: bold;
-    margin: 0 0 4px 0;
+    margin: 0 0 2px 0;
     color: #333;
 }
 
@@ -1034,7 +1032,7 @@ span.lose {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 6px;
+    gap: 4px;
     width: 100%;
     min-height: 0;
     box-sizing: border-box;
@@ -1065,173 +1063,218 @@ span.lose {
     justify-content: space-between;
     align-items: center;
     min-height: 0;
+    box-sizing: border-box;
 }
 
-/* Urn scale inside card */
+
 .explanation-2x2-container .urns-card-wrapper {
-    width: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    flex: 1 1 auto;
-    min-height: 0;
+    justify-content: flex-start;
+    width: 100%;
+    height: fit-content;
+    flex: 0 1 auto;
+    box-sizing: border-box;
     overflow: hidden;
 }
 
+.explanation-2x2-container .urns-display-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 0 8px; /* Extra side padding so urns don't touch edges */
+}
+
 .explanation-2x2-container .urns-card-wrapper .urn-display {
-    gap: clamp(2px, 0.8vw, 6px);
-    margin-bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .explanation-2x2-container .urns-card-wrapper .urn {
-    padding: clamp(1px, 0.3vw, 4px);
-    grid-gap: clamp(1px, 0.2vw, 2px);
+    padding: clamp(2px, 0.4vw, 8px);
+    grid-gap: clamp(2px, 0.3vw, 6px);
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .explanation-2x2-container .urns-card-wrapper .ball {
-    width: clamp(8px, 1.2vw, 14px);
-    height: clamp(8px, 1.2vw, 14px);
+    width: clamp(8px, 1.2vw, 24px);   /* Increased max from 12px to 24px */
+    height: clamp(8px, 1.2vw, 24px);  /* Increased max from 12px to 24px */
 }
 
 .explanation-2x2-container .urns-card-wrapper .urn-slot {
-    width: clamp(18px, 2vw, 22px);
-    height: clamp(18px, 2vw, 22px);
+    width: clamp(16px, 2.2vw, 36px);  /* Increased max from 20px to 36px */
+    height: clamp(16px, 2.2vw, 36px); /* Increased max from 20px to 36px */
 }
 
 .explanation-2x2-container .urns-card-wrapper .urn-slot .ball {
-    width: clamp(12px, 1.4vw, 16px);
-    height: clamp(12px, 1.4vw, 16px);
+    width: clamp(12px, 1.8vw, 28px);  /* Increased max from 14px to 28px */
+    height: clamp(12px, 1.8vw, 28px); /* Increased max from 14px to 28px */
 }
 
-/* BASE FEEDBACK BLOCK: Standardized layout across ALL trials */
+
+.explanation-2x2-container .urns-card-footer {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 1px 4px 1px 0;
+    min-height: 12px;
+}
+
+.explanation-2x2-container .card-probability-text {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #555555;
+    white-space: nowrap;
+}
+
+/* COMPACT FIXED-HEIGHT FEEDBACK BLOCK */
 .card-feedback-block {
     flex: 0 0 auto !important;
     width: 100%;
+    height: 54px !important;            /* Reduced from 76px */
+    min-height: 54px !important;
+    max-height: 54px !important;
     text-align: center !important;
     background-color: #f8f9fa !important;
     border-top: 1px solid #e9ecef;
-    padding: 5px 6px !important;
+    padding: 2px 4px !important;
     box-sizing: border-box;
-    min-height: 44px;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
+    overflow: hidden;
 }
 
-/* SIDE-BY-SIDE FEEDBACK BLOCK VARIANT (Prediction Grid Task) */
+.card-outcome-text, 
+.card-question-text, 
+.comp-card-prompt {
+    font-size: 0.8rem !important;
+    color: #333 !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
+    text-align: center !important;
+    width: 100%;
+}
+
+.card-question-text, 
+.comp-card-prompt {
+    font-style: italic;
+}
+
+/* Compact Sentence Containers */
+.card-explanation-sentence,
+.comp-selection-sentence {
+    font-size: 1rem !important;
+    margin-top: 1px !important;
+    color: #222222 !important;
+    line-height: 1.1 !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    width: 100%;
+    min-height: 1.1em !important;      /* Tighter reserved height */
+    display: block !important;
+}
+
+/* Compact Validation Feedback Container */
+.validation-feedback-text {
+    font-size: 0.8rem !important;
+    line-height: 1.1 !important;
+    margin-top: 1px !important;
+    text-align: center !important;
+    width: 100%;
+    min-height: 1.1em !important;
+}
+
+/* Fixed non-collapsing hidden state */
+.card-explanation-sentence.is-hidden,
+.comp-selection-sentence.is-hidden {
+    display: block !important;
+    visibility: hidden !important;
+}
+
+/* Side-by-Side Prediction Feedback Overrides */
 .card-feedback-block.comp-prediction-feedback-block {
     display: flex !important;
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
-    gap: 6px;
-    padding: 4px 8px !important;
+    gap: 4px;
+    padding: 2px 6px !important;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-/* Standardized Center Alignment & Font Sizing inside Feedback Block */
-.explanation-2x2-container .card-outcome-text,
-.card-outcome-text {
-    font-size: 0.88rem;
-    font-weight: bold;
-    margin-bottom: 2px;
-    text-align: center;
-}
-
-.explanation-2x2-container .card-question-text,
-.card-question-text {
-    font-size: 0.84rem;
-    color: #333;
-    text-align: center;
-    line-height: 1.2;
-}
-
-.explanation-2x2-container .card-explanation-sentence,
-.card-explanation-sentence {
-    font-size: 0.84rem;
-    font-weight: 500;
-    line-height: 1.2;
-    text-align: center;
-}
-
-/* Center-aligned Left Column for Prediction Grid */
 .comp-prediction-text-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+    flex: 1 1 auto;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
     min-width: 0;
+    width: 100%;
 }
 
-.comp-card-prompt {
-    font-size: 0.82rem !important;
-    color: #333;
-    line-height: 1.15;
-    margin: 0;
-    text-align: center;
-}
-
-.comp-selection-sentence {
-    font-size: 0.82rem !important;
-    margin-top: 2px;
-    color: #222222;
-    line-height: 1.15;
-    font-weight: 500;
-    text-align: center;
-}
-
-.comp-selection-sentence.is-hidden {
-    display: none;
-}
-
-.validation-feedback-text {
-    font-size: 0.8rem;
-    line-height: 1.15;
-    margin-top: 2px;
-    text-align: center;
-}
-
-/* Stacked Button Group Styling */
+/* Button Group Layout & Spacing */
 .comp-stacked-btn-group {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    flex-shrink: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;            /* Increased gap between Win and Lose buttons */
+    flex-shrink: 0 !important;
 }
 
+/* Scaled Predict Buttons */
 .comp-stacked-btn {
-    padding: 3px 10px !important;
-    font-size: 0.75rem !important;
+    padding: 2px 2px !important;    /* Expanded internal padding for 1.2rem text */
+    font-size: 1rem !important;    /* Button text size */
     font-weight: bold !important;
-    line-height: 1.1 !important;
+    line-height: 1 !important;
     margin: 0 !important;
-    min-width: 52px;
-    border-radius: 4px;
-    cursor: pointer;
+    /* min-width: 80px !important;     Expanded minimum width to prevent overflow */
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: background-color 0.15s ease, color 0.15s ease !important;
 }
 
-.comp-stacked-btn.predict-win-btn {
-    color: #28a745;
-    border: 1px solid #28a745;
-    background-color: #ffffff;
+button.comp-stacked-btn.predict-win-btn {
+    color: #28a745 !important;
+    border: 1px solid #28a745 !important;
+    background-color: #ffffff !important;
 }
 
-.comp-stacked-btn.predict-win-btn.is-selected {
-    background-color: #28a745;
-    color: #ffffff;
+button.comp-stacked-btn.predict-win-btn:hover {
+    background-color: #e8f5e9 !important;
 }
 
-.comp-stacked-btn.predict-lose-btn {
-    color: #dc3545;
-    border: 1px solid #dc3545;
-    background-color: #ffffff;
+button.comp-stacked-btn.predict-win-btn.is-selected {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
 }
 
-.comp-stacked-btn.predict-lose-btn.is-selected {
-    background-color: #dc3545;
-    color: #ffffff;
+button.comp-stacked-btn.predict-lose-btn {
+    color: #dc3545 !important;
+    border: 1px solid #dc3545 !important;
+    background-color: #ffffff !important;
+}
+
+button.comp-stacked-btn.predict-lose-btn:hover {
+    background-color: #fffeeb !important;
+}
+
+button.comp-stacked-btn.predict-lose-btn.is-selected {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
 }
 
 /* 3. Bottom Action Panel */
@@ -1243,7 +1286,7 @@ span.lose {
 }
 
 .explanation-2x2-container .explanation-instruction-hint {
-    font-size: 0.85em;
+    font-size: 0.8em;
     color: #555;
     margin-bottom: 2px;
 }
@@ -1251,38 +1294,6 @@ span.lose {
 .explanation-2x2-container .grid-submit-btn {
     margin-top: 0 !important;
     margin-bottom: 2px !important;
-    padding: 4px 18px !important;
-    font-size: 0.88em !important;
-}
-
-/* Container wrapper as a vertical flex column */
-.urns-card-wrapper {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 100%;
-}
-
-/* Top block holding urns and slot buttons */
-.urns-display-container {
-    width: 100%;
-    flex-grow: 1;
-}
-
-/* Bottom block footer reserved solely for probability */
-.urns-card-footer {
-    width: 100%;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 2px 4px 1px 0;
-    min-height: 16px;
-}
-
-/* Probability text styling */
-.card-probability-text {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #555555;
-    white-space: nowrap;
+    padding: 3px 14px !important;
+    font-size: 0.82em !important;
 }

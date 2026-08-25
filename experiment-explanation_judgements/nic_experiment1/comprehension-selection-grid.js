@@ -173,15 +173,15 @@ var jsComprehensionGridSelection = (function (jspsych) {
               </div>
 
               <!-- Card Prompt, Selection Sentence & Dynamic Feedback -->
-              <div class="card-feedback-block">
+                <div class="card-feedback-block">
                 ${sc.prompt ? `<div class="card-question-text comp-card-prompt">${sc.prompt}</div>` : ""}
                 
-                <!-- Dynamic Selection Sentence -->
-                <div class="card-explanation-sentence comp-selection-sentence is-hidden" id="card-selection-sentence-${idx}"></div>
+                <!-- Dynamic Selection Sentence (is-hidden uses visibility:hidden) -->
+                <div class="card-explanation-sentence comp-selection-sentence is-hidden" id="card-selection-sentence-${idx}">&nbsp;</div>
 
-                <!-- Validation Feedback (Correct / Incorrect) -->
-                <div class="validation-feedback-text" id="card-feedback-${idx}" style="min-height: 1.4em; font-size: 0.82rem; margin-top: 4px;"></div>
-              </div>
+                <!-- Validation Feedback Container -->
+                <div class="validation-feedback-text" id="card-feedback-${idx}">&nbsp;</div>
+                </div>
 
             </div>
           </div>
@@ -234,7 +234,7 @@ var jsComprehensionGridSelection = (function (jspsych) {
               
               // Clear card error/pass feedback on selection change
               const feedbackEl = cardEl.querySelector(`#card-feedback-${idx}`);
-              if (feedbackEl) feedbackEl.innerHTML = "";
+              if (feedbackEl) feedbackEl.innerHTML = "&nbsp;"; // Maintain line height on clear
 
               if (allowMultiple) {
                 if (state.selectedUrns.has(urnKey)) {
@@ -264,7 +264,7 @@ var jsComprehensionGridSelection = (function (jspsych) {
                   sentenceEl.innerHTML = this.renderSelectionSentence(selectedArray, draw);
                   sentenceEl.classList.remove("is-hidden");
                 } else {
-                  sentenceEl.innerHTML = "";
+                  sentenceEl.innerHTML = "&nbsp;";
                   sentenceEl.classList.add("is-hidden");
                 }
               }
