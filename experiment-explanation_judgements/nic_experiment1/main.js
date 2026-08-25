@@ -328,7 +328,7 @@ timeline.push({
   rule_text: ruleBox,
   urn_html: renderUrnsHTML(),
   urn_map: urnMap,
-  scenarios: predictionDraws.slice(0, 4), 
+  scenarios: predictionDraws, 
   urn_keys: ["A", "B", "C", "D"],
   agent_name: "John",
   rule_fn: rule, // Evaluation function returning true (win) or false (lose)
@@ -432,25 +432,25 @@ const compTrial1 = {
       id: "comp_only_colored_ball",
       draw: singleColoredDraw,
       correct: ["A"],
-      prompt: "Select the <b>only colored ball</b>:"
+      prompt: "Select the ONLY COLORED ball."
     },
     {
       id: "comp_only_grey_ball",
       draw: singleGreyDraw,
       correct: ["D"],
-      prompt: "Select the <b>only grey ball</b>:"
+      prompt: "Select the ONLY GREY ball."
     },
     {
       id: "comp_any_colored_ball",
       draw: multiColorDraw,
       correct: [["A"], ["B"], ["D"]], // or specify accepted key
-      prompt: "Select <b>any colored ball</b>:"
+      prompt: "Select ANY COLORED ball."
     },
     {
       id: "comp_any_grey_ball",
       draw: singleColoredDraw,
       correct: [["B"], ["C"], ["D"]], // or specify accepted key
-      prompt: "Select <b>any grey ball</b>:"
+      prompt: "Select ANY GREY ball."
     }
   ],
   on_finish: function () {
@@ -472,25 +472,25 @@ const compTrial2 = {
       id: "comp_most_likely_ball",
       draw: standardDraw,
       correct: [mostLikelyUrnKey],
-      prompt: "Select the ball <b>most likely</b> to produce a colored ball."
+      prompt: "Select the ball drawn from the box with the MOST colored balls."
     },
     {
       id: "comp_second_most_likely_ball",
       draw: standardDraw,
       correct: [secondMostLikelyUrnKey],
-      prompt: "Select the ball <b>second most likely</b> to produce a colored ball."
+      prompt: "Select the ball drawn from the box with the SECOND MOST colored balls."
     },
     {
       id: "comp_third_most_likely_ball",
       draw: standardDraw,
       correct: [thirdMostLikelyUrnKey],
-      prompt: "Select the ball <b>third most likely</b> to produce a colored ball."
+      prompt: "Select the ball drawn from the box with the THIRD MOST colored balls."
     },
     {
       id: "comp_least_likely_ball",
       draw: standardDraw,
       correct: [leastLikelyUrnKey],
-      prompt: "Select the ball <b>least likely</b> to produce a colored ball."
+      prompt: "Select the ball drawn from the box with the LEAST colored balls."
     }
   ],
   on_finish: function () {

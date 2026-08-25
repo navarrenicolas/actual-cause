@@ -109,10 +109,6 @@ var jsInteractiveDrawSingle = (function (jspsych) {
                 <span class="card-probability-text" id="scenario-prob-text"></span>
               </div>
             </div>
-            
-            <div class="counter-display">
-              <p id="remaining-samples">${trial.remaining_label} ${totalSamples - sampleIndex}</p>
-            </div>
           </div>
 
           <div id="outcome-segment" class="draw-outcome-segment is-hidden">
@@ -122,6 +118,9 @@ var jsInteractiveDrawSingle = (function (jspsych) {
             </div>
           </div>
 
+          <div class="counter-display">
+              <p id="remaining-samples">${trial.remaining_label} ${totalSamples - sampleIndex}</p>
+          </div>
           <div id="action-segment" class="draw-action-segment">
             <button id="next-sample-btn" class="jspsych-btn is-hidden">${trial.next_trial_button_label}</button>
             <button id="continue-btn" class="jspsych-btn is-hidden">${trial.finish_button_label}</button>

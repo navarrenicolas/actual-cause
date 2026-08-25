@@ -113,6 +113,9 @@ var jsComprehensionGridPrediction = (function (jspsych) {
           </div>
 
           <!-- MIDDLE PANEL: GRID -->
+          <div id="instruction-hint" class="explanation-instruction-hint">
+            Select <span class="win">WON</span> or <span class="lose">LOST</span> to predict each scenario below:
+          </div>
           <div class="explanation-2x2-grid">
       `;
 
@@ -127,12 +130,11 @@ var jsComprehensionGridPrediction = (function (jspsych) {
           probText = calculatedProb ? `${calculatedProb}%` : "";
         }
 
-        const promptText = sc.prompt || `Predict outcome:`;
+        const promptText = sc.prompt || `Did John win or lose with this draw?`;
 
         html += `
           <div class="explanation-card-item comp-card-item" data-sample-idx="${idx}">
             <div class="grid-card-scaling-wrapper">
-              
               <!-- Urns Container -->
               <div class="urns-card-wrapper" id="urns-card-${idx}">
                 <div class="urns-display-container">
@@ -171,10 +173,6 @@ var jsComprehensionGridPrediction = (function (jspsych) {
 
           <!-- BOTTOM PANEL: ACTION CONTROL -->
           <div class="draw-action-segment explanation-action-segment">
-            <div id="instruction-hint" class="explanation-instruction-hint">
-              Select <span class="win">WON</span> or <span class="lose">LOST</span> for each scenario above.
-            </div>
-            
             <button id="grid-submit-btn" class="jspsych-btn grid-submit-btn">
               ${trial.submit_button_label}
             </button>
