@@ -239,47 +239,40 @@ timeline.push({
   }
 });
 
-// Instruction trial
-timeline.push({
-  type: jsPsychInstructions,
-  pages: [`
-    <div class="instructions-container">
-    <h2>Instructions 1/2</h2>
-    ${staticUrns}
-      <p>In this study, you will be interacting with four boxes with a mix of colored and uncolored balls.
-      Each box contains some proportion of grey balls and some proportion of colored balls unique to each urn:</p>
-      <p style = "text-align: center;">
-      <span style="color: orange;"><b>A (orange)</b></span>, <span style="color: blue;"><b>B (blue)</b></span>, <span style="color: purple;"><b>C (purple)</b></span>, and <span style="color: hotpink;"><b>D (pink)</b></span>.
-      </p>
-      <p>
-      Notice that some boxes have more colored balls than others making the chances of getting a colored ball different from each box.
-      </p>
-      <br>
-      
-    </div>
-  `,
-  `
+// Instruction trial: static familiarisation page followed by a staggered,
+// interactive walkthrough of drawing, feedback, and the rule. All pages
+// share one trial so participants can navigate back and forth throughout.
+const instructionsIntroHTML = `
   <div class="instructions-container">
-  <h2>Instructions 2/2</h2>
-  ${staticUrns}
-  <p>
-  Here you are playing a game where you will be drawing balls from each of the boxes.
-  Each of the boxes has a <b>Draw</b> button below it. When you press the button, one ball will be pulled out at random from the respective box. Note the buttons are currently disabled for this instruction phase, but will be enabled in the next section.</p>
-  <p>
-  Once all the balls are drawn from each of the boxes, the rule of the game will determine the result of the draws as a <span class="win">win</span> or a <span class="lose">loss</span>.  
-  If the rule is not satisfied, the trial will result in a loss. 
-  Sometimes several combinations are possible to make a win, and sometimes only one combination is necessary. 
-  </p>
-  <p>
-  In the following task you will be introduced to a new rule. You will have 10 rounds to draw samples and understand how the rule works in different scenarios. 
-  </p>
-  <p>Click 'Next' when you are ready to continue.</p>
+    <h2>Instructions</h2>
+    <p>In this study, you will interact with four boxes, each containing a mix of grey balls and balls in a color unique to that box:</p>
+    ${staticUrns}
+    <p style="font-style: italic;">Some boxes have more colored balls than others, so your chances of drawing a colored ball differ from box to box.</p>
   </div>
-    `
-  ],
-  show_clickable_nav: true,
-  data: { question_id: "instructions_familiarisation" }
+`;
+
+const walkthroughOutroHTML = `
+  <div class="instructions-container">
+    <h2>Practice Rounds</h2>
+    <p>Now it's your turn. You'll get to draw balls from the boxes yourself a few times, so you can get a feel for how the game works before the real trials begin.</p>
+  </div>
+`;
+
+timeline.push({
+  type: jsWalkthroughInstructions,
+  intro_html: instructionsIntroHTML,
+  outro_html: walkthroughOutroHTML,
+  rule_text: ruleBox,
+  urn_html: interactiveUrns,
+  urn_map: urnMap,
+  draw: familiarisationDraws[0],
+  urn_keys: ["A", "B", "C", "D"],
+  rule_fn: rule,
+  question_id: "instructions_walkthrough",
+  finish_button_label: "Continue to Practice Rounds",
+  data: { question_id: "instructions_walkthrough" }
 });
+
 
 // Familiarisation trial
 timeline.push({

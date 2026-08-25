@@ -546,6 +546,132 @@ span.lose {
    8. Static Instructions & Consent Styles
    ========================================================================== */
 
+/* Minimal annotation and highlight utility classes */
+.walkthrough-highlight {
+  outline: 3px solid #ff9800 !important;
+  box-shadow: 0 0 10px rgba(255, 152, 0, 0.5) !important;
+  transition: all 0.3s ease;
+}
+
+.instruction-callout {
+  background-color: #fff9c4;
+  border-left: 4px solid #fbc02d;
+  padding: 10px;
+  margin: 10px auto;
+  max-width: 70%;
+  font-size: 0.95em;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.walkthrough-prompt {
+  text-align: center;
+  min-height: 1.4em;
+}
+
+.draw-status-text {
+  text-align: center;
+  font-style: italic;
+  min-height: 1.4em;
+}
+
+span#wt-prob-text.walkthrough-highlight {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Floating annotation tooltip: positioned via JS next to the highlighted
+   element, out of document flow, so nothing else on the page has to move
+   to make room for it. */
+.wt-tooltip {
+  position: fixed;
+  margin: 0;
+  transform: translateX(-50%);
+  max-width: 320px;
+  z-index: 1500;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Rule explanation stays as regular in-flow text alongside the rule box,
+   not a floating annotation. */
+.wt-static-callout {
+  max-width: 70%;
+}
+
+.wt-block-title {
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+/* Fixed content column: every page (static intro and interactive) is bound
+   to the same width, so headers/urns/text/feedback line up consistently
+   as the participant pages back and forth instead of jumping around. */
+.wt-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+#wt-intro-block,
+#wt-interactive-block {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Let the urns row size to its own natural (responsive) width instead of
+   stretching to fill the page, so it can act as the reference width that
+   the header/rule/feedback/result boxes and the intro text are bound to
+   via JS (see walkthrough-instructions-plugin.js). */
+.wt-container .urn-display {
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.wt-container .instructions-container {
+  max-width: none;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+  box-sizing: border-box;
+}
+
+.wt-container .highlight-box {
+  width: 100%;
+  margin: 20px 0;
+  box-sizing: border-box;
+}
+
+#wt-feedback-box,
+#wt-result-box {
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.wt-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.wt-page-indicator {
+  font-size: 0.85em;
+  color: #666;
+  min-width: 90px;
+  text-align: center;
+}
+
+#wt-result-box {
+  text-align: center;
+}
+
 #ConsentStyle {
     max-width: 870px;
     margin: 0 auto;
