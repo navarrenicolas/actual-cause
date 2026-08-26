@@ -185,20 +185,26 @@ function generateAllDrawCombinations(urnMap) {
 }
 
 // ===== Save Data Helper =====
-// Saves to safe_save.php on the server (the only durable copy once this is
-// deployed for real participants); falls back to a local file download only
-// if that request fails, so data isn't silently lost.
-function downloadCSVLocally(filename, csv) {
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+// Saves to safe_save.php on the server, which is hardcoded to write into
+// this experiment's own folder under ~/server_data/ (see safe_save.php) —
+// the only durable copy once this is deployed for real participants.
+//
+// Local-download backup (disabled by default now that server saving is
+// confirmed working; uncomment the two calls below to also force a local
+// CSV download whenever the server save fails, e.g. while testing without
+// a server):
+//
+// function downloadCSVLocally(filename, csv) {
+//   const blob = new Blob([csv], { type: 'text/csv' });
+//   const url = URL.createObjectURL(blob);
+//   const a = document.createElement('a');
+//   a.href = url;
+//   a.download = filename;
+//   document.body.appendChild(a);
+//   a.click();
+//   document.body.removeChild(a);
+//   URL.revokeObjectURL(url);
+// }
 
 function saveDataToServerAsCSV(done = null) {
   const csv = jsPsych.data.get().csv();
@@ -208,7 +214,7 @@ function saveDataToServerAsCSV(done = null) {
   fetch('safe_save.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filename: filename, filedata: csv, subdir: 'nic_experiment1' })
+    body: JSON.stringify({ filename: filename, filedata: csv })
   })
     .then((res) => res.json().then((result) => ({ ok: res.ok, result })))
     .then(({ ok, result }) => {
@@ -216,13 +222,13 @@ function saveDataToServerAsCSV(done = null) {
         if (done) done(true);
       } else {
         console.error('safe_save.php error:', result && result.error);
-        downloadCSVLocally(filename, csv);
+        // downloadCSVLocally(filename, csv);
         if (done) done(false);
       }
     })
     .catch((err) => {
       console.error('Network error saving data:', err);
-      downloadCSVLocally(filename, csv);
+      // downloadCSVLocally(filename, csv);
       if (done) done(false);
     });
 }
@@ -628,11 +634,11 @@ timeline.push({
             stimulus: `
               <h2>Thank you for participating!</h2>
               <div class="instructions-container">
-                <p>Please click the <b>‘Finish’</b> button below, or use the code <b>CODE</b> to confirm your participation on Prolific.</p>
+                <p>Please click the <b>‘Go to Prolific’</b> button below, or use the code <b>CVV8Z1EI</b> to confirm your participation on Prolific.</p>
               </div>`,
-            choices: ['Finish'],
+            choices: ['Go to Prolific'],
             on_finish: () => {
-              window.location.href = "https://app.prolific.com/submissions/complete?cc=CODE";
+              window.location.href = "https://app.prolific.com/submissions/complete?cc=CVV8Z1EI";
             }
           }
         ]);
