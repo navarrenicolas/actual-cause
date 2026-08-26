@@ -215,6 +215,7 @@ const subject_id = 'subj_' + Math.random().toString(36).substring(2, 10);
 jsPsych.data.addProperties({
   subject_id: subject_id,
   urn_probs: JSON.stringify(['A', 'B', 'C', 'D'].map(k => urnProbs[k])),
+  urn_colors: JSON.stringify(['A', 'B', 'C', 'D'].map(k => urnMap[k].color)),
   rule_key: selectedRuleKey,
 });
 

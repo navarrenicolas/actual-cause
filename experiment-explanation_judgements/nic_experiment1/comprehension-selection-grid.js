@@ -130,6 +130,7 @@ var jsComprehensionGridSelection = (function (jspsych) {
         attempts: 0,
         isPassed: false,
         lastAttemptTime: trialStartTime,
+        lastSelectionTime: trialStartTime,
         validOptions: this.parseCorrectOptions(sc.correct)
       }));
 
@@ -231,7 +232,8 @@ var jsComprehensionGridSelection = (function (jspsych) {
 
             slotEl.onclick = () => {
               const state = cardStates[idx];
-              
+              if (state.isPassed) return; // card is locked once answered correctly
+
               // Clear card error/pass feedback on selection change
               const feedbackEl = cardEl.querySelector(`#card-feedback-${idx}`);
               if (feedbackEl) feedbackEl.innerHTML = "&nbsp;"; // Maintain line height on clear
@@ -246,6 +248,19 @@ var jsComprehensionGridSelection = (function (jspsych) {
                 state.selectedUrns.clear();
                 state.selectedUrns.add(urnKey);
               }
+
+              const now = performance.now();
+              const rt = Math.round(now - state.lastSelectionTime);
+              state.lastSelectionTime = now;
+
+              this.jsPsych.data.write({
+                event_type: "comprehension_selection_ball_click",
+                question_id: questionId,
+                scenario_id: sc.id || `task_${idx + 1}`,
+                selected_urn: urnKey,
+                selected_urns: Array.from(state.selectedUrns).sort(),
+                rt: rt
+              });
 
               // Update slot visual selection highlight
               urnKeys.forEach((k) => {
@@ -304,6 +319,8 @@ var jsComprehensionGridSelection = (function (jspsych) {
           const cardEl = display_element.querySelector(`[data-sample-idx="${idx}"]`);
           const feedbackEl = cardEl.querySelector(`#card-feedback-${idx}`);
 
+          if (state.isPassed) return; // already correct — nothing changed, nothing new to record
+
           state.attempts += 1;
           const rt = Math.round(now - state.lastAttemptTime);
           state.lastAttemptTime = now;
@@ -330,6 +347,10 @@ var jsComprehensionGridSelection = (function (jspsych) {
               feedbackEl.innerHTML = `<span style="color: #2e7d32; font-weight: 600;">✓ Correct</span>`;
             }
             cardEl.classList.add("card-passed");
+            urnKeys.forEach((k) => {
+              const s = cardEl.querySelector(`#slot-${k}`);
+              if (s) { s.classList.remove("is-selectable"); s.onclick = null; }
+            });
           } else {
             allCorrect = false;
             if (feedbackEl) {

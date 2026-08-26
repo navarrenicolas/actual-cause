@@ -167,8 +167,16 @@ var jsWalkthroughInstructions = (function (jspsych) {
       const finishTrial = () => {
         window.removeEventListener("resize", repositionTooltipIfVisible);
         window.removeEventListener("resize", remeasureContentWidth);
+        const isWin = trial.rule_fn ? trial.rule_fn(drawnSoFar) : undefined;
         display_element.innerHTML = "";
-        this.jsPsych.finishTrial({ questionID: questionId });
+        this.jsPsych.finishTrial({
+          questionID: questionId,
+          draw_A: drawnSoFar.A,
+          draw_B: drawnSoFar.B,
+          draw_C: drawnSoFar.C,
+          draw_D: drawnSoFar.D,
+          result: isWin === undefined ? undefined : (isWin ? "win" : "lose")
+        });
       };
 
       const allDrawn = () => urnKeys.every((k) => drawnSoFar[k] !== undefined);
@@ -310,12 +318,27 @@ var jsWalkthroughInstructions = (function (jspsych) {
       finishBtn.addEventListener("click", finishTrial);
 
       // ===== Draw interaction (ball-to-slot animation) =====
+      let lastDrawTime = performance.now();
+
       const handleUrnDraw = (urnKey, buttonEl) => {
         if (drawnSoFar[urnKey] !== undefined) return;
         buttonEl.disabled = true;
 
         const drawnColor = targetDraw[urnKey];
         drawnSoFar[urnKey] = drawnColor;
+
+        const drawTime = performance.now();
+        const rt = Math.round(drawTime - lastDrawTime);
+        lastDrawTime = drawTime;
+
+        this.jsPsych.data.write({
+          event_type: "example_draw",
+          question_id: questionId,
+          urn: urnKey,
+          color: drawnColor,
+          draw_order: Object.keys(drawnSoFar).length,
+          rt: rt
+        });
 
         const urnContainer = display_element.querySelector(`#urn-container-${urnKey}`);
         const slotEl = display_element.querySelector(`#slot-${urnKey}`);

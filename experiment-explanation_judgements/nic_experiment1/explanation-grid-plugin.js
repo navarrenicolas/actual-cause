@@ -84,6 +84,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
       const questionId = trial.question_id || "explanation_grid_batch";
       const trialStartTime = performance.now();
       const selections = {};
+      const lastCardInteractionTime = scenarios.map(() => trialStartTime);
 
       let html = `
         <div class="draw-plugin-container explanation-2x2-container">
@@ -180,7 +181,8 @@ var jsPsychExplanationGrid = (function (jspsych) {
 
             slotEl.onclick = () => {
               const clickTime = performance.now();
-              const rt = Math.round(clickTime - trialStartTime);
+              const rt = Math.round(clickTime - lastCardInteractionTime[idx]);
+              lastCardInteractionTime[idx] = clickTime;
 
               // Clear visual selection state within this card's slots
               urnKeys.forEach(k => {
@@ -254,13 +256,22 @@ var jsPsychExplanationGrid = (function (jspsych) {
       const submitBtn = display_element.querySelector("#grid-submit-btn");
       submitBtn.addEventListener("click", () => {
         const totalRt = Math.round(performance.now() - trialStartTime);
-        const detailedResults = Object.keys(selections).map(idx => selections[idx]);
+
+        // One flat row per scenario (the final selection for each card),
+        // rather than a single row with an embedded JSON array — keeps this
+        // consistent with how the other grid trials record their submit.
+        scenarios.forEach((sc, idx) => {
+          this.jsPsych.data.write({
+            event_type: "explanation_selection_submit",
+            ...selections[idx]
+          });
+        });
 
         const trialData = {
           event_type: "grid_batch_complete",
           question_id: questionId,
-          detailed_results: detailedResults,
-          total_trial_rt: totalRt
+          total_trial_rt: totalRt,
+          tasks_completed: scenarios.length
         };
 
         display_element.innerHTML = "";

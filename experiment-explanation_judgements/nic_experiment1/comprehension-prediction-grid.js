@@ -101,7 +101,8 @@ var jsComprehensionGridPrediction = (function (jspsych) {
           actualOutcome: actualOutcome,
           attempts: 0,
           isPassed: false,
-          lastAttemptTime: trialStartTime
+          lastAttemptTime: trialStartTime,
+          lastPressTime: trialStartTime
         };
       });
 
@@ -225,7 +226,20 @@ var jsComprehensionGridPrediction = (function (jspsych) {
 
         const handleCardPrediction = (predictedWin) => {
           const state = cardStates[idx];
+          if (state.isPassed) return; // card is locked once answered correctly
           state.userPrediction = predictedWin;
+
+          const now = performance.now();
+          const rt = Math.round(now - state.lastPressTime);
+          state.lastPressTime = now;
+
+          this.jsPsych.data.write({
+            event_type: "comprehension_prediction_button_press",
+            question_id: questionId,
+            scenario_id: sc.id || `task_${idx + 1}`,
+            pressed: predictedWin ? "win" : "lose",
+            rt: rt
+          });
 
           if (feedbackEl) feedbackEl.innerHTML = "";
 
@@ -260,6 +274,8 @@ var jsComprehensionGridPrediction = (function (jspsych) {
           const cardEl = display_element.querySelector(`[data-sample-idx="${idx}"]`);
           const feedbackEl = cardEl.querySelector(`#card-feedback-${idx}`);
 
+          if (state.isPassed) return; // already correct — nothing changed, nothing new to record
+
           if (state.userPrediction === null) {
             allCorrect = false;
             if (feedbackEl) {
@@ -291,6 +307,7 @@ var jsComprehensionGridPrediction = (function (jspsych) {
               feedbackEl.innerHTML = `<span class="win">✓ Correct</span>`;
             }
             cardEl.classList.add("card-passed");
+            cardEl.querySelectorAll(".predict-btn").forEach((btn) => { btn.disabled = true; });
           } else {
             allCorrect = false;
             if (feedbackEl) {
