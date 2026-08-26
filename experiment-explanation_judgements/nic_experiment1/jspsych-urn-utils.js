@@ -60,6 +60,40 @@ window.UrnUtils = (function () {
     return `<span class="outcome-badge ${isWin ? 'win-badge' : 'lose-badge'}">${isWin ? 'WIN' : 'LOSS'}</span>`;
   }
 
+  // Shared "fixed content column" helper: binds a set of elements (headers,
+  // rule box, feedback text, etc.) to the same width as the urns row so a
+  // trial's content lines up consistently instead of stretching edge to edge.
+  // The urns row must be able to size to its own natural width (not
+  // width:100%) for the measurement to mean anything — see the
+  // `.urn-display { width: fit-content; }` overrides in style.css.
+  function measureUrnDisplayWidth(rootEl, selector) {
+    const el = rootEl.querySelector(selector || ".urn-display");
+    if (!el) return null;
+    const width = el.getBoundingClientRect().width;
+    return width > 0 ? Math.ceil(width) : null;
+  }
+
+  function applyBoundWidth(width, elements) {
+    if (!width) return;
+    const px = `${width}px`;
+    elements.forEach((el) => {
+      if (!el) return;
+      el.style.maxWidth = px;
+      el.style.marginLeft = "auto";
+      el.style.marginRight = "auto";
+    });
+  }
+
+  function bindContentWidthToUrns(rootEl, getBoundEls, selector) {
+    const apply = () => {
+      const width = measureUrnDisplayWidth(rootEl, selector);
+      if (width) applyBoundWidth(width, getBoundEls());
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return { apply, cleanup: () => window.removeEventListener("resize", apply) };
+  }
+
   function renderSampleDescription(drawObj, urnKeys, agentName, isWin, urnMap, showResult = true) {
     const keys = urnKeys || Object.keys(drawObj);
     const items = keys.map((k) => {
@@ -78,5 +112,5 @@ window.UrnUtils = (function () {
     return `${probHTML}<p>In this trial, ${agentName} drew ${formatGrammarList(items)}.${resultHTML}</p>`;
   }
 
-  return { normalizeColor, getDisplayColor, getArticle, matchesColor, computeDrawProbability, formatGrammarList, renderOutcomeBadge, renderSampleDescription };
+  return { normalizeColor, getDisplayColor, getArticle, matchesColor, computeDrawProbability, formatGrammarList, renderOutcomeBadge, renderSampleDescription, measureUrnDisplayWidth, applyBoundWidth, bindContentWidthToUrns };
 })();

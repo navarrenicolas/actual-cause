@@ -95,7 +95,7 @@ var jsInteractiveDrawSingle = (function (jspsych) {
       let lastDrawStartTime = performance.now();
 
       display_element.innerHTML = `
-        <div id="draw-plugin-container" class="draw-plugin-container">
+        <div id="draw-plugin-container" class="draw-plugin-container interactive-draw-container">
           
           <div id="top-segment" class="draw-top-segment">
             ${showRule && trial.rule_text ? `<div id="rule-text">${trial.rule_text}</div>` : ""}
@@ -151,7 +151,17 @@ var jsInteractiveDrawSingle = (function (jspsych) {
         probTextEl.textContent = probText ? `Scenario Probability ${probText}` : "";
       };
 
+      // Fixed content column: bind the rule/urns/feedback panels to the same
+      // width as the urns row itself, matching the walkthrough instructions'
+      // layout instead of stretching edge to edge.
+      const widthBinding = utils.bindContentWidthToUrns(display_element, () => [
+        display_element.querySelector("#rule-text"),
+        display_element.querySelector("#urns-card-single"),
+        display_element.querySelector(".draw-panel-wrapper")
+      ]);
+
       const finishTrial = () => {
+        widthBinding.cleanup();
         display_element.innerHTML = "";
         this.jsPsych.finishTrial({
           questionID: questionId,
@@ -163,6 +173,7 @@ var jsInteractiveDrawSingle = (function (jspsych) {
       const resetUrnsForNextTrial = () => {
         const urnsWrapper = display_element.querySelector("#urns-wrapper");
         urnsWrapper.innerHTML = trial.urn_html || "";
+        widthBinding.apply();
 
         urnKeys.forEach((k) => {
           const slotEl = display_element.querySelector(`#slot-${k}`);

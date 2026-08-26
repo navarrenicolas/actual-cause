@@ -47,19 +47,6 @@ html {
     visibility: hidden;
 }
 
-/* Bottom Segment: Selection Trial Variant */
-.comprehension-bottom-segment {
-    flex: 0 1 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding-top: 10px;
-    gap: 12px;
-    overflow-y: auto;
-}
-
 /* Action Segment: Bottom Submit / Continue Buttons */
 .draw-action-segment {
     flex: 0 0 auto;
@@ -174,10 +161,6 @@ html {
   display: none !important;
 }
 
-.urn-display-below {
-    margin-top: 30px;
-}
-
 /* Individual Urn Container */
 .urn {
     display: grid;
@@ -219,20 +202,6 @@ html {
     pointer-events: none;
 }
 
-/* Checkbox options under urns */
-.urn-checkbox {
-    display: inline-block;
-    margin: 15px;
-    font-weight: bold;
-    font-size: 1em;
-}
-
-.checkbox-row {
-    text-align: center;
-    margin-top: 15px;
-    margin-bottom: 20px;
-}
-
 /* ==========================================================================
    4. Tables & Grid Layouts
    ========================================================================== */
@@ -262,15 +231,6 @@ html {
     text-align: center;
     white-space: nowrap;
     font-size: 0.9em;
-}
-
-/* Slot box styling stripped to remove square borders around balls */
-.draw-slot {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
 }
 
 .result-box {
@@ -371,25 +331,6 @@ html {
     box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
 }
 
-/* Interactive Ball Specific Styles (Active sample only) */
-.explanation-selectable-ball {
-    cursor: pointer;
-    transition: transform 0.15s ease, outline-color 0.15s ease, box-shadow 0.15s ease;
-    border-radius: 50%;
-}
-
-.explanation-selectable-ball:hover {
-    transform: scale(1.15);
-    outline: 2px dashed #a98c4a;
-    outline-offset: 3px;
-}
-
-/* History Balls Read-Only Constraints */
-.history-row .ball {
-    cursor: default;
-    pointer-events: none; /* Prevents click/hover interactions on committed history */
-}
-
 /* Selectable Target Slots for Interactive Draw Explanation */
 .urn-slot.is-selectable {
   cursor: pointer;
@@ -419,44 +360,9 @@ html {
   box-shadow: 0 0 10px rgba(198, 40, 40, 0.6);
 }
 
-/* Dynamic Explanation Sentence Container */
-.explanation-prompt-text {
-  font-size: 14px;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.explanation-sentence-box {
-  min-height: 24px;
-  font-size: 14px;
-  font-weight: normal;
-}
-
-.explanation-sentence-box .win {
-  color: #2e7d32;
-  font-weight: bold;
-}
-
-.explanation-sentence-box .lose {
-  color: #c62828;
-  font-weight: bold;
-}
-
 /* ==========================================================================
    7. Feedback & Text Messaging
    ========================================================================== */
-
-.comprehension-prompt-box {
-    text-align: center;
-    max-width: 600px;
-    margin-top: 5px;
-}
-
-.comprehension-prompt-box p {
-    margin: 4px 0;
-    font-size: 1.05em;
-    line-height: 1.3;
-}
 
 .draw-feedback-text,
 #feedback-box {
@@ -672,6 +578,52 @@ span#wt-prob-text.walkthrough-highlight {
   text-align: center;
 }
 
+/* Interactive draw trial (draw-interactive-plugin.js): same fixed content
+   column as the walkthrough instructions above, bound to the urns row's
+   width via UrnUtils.bindContentWidthToUrns instead of stretching to fill
+   the page. */
+.interactive-draw-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+.interactive-draw-container .urn-display {
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.interactive-draw-container #urns-card-single,
+.interactive-draw-container #rule-text {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.interactive-draw-container #rule-text .highlight-box {
+  width: 100%;
+  margin: 20px 0;
+  box-sizing: border-box;
+}
+
+.interactive-draw-container .draw-panel-wrapper {
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.interactive-draw-container .draw-panel-title {
+  text-align: left;
+}
+
+.interactive-draw-container #feedback-box {
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
 #ConsentStyle {
     max-width: 870px;
     margin: 0 auto;
@@ -843,35 +795,6 @@ span#wt-prob-text.walkthrough-highlight {
     overflow: hidden;
 }
 
-.draw-history-scroll-body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;    
-    padding-top: 6px;    
-    padding-bottom: 6px; 
-    padding-right: 6px;
-    scrollbar-width: thin;
-    scrollbar-color: #a98c4a #f1f1f1;
-}
-
-.draw-history-scroll-body::-webkit-scrollbar {
-    width: 6px;
-}
-
-.draw-history-scroll-body::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-.draw-history-scroll-body::-webkit-scrollbar-thumb {
-    background: #a98c4a;
-    border-radius: 4px;
-}
-
-.draw-history-scroll-body::-webkit-scrollbar-thumb:hover {
-    background: #8b7138;
-}
-
 .draw-history-panel .draw-row {
     grid-template-columns: 32px 32px 32px 32px 46px;
     gap: 3px;
@@ -896,228 +819,6 @@ span#wt-prob-text.walkthrough-highlight {
     outline: 2px solid #28a745;
     outline-offset: 2px;
     box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
-}
-
-/* ==========================================================================
-   11. 4x4 Matrix Batch Selection Layout
-   ========================================================================== */
-
-.explanation-grid-container {
-    height: 98vh !important;
-    max-height: 100vh !important;
-    justify-content: flex-start !important;
-    padding: 4px 6px;
-    box-sizing: border-box;
-}
-
-.grid-top-segment {
-    flex: 0 0 auto;
-    margin-bottom: 2px;
-}
-
-.grid-rule-text {
-    font-size: 0.8em;
-    margin-top: 2px;
-    font-weight: 500;
-}
-
-.grid-matrix-wrapper {
-    flex: 1 1 auto;
-    width: 100%;
-    min-height: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-
-.grid-matrix {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 5px;
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
-    box-sizing: border-box;
-}
-
-.grid-column {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    height: 100%;
-    min-width: 0;
-    background: #fdfdfd;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 3px;
-    box-sizing: border-box;
-}
-
-.grid-column.is-hidden {
-    visibility: hidden !important;
-    pointer-events: none;
-}
-
-.grid-column.is-completed {
-    opacity: 0.65;
-    pointer-events: none;
-    background: #f8f9fa;
-    border: 1px solid #ced4da;
-}
-
-.grid-column.is-active {
-    opacity: 1;
-    visibility: visible !important;
-    border: 2px solid #a98c4a;
-    box-shadow: 0 2px 6px rgba(169, 140, 74, 0.15);
-    background: #ffffff;
-}
-
-.grid-col-header {
-    font-size: 0.65em;
-    font-weight: bold;
-    text-transform: uppercase;
-    text-align: center;
-    color: #555;
-    letter-spacing: 0.5px;
-    flex: 0 0 auto;
-}
-
-.grid-card {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 3px 4px;
-    box-sizing: border-box;
-    min-height: 0;
-    min-width: 0;
-    overflow: hidden;
-}
-
-.grid-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex: 0 0 auto;
-    margin-bottom: 2px;
-    min-width: 0;
-}
-
-.outcome-badge {
-    font-size: 0.58em;
-    font-weight: bold;
-    padding: 1px 3px;
-    border-radius: 2px;
-    color: #fff;
-    text-transform: uppercase;
-    line-height: 1;
-}
-
-.win-badge { background-color: #28a745; }
-.lose-badge { background-color: #dc3545; }
-
-.prob-tag {
-    font-size: 0.55em;
-    font-weight: 700;
-    color: #495057;
-    background: #e9ecef;
-    padding: 1px 3px;
-    border-radius: 2px;
-    line-height: 1;
-    white-space: nowrap;
-}
-
-.grid-card-balls {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    flex: 1 1 auto;
-    margin: 2px 0;
-}
-
-.grid-ball-slot {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-}
-
-.urn-ball-label {
-    font-size: 0.55em;
-    font-weight: bold;
-    color: #666;
-    line-height: 1;
-}
-
-.grid-selectable-ball {
-    width: 10px !important;
-    height: 10px !important;
-    cursor: pointer;
-    border-radius: 50%;
-    transition: transform 0.15s ease, outline 0.15s ease;
-}
-
-.grid-column.is-active .grid-selectable-ball:hover {
-    transform: scale(1.3);
-    outline: 2px dashed #a98c4a;
-    outline-offset: 1px;
-}
-
-.grid-selectable-ball.is-selected-win {
-    transform: scale(1.3) !important;
-    outline: 2px solid #28a745 !important;
-    outline-offset: 1px !important;
-    box-shadow: 0 0 4px rgba(40, 167, 69, 0.6);
-}
-
-.grid-selectable-ball.is-selected-loss {
-    transform: scale(1.3) !important;
-    outline: 2px solid #dc3545 !important;
-    outline-offset: 1px !important;
-    box-shadow: 0 0 4px rgba(220, 53, 69, 0.6);
-}
-
-.grid-card-sentence {
-    flex: 0 0 auto;
-    width: 100%;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 3px;
-    padding: 0.35em 2px;
-    box-sizing: border-box;
-    white-space: nowrap !important;
-    overflow: hidden;
-    text-align: center;
-    margin-top: 2px;
-}
-
-.grid-action-segment {
-    flex: 0 0 auto;
-    padding: 2px 0 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-}
-
-.grid-prompt {
-    font-size: 0.78em;
-    font-weight: 500;
-}
-
-.grid-status-tracker {
-    font-size: 0.68em;
-    color: #666;
-    font-weight: bold;
 }
 
 /* ==========================================================================

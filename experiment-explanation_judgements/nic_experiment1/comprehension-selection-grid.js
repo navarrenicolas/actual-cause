@@ -134,7 +134,7 @@ var jsComprehensionGridSelection = (function (jspsych) {
       }));
 
       let html = `
-        <div class="draw-plugin-container explanation-2x2-container comprehension-grid-container">
+        <div class="draw-plugin-container explanation-2x2-container">
           <!-- TOP PANEL: RULE HEADER -->
           <div class="grid-top-panel">
             ${showRule && trial.rule_text ? `<div id="rule-text" class="grid-rule-text">${trial.rule_text}</div>` : ""}

@@ -200,46 +200,32 @@ var jsWalkthroughInstructions = (function (jspsych) {
 
       // ===== Shared content column =====
       // Every page (the static intro included) binds its header/rule/feedback/
-      // result boxes to the same width as the urns row itself, so nothing
-      // extends past the urns' edges and pages don't shift width as the
-      // participant moves back and forth. The urns' natural width depends on
-      // the responsive ball sizing, so it's measured rather than guessed.
+      // result boxes to the same width as the urns row itself (see
+      // UrnUtils.bindContentWidthToUrns), so nothing extends past the urns'
+      // edges and pages don't shift width as the participant moves back and
+      // forth. The urns row is hidden on the intro page, so it's briefly
+      // made measurable (invisible, out of flow) rather than skipped.
       let contentWidth = null;
 
       const measureUrnsWidth = () => {
-        const urnDisplay = display_element.querySelector(".urn-display");
-        if (!urnDisplay) return;
         const wasHidden = interactiveBlock.classList.contains("is-hidden");
         if (wasHidden) {
           interactiveBlock.style.visibility = "hidden";
           interactiveBlock.style.position = "absolute";
           interactiveBlock.classList.remove("is-hidden");
         }
-        const width = urnDisplay.getBoundingClientRect().width;
+        const width = utils.measureUrnDisplayWidth(display_element);
         if (wasHidden) {
           interactiveBlock.classList.add("is-hidden");
           interactiveBlock.style.visibility = "";
           interactiveBlock.style.position = "";
         }
-        if (width > 0) contentWidth = Math.ceil(width);
+        if (width) contentWidth = width;
       };
 
       const applyContentWidth = () => {
-        if (!contentWidth) return;
-        const px = `${contentWidth}px`;
-        const boundEls = [blockTitle, ruleSlot, ruleExplain, urnsCardWrapper, feedbackBox, resultBox];
-        boundEls.forEach((el) => {
-          if (!el) return;
-          el.style.maxWidth = px;
-          el.style.marginLeft = "auto";
-          el.style.marginRight = "auto";
-        });
         const introInner = introBlock.querySelector(".instructions-container");
-        if (introInner) {
-          introInner.style.maxWidth = px;
-          introInner.style.marginLeft = "auto";
-          introInner.style.marginRight = "auto";
-        }
+        utils.applyBoundWidth(contentWidth, [blockTitle, ruleSlot, ruleExplain, urnsCardWrapper, feedbackBox, resultBox, introInner]);
       };
 
       function remeasureContentWidth() {
