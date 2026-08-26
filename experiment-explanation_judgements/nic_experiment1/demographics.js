@@ -85,6 +85,6 @@ const demographicTrial = {
     </div>
   `,
   button_label: "Submit",
-  data: { questionID: "demographics" },
+  data: { question_id: "demographics" },
   on_finish: function(data) {}
 };

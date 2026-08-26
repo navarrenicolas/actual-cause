@@ -64,7 +64,7 @@ const consentTrial = {
     </div>
   `,
   choices: ['Start the experiment'],
-  data: { questionID: "consent" },
+  data: { question_id: "consent" },
   on_load: function() {
     const continueButton = document.querySelector('button.jspsych-btn');
     continueButton.disabled = true; 

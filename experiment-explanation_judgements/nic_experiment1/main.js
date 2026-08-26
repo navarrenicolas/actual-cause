@@ -185,11 +185,10 @@ function generateAllDrawCombinations(urnMap) {
 }
 
 // ===== Save Data Helper =====
-function saveDataToServerAsCSV(done = null) {
-  const csv = jsPsych.data.get().csv();
-  const subject_id = jsPsych.data.get().values()[0]?.subject_id || 'anon';
-  const filename = `causal_exp1_${subject_id}.csv`;
-
+// Saves to safe_save.php on the server (the only durable copy once this is
+// deployed for real participants); falls back to a local file download only
+// if that request fails, so data isn't silently lost.
+function downloadCSVLocally(filename, csv) {
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -199,7 +198,33 @@ function saveDataToServerAsCSV(done = null) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  if (done) done(true);
+}
+
+function saveDataToServerAsCSV(done = null) {
+  const csv = jsPsych.data.get().csv();
+  const subject_id = jsPsych.data.get().values()[0]?.subject_id || 'anon';
+  const filename = `causal_exp1_${subject_id}.csv`;
+
+  fetch('safe_save.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: filename, filedata: csv, subdir: 'nic_experiment1' })
+  })
+    .then((res) => res.json().then((result) => ({ ok: res.ok, result })))
+    .then(({ ok, result }) => {
+      if (ok && result.status === 'saved') {
+        if (done) done(true);
+      } else {
+        console.error('safe_save.php error:', result && result.error);
+        downloadCSVLocally(filename, csv);
+        if (done) done(false);
+      }
+    })
+    .catch((err) => {
+      console.error('Network error saving data:', err);
+      downloadCSVLocally(filename, csv);
+      if (done) done(false);
+    });
 }
 
 // ===== jsPsych and Data Properties =====
@@ -578,6 +603,11 @@ scenarioBatches.forEach((batch, batchIdx) => {
   });
 });
 
+// Demographics (asked last, since two questions ask about the rule just used)
+timeline.push(demographicTrial);
+
+// Open-ended feedback questionnaire
+timeline.push(feedbackTrial);
 
 // Save data & finish
 timeline.push({
@@ -612,5 +642,7 @@ timeline.push({
     });
   }
 });
+
+
 
 jsPsych.run(timeline);
