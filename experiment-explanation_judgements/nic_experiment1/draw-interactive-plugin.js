@@ -115,6 +115,7 @@ var jsInteractiveDrawSingle = (function (jspsych) {
             <div class="draw-panel-wrapper">
               ${trial.current_title ? `<div class="draw-panel-title">${trial.current_title}</div>` : ""}
               <div id="feedback-box" class="draw-feedback-text"></div>
+              <div id="result-box" class="draw-feedback-text"></div>
             </div>
           </div>
 
@@ -130,6 +131,7 @@ var jsInteractiveDrawSingle = (function (jspsych) {
 
       const outcomeSegment = display_element.querySelector("#outcome-segment");
       const feedbackBox = display_element.querySelector("#feedback-box");
+      const resultBox = display_element.querySelector("#result-box");
       const nextSampleBtn = display_element.querySelector("#next-sample-btn");
       const continueBtn = display_element.querySelector("#continue-btn");
       const remainingSamples = display_element.querySelector("#remaining-samples");
@@ -286,14 +288,26 @@ var jsInteractiveDrawSingle = (function (jspsych) {
             rt: rt
           });
 
+          // Draw description and result are shown as two separate boxes
+          // (feedback, then result below it), matching the instructions
+          // walkthrough's presentation, rather than one merged sentence.
           feedbackBox.innerHTML = utils.renderSampleDescription(
-            completedDraw, 
-            urnKeys, 
-            agentName, 
-            result, 
-            null, 
-            showResult
+            completedDraw,
+            urnKeys,
+            agentName,
+            result,
+            null,
+            false
           );
+
+          if (showResult) {
+            const outcomeMarkup = result
+              ? `<span class="win">${agentName === "You" ? "WON!" : "won."}</span>`
+              : `<span class="lose">${agentName === "You" ? "LOST!" : "lost."}</span>`;
+            resultBox.innerHTML = `<p><b>With this draw ${agentName} ${outcomeMarkup}</b></p>`;
+          } else {
+            resultBox.innerHTML = "";
+          }
 
           remainingSamples.textContent = `${trial.remaining_label} ${Math.max(totalSamples - sampleIndex, 0)}`;
           outcomeSegment.classList.remove("is-hidden");

@@ -370,7 +370,7 @@ html {
     box-sizing: border-box;
     text-align: left;
     margin: 0 auto;
-    padding: 0 10px;
+    padding: 0;
 }
 
 .draw-feedback-text p,
@@ -396,7 +396,7 @@ html {
 #remaining-samples {
     text-align: center;
     font-weight: bold;
-    margin-top: 0;
+    margin-top: 10px;
     margin-bottom: 10px;
     font-size: 1em;
 }
@@ -624,8 +624,24 @@ span#wt-prob-text.walkthrough-highlight {
   box-sizing: border-box;
 }
 
+.interactive-draw-container #result-box {
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* 650px so this reads at roughly the same width as the walkthrough
+   instructions and familiarisation trial's content column — those are
+   dynamically bound to the urns row's rendered width (see .wt-container /
+   .interactive-draw-container), which on a typical desktop viewport
+   settles close to this value once the responsive ball sizes hit their
+   own pixel ceilings. Static screens like this one have no urns to bind
+   to, so this is a fixed approximation of that same width, chosen so the
+   margins feel consistent across the whole experiment rather than jumping
+   between a narrow urns-bound column and a much wider static one. */
 #ConsentStyle {
-    max-width: 870px;
+    max-width: 650px;
     margin: 0 auto;
     padding: 30px;
     font-family: Arial, sans-serif;
@@ -638,8 +654,12 @@ span#wt-prob-text.walkthrough-highlight {
     margin: 0;
 }
 
+/* Same 650px reasoning as #ConsentStyle above — matches the width the
+   urns-bound trials typically settle at, so comprehension-check text,
+   demographics, and feedback screens read at a consistent width with the
+   walkthrough and familiarisation trials instead of stretching wider. */
 .instructions-container {
-    max-width: 870px;
+    max-width: 650px;
     margin-top: 20px;
     margin-bottom: 10px;
     padding: 20px;
@@ -827,10 +847,27 @@ span#wt-prob-text.walkthrough-highlight {
 
 /* Namespaced outer container override */
 .explanation-2x2-container {
-    height: fit-content;
+    /* Must be a genuinely *definite* height (not height:fit-content, which
+       lets the container silently grow taller than the viewport to fit
+       its content, with no overflow:hidden to stop it). Without a real
+       ceiling, .explanation-2x2-grid's rows never get truly squeezed on a
+       short screen — they just render at their content-driven size and
+       spill past the page, and fitGridBallsToCard ends up measuring that
+       larger, not-actually-available height, sizing the balls too big for
+       what's really on screen and clipping the feedback text beneath
+       them. A fixed height forces genuine compression under real
+       constraints, matching .draw-plugin-container's 98vh elsewhere. */
+    height: 98vh;
     max-height: 100vh;
     width: 100%;
-    max-width: 95vw;
+    /* 95vw alone has no ceiling — on a wide screen the grid (and so each
+       card) keeps getting wider even though the page's height budget
+       (max-height:100vh) does not grow with it. The balls/urns below are
+       sized in vw, so they kept growing to match that extra width with no
+       regard for whether the card's fixed-height feedback row left them
+       enough room — an absolute cap stops that growth once the 2x2 grid
+       is already comfortably sized, regardless of how wide the screen is. */
+    max-width: min(95vw, 1200px);
     padding: 8px;
     display: flex;
     flex-direction: column;
@@ -851,6 +888,20 @@ span#wt-prob-text.walkthrough-highlight {
     font-weight: bold;
     margin: 0 0 2px 0;
     color: #333;
+}
+
+/* The rule box (.highlight-box) is 70% of its container everywhere else
+   in the app — in the walkthrough/familiarisation trials that container
+   is bound to a single urn row's width (~650px), but here it's the full
+   2-column grid (up to 1200px), so 70% of THAT rendered much wider than
+   the same component looks in any other trial. Capping it to the same
+   ~650px the other trials settle at keeps it visually the same component
+   everywhere instead of one that grows with whatever it happens to sit
+   inside. */
+.explanation-2x2-container .highlight-box {
+    width: 100%;
+    max-width: 650px;
+    margin: 0 auto;
 }
 
 /* 2. Middle Panel (Strict 2x2 Grid) */
@@ -882,15 +933,34 @@ span#wt-prob-text.walkthrough-highlight {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+/* CSS Grid instead of flex here: grid rows are laid out in strictly
+   sequential, non-overlapping tracks by definition, unlike the flex
+   justify-content/shrink combination this replaces, which could end up
+   placing the feedback row over the bottom of the urns row once the two
+   no longer both fit. The urns row is a plain 1fr (no minmax floor — see
+   below) and grows into whatever space is left; the feedback row is
+   `auto`, sized to whatever .card-feedback-block's actual content needs
+   right now (it no longer has a fixed height — see .card-feedback-block),
+   so the urns row's 1fr share shrinks or grows to match in real time as
+   the feedback content changes. */
 .explanation-2x2-container .grid-card-scaling-wrapper {
     width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
+    display: grid;
+    /* No minmax(Npx, 1fr) floor on the urns row: fitGridBallsToCard
+       (jspsych-urn-utils.js) measures this row's real rendered height to
+       size the balls, and a CSS-level floor would inflate that reading on
+       a short screen — the row would report e.g. 120px even when far less
+       is actually available, so the balls get sized for space that isn't
+       really there and the excess gets clipped below them. Leaving this
+       row uninflated is what lets the measurement (and so the ball size)
+       be accurate; fitGridBallsToCard has its own 6px floor so the urns
+       still can't shrink to nothing. */
+    grid-template-rows: 1fr auto;
+    row-gap: 4px;
     min-height: 0;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 
@@ -899,8 +969,7 @@ span#wt-prob-text.walkthrough-highlight {
     flex-direction: column;
     justify-content: flex-start;
     width: 100%;
-    height: fit-content;
-    flex: 0 1 auto;
+    min-height: 0;
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -923,26 +992,49 @@ span#wt-prob-text.walkthrough-highlight {
     box-sizing: border-box;
 }
 
+/* Ball/urn sizing is driven by --grid-ball-size, a custom property that
+   UrnUtils.fitGridBallsToCard (jspsych-urn-utils.js) computes by measuring
+   the card's actual rendered space and solving for the largest ball size
+   that fits it exactly — recalculated on resize. Viewport units (vw/vh)
+   can only ever approximate that, since they have no idea how much of the
+   viewport's width/height a given card's grid row/column actually ended
+   up with; the fallback values here only matter for the brief instant
+   before that JS runs. Urn-slot sizes derive from the same measured ball
+   size (via calc(), at the same ratios the old fixed clamps used) so
+   everything scales together and none of it can drift out of sync. */
 .explanation-2x2-container .urns-card-wrapper .urn {
-    padding: clamp(2px, 0.4vw, 8px);
-    grid-gap: clamp(2px, 0.3vw, 6px);
+    padding: var(--grid-urn-padding, 6px);
+    grid-gap: var(--grid-urn-gap, 3px);
     max-width: 100%;
     box-sizing: border-box;
 }
 
 .explanation-2x2-container .urns-card-wrapper .ball {
-    width: clamp(8px, 1.2vw, 24px);   /* Increased max from 12px to 24px */
-    height: clamp(8px, 1.2vw, 24px);  /* Increased max from 12px to 24px */
+    width: var(--grid-ball-size, 18px);
+    height: var(--grid-ball-size, 18px);
 }
 
 .explanation-2x2-container .urns-card-wrapper .urn-slot {
-    width: clamp(16px, 2.2vw, 36px);  /* Increased max from 20px to 36px */
-    height: clamp(16px, 2.2vw, 36px); /* Increased max from 20px to 36px */
+    width: calc(var(--grid-ball-size, 18px) * 1.5);
+    height: calc(var(--grid-ball-size, 18px) * 1.5);
 }
 
 .explanation-2x2-container .urns-card-wrapper .urn-slot .ball {
-    width: clamp(12px, 1.8vw, 28px);  /* Increased max from 14px to 28px */
-    height: clamp(12px, 1.8vw, 28px); /* Increased max from 14px to 28px */
+    width: calc(var(--grid-ball-size, 18px) * 1.17);
+    height: calc(var(--grid-ball-size, 18px) * 1.17);
+}
+
+/* The (disabled, decorative) draw button also scales with the measured
+   ball size — otherwise it stays fixed-size while everything around it
+   shrinks/grows, which both looks inconsistent and throws off
+   fitGridBallsToCard's height budget, since that fixed size no longer
+   matches what the controls row actually needs. At these ratios the
+   button's own rendered height stays comfortably under the slot's
+   (1.5x), so the slot keeps determining the row's height — see the
+   matching controlsRowHeight formula in fitGridBallsToCard. */
+.explanation-2x2-container .urns-card-wrapper .push-draw-btn {
+    font-size: calc(var(--grid-ball-size, 18px) * 0.5);
+    padding: calc(var(--grid-ball-size, 18px) * 0.15) calc(var(--grid-ball-size, 18px) * 0.3);
 }
 
 
@@ -962,60 +1054,68 @@ span#wt-prob-text.walkthrough-highlight {
     white-space: nowrap;
 }
 
-/* COMPACT FIXED-HEIGHT FEEDBACK BLOCK */
+/* CONTENT-SIZED FEEDBACK BLOCK — no fixed height. It used to be pinned to
+   a hand-picked worst-case height (enough for every line it could ever
+   show, even before they appear), which meant it reserved that much space
+   from the very first render regardless of how much text was actually
+   present, at the urns row's expense. Since it now just sizes to its
+   actual content (the grid's `auto` track handles that — see
+   .grid-card-scaling-wrapper), it only ever takes exactly as much of the
+   card as it currently needs. UrnUtils.fitGridBallsToCard measures
+   whatever's left over for the urns after that — and is re-run by each
+   plugin whenever this block's content changes (a new sentence line
+   appearing, text wrapping) so the urns stay correctly sized as this
+   block grows or shrinks, instead of only being sized once up front. */
 .card-feedback-block {
-    flex: 0 0 auto !important;
     width: 100%;
-    height: 54px !important;            /* Reduced from 76px */
-    min-height: 54px !important;
-    max-height: 54px !important;
     text-align: center !important;
     background-color: #f8f9fa !important;
     border-top: 1px solid #e9ecef;
-    padding: 2px 4px !important;
+    padding: 4px !important;
     box-sizing: border-box;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    overflow: hidden;
 }
 
-.card-question-text{
+/* Question/prompt text: two self-contained sizes rather than a shared base
+   class plus a size override, so an element only ever needs one of them,
+   never both. .card-question-text is explanation-grid's own (larger)
+   heading; .card-prompt-text is the comprehension grids' (smaller) one. */
+.card-question-text {
     font-size: 1rem !important;
     line-height: 1.1 !important;
     margin: 0 !important;
     text-align: center !important;
     font-weight: bold !important;
+    font-style: italic;
     width: 100%;
 }
 
-.card-outcome-text{
+.card-outcome-text {
     font-size: 1rem !important;
     line-height: 1.1 !important;
     margin: 0 !important;
     text-align: center !important;
     width: 100%;
 }
-.comp-card-prompt {
+
+.card-prompt-text {
     font-size: 0.8rem !important;
     line-height: 1 !important;
     margin: 0 !important;
     text-align: center !important;
     font-weight: bold !important;
+    font-style: italic;
     width: 100%;
 }
 
-
-
-.card-question-text, 
-.comp-card-prompt {
-    font-style: italic;
-}
-
-/* Compact Sentence Containers */
-.card-explanation-sentence,
-.comp-selection-sentence {
+/* The dynamic sentence line beneath a card's prompt (the explanation
+   sentence, the selection sentence, the prediction outcome sentence) is
+   styled identically everywhere it appears, so it's one class rather than
+   a different name per trial that all resolve to the same rule. */
+.card-sentence-text {
     font-size: 1rem !important;
     margin-top: 1px !important;
     color: #222222 !important;
@@ -1025,6 +1125,12 @@ span#wt-prob-text.walkthrough-highlight {
     width: 100%;
     min-height: 1.1em !important;      /* Tighter reserved height */
     display: block !important;
+}
+
+/* Fixed non-collapsing hidden state */
+.card-sentence-text.is-hidden {
+    display: block !important;
+    visibility: hidden !important;
 }
 
 /* Compact Validation Feedback Container */
@@ -1037,26 +1143,24 @@ span#wt-prob-text.walkthrough-highlight {
     min-height: 1.1em !important;
 }
 
-/* Fixed non-collapsing hidden state */
-.card-explanation-sentence.is-hidden,
-.comp-selection-sentence.is-hidden {
-    display: block !important;
-    visibility: hidden !important;
-}
-
-/* Side-by-Side Prediction Feedback Overrides */
-.card-feedback-block.comp-prediction-feedback-block {
+/* Comprehension-prediction grid's feedback block: text beside the WON/LOST
+   buttons instead of full-width. Self-contained (not .card-feedback-block
+   plus a row-direction override) so a card only ever needs this one class,
+   not two. */
+.prediction-feedback-block {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #f8f9fa !important;
+    border-top: 1px solid #e9ecef;
+    padding: 2px 6px !important;
     display: flex !important;
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
     gap: 4px;
-    padding: 2px 6px !important;
-    width: 100%;
-    box-sizing: border-box;
 }
 
-.comp-prediction-text-col {
+.prediction-text-col {
     flex: 1 1 auto;
     display: flex !important;
     flex-direction: column !important;
@@ -1067,22 +1171,24 @@ span#wt-prob-text.walkthrough-highlight {
     width: 100%;
 }
 
-/* Button Group Layout & Spacing */
-.comp-stacked-btn-group {
+.predict-btn-group {
     display: flex !important;
     flex-direction: column !important;
-    gap: 4px !important;            /* Increased gap between Win and Lose buttons */
+    gap: 4px !important;            /* Gap between the WON and LOST buttons */
     flex-shrink: 0 !important;
 }
 
-/* Scaled Predict Buttons */
-.comp-stacked-btn {
-    padding: 2px 2px !important;    /* Expanded internal padding for 1.2rem text */
-    font-size: 1rem !important;    /* Button text size */
+/* WON/LOST buttons: each self-contained (shared sizing plus its own
+   color), rather than a shared sizing class plus a color-modifier class on
+   top of it. .jspsych-btn stays separate since that's the app-wide button
+   reset every button needs, not something specific to these two. */
+.predict-win-btn,
+.predict-lose-btn {
+    padding: 2px 2px !important;
+    font-size: 1rem !important;
     font-weight: bold !important;
     line-height: 1 !important;
     margin: 0 !important;
-    /* min-width: 80px !important;     Expanded minimum width to prevent overflow */
     border-radius: 5px !important;
     cursor: pointer !important;
     box-shadow: none !important;
@@ -1090,32 +1196,32 @@ span#wt-prob-text.walkthrough-highlight {
     transition: background-color 0.15s ease, color 0.15s ease !important;
 }
 
-button.comp-stacked-btn.predict-win-btn {
+.predict-win-btn {
     color: #28a745 !important;
     border: 1px solid #28a745 !important;
     background-color: #ffffff !important;
 }
 
-button.comp-stacked-btn.predict-win-btn:hover {
+.predict-win-btn:hover {
     background-color: #e8f5e9 !important;
 }
 
-button.comp-stacked-btn.predict-win-btn.is-selected {
+.predict-win-btn.is-selected {
     background-color: #28a745 !important;
     color: #ffffff !important;
 }
 
-button.comp-stacked-btn.predict-lose-btn {
+.predict-lose-btn {
     color: #dc3545 !important;
     border: 1px solid #dc3545 !important;
     background-color: #ffffff !important;
 }
 
-button.comp-stacked-btn.predict-lose-btn:hover {
+.predict-lose-btn:hover {
     background-color: #fffeeb !important;
 }
 
-button.comp-stacked-btn.predict-lose-btn.is-selected {
+.predict-lose-btn.is-selected {
     background-color: #dc3545 !important;
     color: #ffffff !important;
 }
@@ -1138,4 +1244,9 @@ button.comp-stacked-btn.predict-lose-btn.is-selected {
     margin-top: 2px !important;
     margin-bottom: 2px !important;
     padding: 3px 14px !important;
+}
+
+.explanation-set-label {
+    font-size: 0.8em;
+    font-weight: 600;
 }

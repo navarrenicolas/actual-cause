@@ -94,6 +94,113 @@ window.UrnUtils = (function () {
     return { apply, cleanup: () => window.removeEventListener("resize", apply) };
   }
 
+  // Grid-card ball sizing: rather than approximating with viewport units
+  // (which have no idea how tall/wide a given card actually rendered),
+  // measure the card's real available space and solve for the largest
+  // ball size that fits it exactly, so the urns + probability footer are
+  // guaranteed visible in full at any screen size.
+  //
+  // Every quantity below is either independent of the current ball size
+  // (wrapper height, display width, label height — all governed by fixed
+  // CSS or the card's own grid-row sizing) or derived algebraically from
+  // the ball size using the same ratios the CSS uses (ball grid gap/
+  // padding, the urn-slot, and the draw button), rather than measured —
+  // measuring the controls row would bake in whatever font-size/padding
+  // the *previous* ball size left the button at, which is exactly the
+  // circular dependency that made the button not track the adjustment.
+  // That keeps this a single, exact pass with no iteration needed.
+  function fitGridBallsToCard(rootEl) {
+    const wrappers = Array.from(rootEl.querySelectorAll(".urns-card-wrapper"));
+    if (wrappers.length === 0) return;
+
+    // Each card's own feedback block is now content-sized (see
+    // .card-feedback-block), and different cards can have different
+    // content — a longer/wrapped selection sentence on one card, an
+    // unanswered (shorter) one on another — so each card's own internal
+    // split between its urns row and its feedback row can differ even
+    // though every card gets the same *total* height from the outer 2x2
+    // grid. Sizing off just one card's wrapper could miss a more
+    // constrained card entirely; use whichever card currently has the
+    // *least* room for its urns row as the shared ball size, so nothing
+    // on any card ever overflows.
+    let wrapper = wrappers[0];
+    let wrapperHeight = wrapper.getBoundingClientRect().height;
+    for (let i = 1; i < wrappers.length; i++) {
+      const h = wrappers[i].getBoundingClientRect().height;
+      if (h > 0 && h < wrapperHeight) {
+        wrapper = wrappers[i];
+        wrapperHeight = h;
+      }
+    }
+
+    const displayContainerEl = wrapper.querySelector(".urns-display-container");
+    const urnDisplayEl = wrapper.querySelector(".urn-display");
+    const labelEl = wrapper.querySelector(".urn-label");
+    const urnEl = wrapper.querySelector(".urn");
+    if (!displayContainerEl || !urnDisplayEl || !urnEl) return;
+
+    const displayWidth = displayContainerEl.getBoundingClientRect().width;
+    if (wrapperHeight <= 0 || displayWidth <= 0) return;
+
+    // Probability text length (and so how many lines it wraps to) varies
+    // per scenario/card, so measure every card's footer and use the
+    // tallest — sizing off just one card could under-count how much room
+    // a longer probability string needs on another.
+    const footerHeight = Array.from(rootEl.querySelectorAll(".urns-card-footer"))
+      .reduce((max, el) => Math.max(max, el.getBoundingClientRect().height), 0);
+    const labelHeight = labelEl ? labelEl.getBoundingClientRect().height : 0;
+
+    const nUrns = urnDisplayEl.querySelectorAll(".urn-column").length || 4;
+    const urnDisplayGap = parseFloat(window.getComputedStyle(urnDisplayEl).columnGap) || 0;
+    const perUrnWidth = (displayWidth - (nUrns - 1) * urnDisplayGap) / nUrns;
+
+    const nCols = 5;
+    const nBalls = urnEl.querySelectorAll(".ball").length || 20;
+    const nRows = Math.ceil(nBalls / nCols);
+
+    // Ball grid: nRows/nCols balls, plus a gap proportional to ball size
+    // (0.2x) between them, plus padding on both sides (0.3x each) —
+    // matches .urns-card-wrapper .urn's padding/grid-gap rules.
+    const heightFactor = nRows + 0.2 * (nRows - 1) + 0.6;
+    const widthFactor = nCols + 0.2 * (nCols - 1) + 0.6;
+
+    // Controls row: matches .urn-controls-compact (margin-top:10px, fixed)
+    // plus its tallest child. The slot (1.5x ball size) is taller than the
+    // scaled button (~0.9x ball size + ~2px, from its 0.5x font-size and
+    // 0.15x top/bottom padding) at any ball size this ever reaches, so the
+    // slot is what actually determines the row's height.
+    const controlsMarginTop = 10;
+    const controlsHeightFactor = 1.5;
+
+    // Small fixed safety margin: the algebra above is exact for the ball
+    // grid itself, but real layout has a few extra sub-pixel contributors
+    // (font metrics, the row-gap between the urns row and the feedback
+    // row, rounding from the grid engine's own track sizing) that aren't
+    // worth individually modeling. Reserving a few px up front means the
+    // probability text never ends up flush against the feedback block
+    // below it even when those small effects stack up, instead of solving
+    // for a razor-thin fit that any of them could tip into an overlap.
+    const safetyMargin = 6;
+
+    const availableHeight = wrapperHeight - footerHeight - labelHeight - controlsMarginTop - safetyMargin;
+
+    const ballSizeByHeight = availableHeight / (heightFactor + controlsHeightFactor);
+    const ballSizeByWidth = perUrnWidth / widthFactor;
+
+    const ballSize = Math.max(6, Math.floor(Math.min(ballSizeByHeight, ballSizeByWidth, 24)));
+
+    rootEl.style.setProperty("--grid-ball-size", `${ballSize}px`);
+    rootEl.style.setProperty("--grid-urn-padding", `${Math.max(2, Math.round(ballSize * 0.3))}px`);
+    rootEl.style.setProperty("--grid-urn-gap", `${Math.max(1, Math.round(ballSize * 0.2))}px`);
+  }
+
+  function bindGridBallFit(rootEl) {
+    const apply = () => fitGridBallsToCard(rootEl);
+    apply();
+    window.addEventListener("resize", apply);
+    return { apply, cleanup: () => window.removeEventListener("resize", apply) };
+  }
+
   function renderSampleDescription(drawObj, urnKeys, agentName, isWin, urnMap, showResult = true) {
     const keys = urnKeys || Object.keys(drawObj);
     const items = keys.map((k) => {
@@ -112,5 +219,5 @@ window.UrnUtils = (function () {
     return `${probHTML}<p>In this trial, ${agentName} drew ${formatGrammarList(items)}.${resultHTML}</p>`;
   }
 
-  return { normalizeColor, getDisplayColor, getArticle, matchesColor, computeDrawProbability, formatGrammarList, renderOutcomeBadge, renderSampleDescription, measureUrnDisplayWidth, applyBoundWidth, bindContentWidthToUrns };
+  return { normalizeColor, getDisplayColor, getArticle, matchesColor, computeDrawProbability, formatGrammarList, renderOutcomeBadge, renderSampleDescription, measureUrnDisplayWidth, applyBoundWidth, bindContentWidthToUrns, fitGridBallsToCard, bindGridBallFit };
 })();

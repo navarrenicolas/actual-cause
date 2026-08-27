@@ -120,7 +120,7 @@ function generateUrnBallsData(urnKey, total = 20) {
   }));
 }
 
-function renderUrnsHTML(urnsData = sharedUrnsData, interactive = false) {
+function renderUrnsHTML(urnsData = sharedUrnsData, interactive = false, showControls = true) {
   const columns = Object.keys(urnMap).map(urnKey => {
     const ballsData = urnsData[urnKey] || [];
     const ballsHTML = ballsData.map(b => {
@@ -130,12 +130,13 @@ function renderUrnsHTML(urnsData = sharedUrnsData, interactive = false) {
 
     return `
       <div class="urn-column" data-urn="${urnKey}">
-        <div class="urn-label" style="color: ${urnMap[urnKey].color};">${urnLabels[urnKey]}</div> 
+        <div class="urn-label" style="color: ${urnMap[urnKey].color};">${urnLabels[urnKey]}</div>
         <div class="urn" id="urn-container-${urnKey}">${ballsHTML}</div>
+        ${showControls ? `
         <div class="urn-controls-compact">
           <button class="push-draw-btn" data-urn="${urnKey}" ${interactive ? '' : 'disabled'}>DRAW</button>
           <div class="urn-slot" id="slot-${urnKey}"></div>
-        </div>
+        </div>` : ''}
       </div>`;
   }).join('');
 
@@ -145,6 +146,9 @@ function renderUrnsHTML(urnsData = sharedUrnsData, interactive = false) {
 
 // Interactive version for your new trial
 const staticUrns = renderUrnsHTML(sharedUrnsData, false);
+// Purely illustrative urns (no draw button/slot) for the first instructions
+// page, where participants are only meant to look at the colors/proportions.
+const staticUrnsNoControls = renderUrnsHTML(sharedUrnsData, false, false);
 const interactiveUrns = renderUrnsHTML(sharedUrnsData, true);
 
 
@@ -278,15 +282,15 @@ const instructionsIntroHTML = `
   <div class="instructions-container">
     <h2>Instructions</h2>
     <p>In this study, you will interact with four boxes, each containing a mix of grey balls and balls in a color unique to that box:</p>
-    ${staticUrns}
+    ${staticUrnsNoControls}
     <p style="font-style: italic;">Some boxes have more colored balls than others, so your chances of drawing a colored ball differ from box to box.</p>
   </div>
 `;
 
 const walkthroughOutroHTML = `
   <div class="instructions-container">
-    <h2>Practice Rounds</h2>
-    <p>Now it's your turn. You'll get to draw balls from the boxes yourself a few times, so you can get a feel for how the game works before the real trials begin.</p>
+    <h2>Interactive trials</h2>
+    <p>Now it's your turn. You'll get to draw balls from the boxes yourself a few times, so you can get a feel for how the game works before the study trials begin.</p>
   </div>
 `;
 
@@ -301,7 +305,7 @@ timeline.push({
   urn_keys: ["A", "B", "C", "D"],
   rule_fn: rule,
   question_id: "instructions_walkthrough",
-  finish_button_label: "Continue to Practice Rounds",
+  finish_button_label: "Continue to interactive rounds",
   data: { question_id: "instructions_walkthrough" }
 });
 
@@ -333,8 +337,10 @@ timeline.push({
       Now that you are familiar with the game, we will check your understanding of the rule.
     </p>
     <p>
-      In the following comprehension check, you will see several sample draws from the boxes from another player.
+      In the following comprehension check, you will see several sample draws from the boxes from another player, John.
       Your job is to determine whether the scenario would lead to a <span class="win">win</span> or a <span class="lose">loss</span> based on the rule. 
+      </p>
+      <p>
       To continue to the experiment you must answer all questions correctly. If you answer incorrectly, you will be prompted to try again.
     </p>
     <p>
@@ -452,6 +458,8 @@ const compTrial1 = {
   urn_html: staticUrns,
   urn_map: urnMap,
   submit_button_label: "Submit Selections",
+  set_number: 1,
+  set_total: 2,
   scenarios: [
     {
       id: "comp_only_colored_ball",
@@ -492,6 +500,8 @@ const compTrial2 = {
   urn_html: staticUrns,
   urn_map: urnMap,
   submit_button_label: "Submit Selections",
+  set_number: 2,
+  set_total: 2,
   scenarios: [
     {
       id: "comp_most_likely_ball",
@@ -606,6 +616,8 @@ scenarioBatches.forEach((batch, batchIdx) => {
     scenarios: batch,
     rule_fn: rule,
     question_id: `explanation_batch_${batchIdx + 1}`,
+    set_number: batchIdx + 1,
+    set_total: scenarioBatches.length,
   });
 });
 

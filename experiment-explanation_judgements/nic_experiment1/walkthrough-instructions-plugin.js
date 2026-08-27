@@ -53,7 +53,7 @@ var jsWalkthroughInstructions = (function (jspsych) {
       },
       finish_button_label: {
         type: jspsych.ParameterType.STRING,
-        default: "Continue to Practice Rounds"
+        default: "Continue to interactive rounds"
       }
     }
   };

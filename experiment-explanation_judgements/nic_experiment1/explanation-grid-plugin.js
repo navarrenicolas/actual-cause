@@ -57,6 +57,16 @@ var jsPsychExplanationGrid = (function (jspsych) {
       button_label: {
         type: jspsych.ParameterType.STRING,
         default: "Submit Explanations"
+      },
+      /** 1-indexed position of this batch among the full set, e.g. 1 of 4 */
+      set_number: {
+        type: jspsych.ParameterType.INT,
+        default: null
+      },
+      /** Total number of batches in the full set */
+      set_total: {
+        type: jspsych.ParameterType.INT,
+        default: null
       }
     }
   };
@@ -87,7 +97,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
       const lastCardInteractionTime = scenarios.map(() => trialStartTime);
 
       let html = `
-        <div class="draw-plugin-container explanation-2x2-container">
+        <div class="explanation-2x2-container">
           <!-- TOP PANEL: RULE HEADER -->
           <div class="grid-top-panel">
             ${trial.rule_text ? `<div id="rule-text" class="grid-rule-text">${trial.rule_text}</div>` : ""}
@@ -141,7 +151,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
                 <div class="card-question-text" id="card-question-${idx}">
                   Why did ${agentName} <span class="${isWin ? 'win' : 'lose'}">${isWin ? 'win' : 'lose'}</span>?
                 </div>
-                <div class="card-explanation-sentence is-hidden" id="card-explanation-${idx}">&nbsp;</div>
+                <div class="card-sentence-text is-hidden" id="card-explanation-${idx}">&nbsp;</div>
               </div>
             </div>
           </div>
@@ -152,7 +162,8 @@ var jsPsychExplanationGrid = (function (jspsych) {
           </div>
 
           <!-- BOTTOM PANEL: ACTION & SUBMIT BUTTON -->
-          <div class="draw-action-segment explanation-action-segment">
+          <div class="explanation-action-segment">
+            ${trial.set_number && trial.set_total ? `<div class="explanation-set-label">Set ${trial.set_number}/${trial.set_total}</div>` : ""}
             <button id="grid-submit-btn" class="jspsych-btn grid-submit-btn" disabled>
               ${trial.button_label}
             </button>
@@ -161,6 +172,12 @@ var jsPsychExplanationGrid = (function (jspsych) {
       `;
 
       display_element.innerHTML = html;
+
+      // Size the balls to whatever the card actually has room for, so the
+      // urns + probability footer stay fully visible regardless of screen
+      // size (see UrnUtils.fitGridBallsToCard for why viewport units alone
+      // can't guarantee that).
+      const gridBallFit = utils.bindGridBallFit(display_element);
 
       // Populate Urn Drawn Balls and Attach Click Listeners
       scenarios.forEach((sc, idx) => {
@@ -225,6 +242,12 @@ var jsPsychExplanationGrid = (function (jspsych) {
                 sentenceEl.classList.remove("is-hidden");
               }
 
+              // The explanation sentence just appeared (or changed), which
+              // can change how tall the feedback block is now that it's
+              // content-sized — re-fit the balls to whatever room that
+              // leaves the urns row.
+              gridBallFit.apply();
+
               // Check if all cards have selections
               const submitBtn = display_element.querySelector("#grid-submit-btn");
               if (submitBtn) {
@@ -274,6 +297,7 @@ var jsPsychExplanationGrid = (function (jspsych) {
           tasks_completed: scenarios.length
         };
 
+        gridBallFit.cleanup();
         display_element.innerHTML = "";
         this.jsPsych.finishTrial(trialData);
       });

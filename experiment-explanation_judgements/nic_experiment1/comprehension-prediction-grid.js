@@ -58,6 +58,16 @@ var jsComprehensionGridPrediction = (function (jspsych) {
       incorrect_feedback_text: {
         type: jspsych.ParameterType.STRING,
         default: "Incorrect prediction. Please try again."
+      },
+      /** 1-indexed position of this batch among the full set, e.g. 1 of 1 */
+      set_number: {
+        type: jspsych.ParameterType.INT,
+        default: null
+      },
+      /** Total number of batches in the full set */
+      set_total: {
+        type: jspsych.ParameterType.INT,
+        default: null
       }
     }
   };
@@ -107,7 +117,7 @@ var jsComprehensionGridPrediction = (function (jspsych) {
       });
 
       let html = `
-        <div class="draw-plugin-container explanation-2x2-container">
+        <div class="explanation-2x2-container">
           <!-- TOP PANEL: RULE HEADER -->
           <div class="grid-top-panel">
             ${showRule && trial.rule_text ? `<div id="rule-text" class="grid-rule-text">${trial.rule_text}</div>` : ""}
@@ -134,7 +144,7 @@ var jsComprehensionGridPrediction = (function (jspsych) {
         const promptText = sc.prompt || `Did John win or lose with this draw?`;
 
         html += `
-          <div class="explanation-card-item comp-card-item" data-sample-idx="${idx}">
+          <div class="explanation-card-item" data-sample-idx="${idx}">
             <div class="grid-card-scaling-wrapper">
               <!-- Urns Container -->
               <div class="urns-card-wrapper" id="urns-card-${idx}">
@@ -149,18 +159,18 @@ var jsComprehensionGridPrediction = (function (jspsych) {
               </div>
 
               <!-- Side-by-Side Feedback Block -->
-              <div class="card-feedback-block comp-prediction-feedback-block">
+              <div class="prediction-feedback-block">
                 <!-- Left/Center Column: Prompt, Dynamic Sentence & Validation -->
-                <div class="comp-prediction-text-col">
-                  <div class="card-question-text comp-card-prompt">${promptText}</div>
-                  <div class="comp-selection-sentence is-hidden" id="card-outcome-sentence-${idx}"></div>
+                <div class="prediction-text-col">
+                  <div class="card-prompt-text">${promptText}</div>
+                  <div class="card-sentence-text is-hidden" id="card-outcome-sentence-${idx}"></div>
                   <div class="validation-feedback-text" id="card-feedback-${idx}"></div>
                 </div>
 
                 <!-- Right Column: Stacked WON / LOST Buttons -->
-                <div class="comp-stacked-btn-group">
-                  <button type="button" class="jspsych-btn predict-btn predict-win-btn comp-stacked-btn" data-action="win">WON</button>
-                  <button type="button" class="jspsych-btn predict-btn predict-lose-btn comp-stacked-btn" data-action="lose">LOST</button>
+                <div class="predict-btn-group">
+                  <button type="button" class="jspsych-btn predict-win-btn" data-action="win">WON</button>
+                  <button type="button" class="jspsych-btn predict-lose-btn" data-action="lose">LOST</button>
                 </div>
               </div>
 
@@ -173,7 +183,8 @@ var jsComprehensionGridPrediction = (function (jspsych) {
           </div>
 
           <!-- BOTTOM PANEL: ACTION CONTROL -->
-          <div class="draw-action-segment explanation-action-segment">
+          <div class="explanation-action-segment">
+            ${trial.set_number && trial.set_total ? `<div class="explanation-set-label">Set ${trial.set_number}/${trial.set_total}</div>` : ""}
             <button id="grid-submit-btn" class="jspsych-btn grid-submit-btn">
               ${trial.submit_button_label}
             </button>
@@ -186,6 +197,12 @@ var jsComprehensionGridPrediction = (function (jspsych) {
       `;
 
       display_element.innerHTML = html;
+
+      // Size the balls to whatever the card actually has room for, so the
+      // urns + probability footer stay fully visible regardless of screen
+      // size (see UrnUtils.fitGridBallsToCard for why viewport units alone
+      // can't guarantee that).
+      const gridBallFit = utils.bindGridBallFit(display_element);
 
       // Populate slots & setup listeners
       scenarios.forEach((sc, idx) => {
@@ -255,6 +272,12 @@ var jsComprehensionGridPrediction = (function (jspsych) {
             sentenceEl.innerHTML = this.renderOutcomeSentence(predictedWin, agentName);
             sentenceEl.classList.remove("is-hidden");
           }
+
+          // The outcome sentence just appeared (or changed), which can
+          // change how tall the feedback block is now that it's
+          // content-sized — re-fit the balls to whatever room that leaves
+          // the urns row.
+          gridBallFit.apply();
         };
 
         winBtn.onclick = () => handleCardPrediction(true);
@@ -307,7 +330,7 @@ var jsComprehensionGridPrediction = (function (jspsych) {
               feedbackEl.innerHTML = `<span class="win">✓ Correct</span>`;
             }
             cardEl.classList.add("card-passed");
-            cardEl.querySelectorAll(".predict-btn").forEach((btn) => { btn.disabled = true; });
+            cardEl.querySelectorAll(".predict-win-btn, .predict-lose-btn").forEach((btn) => { btn.disabled = true; });
           } else {
             allCorrect = false;
             if (feedbackEl) {
@@ -319,13 +342,18 @@ var jsComprehensionGridPrediction = (function (jspsych) {
           }
         });
 
+        // Validation text just appeared/changed on every card at once —
+        // re-fit the balls once now that all the feedback blocks have
+        // settled, rather than per card.
+        gridBallFit.apply();
+
         if (allCorrect) {
           submitBtn.style.display = "none";
           continueBtn.style.display = "inline-block";
           if (hintEl) hintEl.textContent = "All predictions correct! Click Continue to proceed.";
 
           // Disable all prediction buttons across all cards
-          const allPredictBtns = display_element.querySelectorAll(".predict-btn");
+          const allPredictBtns = display_element.querySelectorAll(".predict-win-btn, .predict-lose-btn");
           allPredictBtns.forEach((btn) => {
             btn.disabled = true;
           });
@@ -341,6 +369,7 @@ var jsComprehensionGridPrediction = (function (jspsych) {
           tasks_completed: scenarios.length
         };
 
+        gridBallFit.cleanup();
         display_element.innerHTML = "";
         this.jsPsych.finishTrial(trialData);
       });

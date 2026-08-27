@@ -56,6 +56,16 @@ var jsComprehensionGridSelection = (function (jspsych) {
       incorrect_feedback_text: {
         type: jspsych.ParameterType.STRING,
         default: "Incorrect selection. Please try again."
+      },
+      /** 1-indexed position of this batch among the full set, e.g. 1 of 2 */
+      set_number: {
+        type: jspsych.ParameterType.INT,
+        default: null
+      },
+      /** Total number of batches in the full set */
+      set_total: {
+        type: jspsych.ParameterType.INT,
+        default: null
       }
     }
   };
@@ -135,7 +145,7 @@ var jsComprehensionGridSelection = (function (jspsych) {
       }));
 
       let html = `
-        <div class="draw-plugin-container explanation-2x2-container">
+        <div class="explanation-2x2-container">
           <!-- TOP PANEL: RULE HEADER -->
           <div class="grid-top-panel">
             ${showRule && trial.rule_text ? `<div id="rule-text" class="grid-rule-text">${trial.rule_text}</div>` : ""}
@@ -161,7 +171,7 @@ var jsComprehensionGridSelection = (function (jspsych) {
         }
 
         html += `
-          <div class="explanation-card-item comp-card-item" data-sample-idx="${idx}">
+          <div class="explanation-card-item" data-sample-idx="${idx}">
             <div class="grid-card-scaling-wrapper">
               
               <!-- Urns Container with Zero-Overlap Layout -->
@@ -178,10 +188,10 @@ var jsComprehensionGridSelection = (function (jspsych) {
 
               <!-- Card Prompt, Selection Sentence & Dynamic Feedback -->
                 <div class="card-feedback-block">
-                ${sc.prompt ? `<div class="card-question-text comp-card-prompt">${sc.prompt}</div>` : ""}
-                
+                ${sc.prompt ? `<div class="card-prompt-text">${sc.prompt}</div>` : ""}
+
                 <!-- Dynamic Selection Sentence (is-hidden uses visibility:hidden) -->
-                <div class="card-explanation-sentence comp-selection-sentence is-hidden" id="card-selection-sentence-${idx}">&nbsp;</div>
+                <div class="card-sentence-text is-hidden" id="card-selection-sentence-${idx}">&nbsp;</div>
 
                 <!-- Validation Feedback Container -->
                 <div class="validation-feedback-text" id="card-feedback-${idx}">&nbsp;</div>
@@ -196,8 +206,9 @@ var jsComprehensionGridSelection = (function (jspsych) {
           </div>
 
           <!-- BOTTOM PANEL: ACTION CONTROL -->
-          <div class="draw-action-segment explanation-action-segment">
-            
+          <div class="explanation-action-segment">
+            ${trial.set_number && trial.set_total ? `<div class="explanation-set-label">Set ${trial.set_number}/${trial.set_total}</div>` : ""}
+
             <!-- Phase 1 Button: Submit All -->
             <button id="grid-submit-btn" class="jspsych-btn grid-submit-btn">
               ${trial.submit_button_label}
@@ -212,6 +223,12 @@ var jsComprehensionGridSelection = (function (jspsych) {
       `;
 
       display_element.innerHTML = html;
+
+      // Size the balls to whatever the card actually has room for, so the
+      // urns + probability footer stay fully visible regardless of screen
+      // size (see UrnUtils.fitGridBallsToCard for why viewport units alone
+      // can't guarantee that).
+      const gridBallFit = utils.bindGridBallFit(display_element);
 
       // Attach Urn Balls & Click Handlers
       scenarios.forEach((sc, idx) => {
@@ -283,6 +300,12 @@ var jsComprehensionGridSelection = (function (jspsych) {
                   sentenceEl.classList.add("is-hidden");
                 }
               }
+
+              // The selection sentence just changed (it can grow with
+              // multi-select, or wrap), which can change how tall the
+              // feedback block is now that it's content-sized — re-fit the
+              // balls to whatever room that leaves the urns row.
+              gridBallFit.apply();
             };
           }
 
@@ -362,6 +385,11 @@ var jsComprehensionGridSelection = (function (jspsych) {
           }
         });
 
+        // Validation text just appeared/changed on every card at once —
+        // re-fit the balls once now that all the feedback blocks have
+        // settled, rather than per card.
+        gridBallFit.apply();
+
         // If all cards passed, swap Submit with Continue
         if (allCorrect) {
           submitBtn.style.display = "none";
@@ -380,6 +408,7 @@ var jsComprehensionGridSelection = (function (jspsych) {
           tasks_completed: scenarios.length
         };
 
+        gridBallFit.cleanup();
         display_element.innerHTML = "";
         this.jsPsych.finishTrial(trialData);
       });
