@@ -655,11 +655,11 @@ timeline.push({
             stimulus: `
               <h2>Thank you for participating!</h2>
               <div class="instructions-container">
-                <p>Please click the <b>‘Go to Prolific’</b> button below, or use the code <b>CETVHJZ1</b> to confirm your participation on Prolific.</p>
+                <p>Please click the <b>‘Go to Prolific’</b> button below, or use the code <b>C1K1S1PU</b> to confirm your participation on Prolific.</p>
               </div>`,
             choices: ['Go to Prolific'],
             on_finish: () => {
-              window.location.href = "https://app.prolific.com/submissions/complete?cc=CETVHJZ1";
+              window.location.href = "https://app.prolific.com/submissions/complete?cc=C1K1S1PU";
             }
           }
         ]);
