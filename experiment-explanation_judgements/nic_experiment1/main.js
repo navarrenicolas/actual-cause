@@ -343,6 +343,9 @@ timeline.push({
       <p>
       To continue to the experiment you must answer all questions correctly. If you answer incorrectly, you will be prompted to try again.
     </p>
+    <p class="instruction-callout">
+      If you have trouble seeing the balls and boxes clearly on the next screens, please set your browser zoom to <b>100%</b> (Ctrl+0, or Cmd+0 on Mac).
+    </p>
     <p>
       Click <b>Continue</b> to proceed.
     </p>
@@ -398,8 +401,11 @@ timeline.push({
     <p>
       In the following comprehension check, you will be asked to select the ball that matches the given prompt.
       When a ball is selected, a circle will appear around it to indicate that it has been selected.
-      You can submit the selection by clicking the <b>Submit</b> button. 
+      You can submit the selection by clicking the <b>Submit</b> button.
       You must get all the questions correct to proceed to the next section. If you answer incorrectly, you will be prompted to try again.
+    </p>
+    <p class="instruction-callout">
+      If you have trouble seeing the balls and boxes clearly on the next screens, please set your browser zoom to <b>100%</b> (Ctrl+0, or Cmd+0 on Mac).
     </p>
     <p>
       Click <b>Continue</b> to proceed.
@@ -549,6 +555,9 @@ timeline.push({
     <p>
     Your task is to select the ball that best explains the result to John.
     </p>
+    <p class="instruction-callout">
+      If you have trouble seeing the balls and boxes clearly on the next screens, please set your browser zoom to <b>100%</b> (Ctrl+0, or Cmd+0 on Mac).
+    </p>
     <p>
     When you are ready, click the <b>Start experiment</b> button.</p>
     </div>
@@ -646,11 +655,11 @@ timeline.push({
             stimulus: `
               <h2>Thank you for participating!</h2>
               <div class="instructions-container">
-                <p>Please click the <b>‘Go to Prolific’</b> button below, or use the code <b>CVV8Z1EI</b> to confirm your participation on Prolific.</p>
+                <p>Please click the <b>‘Go to Prolific’</b> button below, or use the code <b>CETVHJZ1</b> to confirm your participation on Prolific.</p>
               </div>`,
             choices: ['Go to Prolific'],
             on_finish: () => {
-              window.location.href = "https://app.prolific.com/submissions/complete?cc=CVV8Z1EI";
+              window.location.href = "https://app.prolific.com/submissions/complete?cc=CETVHJZ1";
             }
           }
         ]);

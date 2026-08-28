@@ -31,16 +31,7 @@ const demographicTrial = {
         </select>
       </label><br><br>
   
-      <label>What is your college-level background in logic?<br>
-        <select name="logic_background" required>
-          <option value="">----</option>
-          <option value="none">None</option>
-          <option value="some">Some courses</option>
-          <option value="extensive">Extensive background</option>
-        </select>
-      </label><br><br>
-  
-      <label>What is your college-level background in mathematics?<br>
+      <label>What is your background in mathematics?<br>
         <select name="math_background" required>
           <option value="">----</option>
           <option value="none">None</option>
