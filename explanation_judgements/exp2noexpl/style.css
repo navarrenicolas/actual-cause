@@ -1,0 +1,1274 @@
+/* ==========================================================================
+   1. Base Page & Layout Setup
+   ========================================================================== */
+
+html {
+    overflow-y: scroll; /* Always show scrollbar to prevent layout width shift */
+}
+
+/* ==========================================================================
+   2. Plugin Outer Container & Centering Engine
+   ========================================================================== */
+
+/* Main flex container that centers trial segments vertically on screen */
+.draw-plugin-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centers trial segments vertically on screen */
+    align-items: center;     /* Centers trial segments horizontally */
+    height: 98vh;
+    max-height: 100vh;
+    width: 90vw;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* Top Segment: Urns display, rule text, top control buttons */
+.draw-top-segment {
+    flex: 0 0 auto;
+    width: 100%;
+    text-align: center;
+}
+
+/* Bottom Segment: Split planes for Draw Table trial */
+.draw-bottom-segment {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-top: 15px;
+    min-height: 0; /* Enables internal scrolling without stretching container height */
+    gap: 10px;
+}
+
+.draw-bottom-segment.is-hidden {
+    visibility: hidden;
+}
+
+/* Action Segment: Bottom Submit / Continue Buttons */
+.draw-action-segment {
+    flex: 0 0 auto;
+    width: 100%;
+    text-align: center;
+    padding: 10px 0;
+}
+
+/* ==========================================================================
+   3. Responsive Urns & 3D Ball Components
+   ========================================================================== */
+
+/* Container for multiple urns */
+.urn-display {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: clamp(8px, 1.5vw, 16px);
+    margin-bottom: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.urn-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Maintain urn grid layout and empty slot space */
+.urn .ball {
+  transition: opacity 0.2s ease;
+}
+
+/* Leaves an empty placeholder slot in the urn without shifting surrounding balls */
+.ball.drawn-hidden {
+  visibility: hidden !important;
+}
+
+/* Compact Controls: Button and Target Slot side-by-side */
+.urn-controls-compact {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 3D Pushable Red Button */
+.push-draw-btn {
+  background: linear-gradient(to bottom, #ff4d4d 0%, #cc0000 100%);
+  border: 1px solid #990000;
+  border-radius: 6px;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 6px 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #880000, 0 5px 5px rgba(0,0,0,0.2);
+  transition: all 0.05s ease;
+  outline: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.push-draw-btn:hover {
+  background: linear-gradient(to bottom, #ff6666 0%, #dd0000 100%);
+}
+
+.push-draw-btn:active {
+  box-shadow: 0 1px 0 #880000, 0 2px 3px rgba(0,0,0,0.2);
+  transform: translateY(3px);
+}
+
+.push-draw-btn:disabled {
+  background: #cccccc;
+  border-color: #aaaaaa;
+  color: #666666;
+  box-shadow: none;
+  cursor: default;
+  transform: none;
+}
+
+/* Empty Grey Target Slot */
+.urn-slot {
+  width: 28px;
+  height: 28px;
+  border: 2px dashed #999999;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.urn-slot .ball {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+/* Single Outcome Segment */
+.draw-outcome-segment {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+/* Individual Urn Container */
+.urn {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-gap: clamp(2px, 0.5vw, 4px);
+    padding: clamp(4px, 1vw, 10px);
+    border: 2px solid #a98c4a;
+    border-radius: 6px;
+    background-color: white;
+}
+
+.urn-label {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: clamp(0.8em, 1.2vw, 1em);
+}
+
+/* 3D Rendered Ball */
+.ball {
+    position: relative;
+    width: clamp(12px, 1.8vw, 22px);
+    height: clamp(12px, 1.8vw, 22px);
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+/* Realistic specular light overlay on ball surface */
+.ball::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.65) 100%);
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   4. Tables & Grid Layouts
+   ========================================================================== */
+
+.draw-table {
+    display: block;
+    margin: auto;
+}
+
+.draw-row {
+    display: grid;
+    grid-template-columns: 46px 46px 46px 46px 64px;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.draw-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+    height: 34px; /* Maintain height without requiring bounding slot box */
+}
+
+.draw-cell b {
+    text-align: center;
+    white-space: nowrap;
+    font-size: 0.9em;
+}
+
+.result-box {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    border: 1px solid #a98c4a;
+}
+
+/* --- Prediction Grid Overrides --- */
+.prediction-history-panel .draw-row {
+    grid-template-columns: 46px 46px 46px 46px 64px 40px !important;
+}
+
+.prediction-box {
+    width: 64px !important;
+    height: 32px !important;
+    box-sizing: border-box !important;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 11px !important;
+    text-transform: uppercase;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.prediction-status-cell {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.status-check { color: #28a745; }
+.status-cross { color: #dc3545; }
+
+/* ==========================================================================
+   5. Panels & History Split Views
+   ========================================================================== */
+
+.draw-bottom-left {
+    flex: 1 1 0px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 15px;
+    border-right: 1px dashed #ccc;
+    overflow-y: auto;
+    min-height: 0 !important;
+    height: 100%;
+}
+
+.draw-bottom-right {
+    flex: 1 1 0px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 10px;
+    min-height: 0 !important;
+    max-height: 100%;
+    overflow: hidden; /* Prevent parent window scroll, force panel inner scroll */
+}
+
+.draw-panel-wrapper {
+    display: inline-block;
+    margin: 0 auto;
+}
+
+.draw-panel-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.draw-history-empty {
+    color: #777;
+    font-style: italic;
+    text-align: center;
+    padding: 10px 0 4px;
+}
+
+/* ==========================================================================
+   6. Interactive & History Ball Selection Styles
+   ========================================================================== */
+
+/* Universal Selection Highlight (Applied to both interactive and history balls) */
+.ball.is-selected {
+    transform: scale(1.15);
+    outline: 3px solid #28a745;
+    outline-offset: 3px;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
+}
+
+/* Selectable Target Slots for Interactive Draw Explanation */
+.urn-slot.is-selectable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.urn-slot.is-selectable:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Selection Highlights for Drawn Slots */
+.urn-slot.is-selected {
+  border-style: solid;
+  border-width: 3px;
+  border-color: #0e7490;
+  box-shadow: 0 0 10px rgba(0, 86, 179, 0.7);
+}
+
+.urn-slot.is-selected-win {
+  border-color: #2e7d32;
+  box-shadow: 0 0 10px rgba(46, 125, 50, 0.6);
+}
+
+.urn-slot.is-selected-loss {
+  border-color: #c62828;
+  box-shadow: 0 0 10px rgba(198, 40, 40, 0.6);
+}
+
+/* ==========================================================================
+   7. Feedback & Text Messaging
+   ========================================================================== */
+
+/* Standard fixed width (matching .highlight-box / .instructions-container
+   below) so this reads the same everywhere it's used — walkthrough
+   feedback/result boxes, familiarisation's feedback/result, and the
+   explanation examples' sentence box — instead of each context binding it
+   to a differently-sized urn display via JS. */
+.draw-feedback-text,
+#feedback-box {
+    width: 100%;
+    max-width: 650px;
+    box-sizing: border-box;
+    text-align: left;
+    margin: 0 auto;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+}
+
+/* Same spacing as .instructions-container p, for genuine visual parity
+   between feedback text and instructional text. */
+.draw-feedback-text p,
+#feedback-box p {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+/* explanation-example-plugin.js's sentence box is the one .draw-feedback-text
+   instance that shows a single highlighted (mark.hi-lite) explanation
+   sentence rather than a longer left-aligned description paragraph, so it
+   reads better centered — scoped to this element only, not the shared
+   class, so the longer walkthrough/familiarisation feedback text keeps
+   reading naturally left-aligned. */
+#ee-sentence-box {
+    text-align: center;
+}
+
+.draw-feedback-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 4px auto;
+    display: inline-block;
+    text-align: left;
+}
+
+.draw-feedback-list li {
+    margin-bottom: 2px;
+    line-height: 1.25;
+}
+
+#remaining-samples {
+    text-align: center;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+#rule-text {
+    margin-top: 15px;
+    text-align: center;
+}
+
+span.win {
+    color: green;
+    font-weight: bold;
+}
+
+span.lose {
+    color: red;
+    font-weight: bold;
+}
+
+/* Custom Utility Text Formatting */
+.draw-prob-text {
+  text-align: center;
+}
+
+.urn-ball-text {
+  font-weight: bold;
+}
+
+/* Dynamic Explanation Sentence Box */
+
+.explanation-sentence {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 15px 0;
+  text-align: center;
+}
+.explanation-prompt-heading {
+  font-size: 20px;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.explanation-hint-small {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #666;
+  margin-top: 15px;
+  min-height: 1.2em;
+  text-align: center;
+}
+
+/* ==========================================================================
+   8. Static Instructions & Consent Styles
+   ========================================================================== */
+
+/* Minimal annotation and highlight utility classes */
+.walkthrough-highlight {
+  outline: 3px solid #ff9800 !important;
+  box-shadow: 0 0 10px rgba(255, 152, 0, 0.5) !important;
+  transition: all 0.3s ease;
+}
+
+.instruction-callout {
+  background-color: #fff9c4;
+  border-left: 4px solid #fbc02d;
+  padding: 10px;
+  margin: 10px auto;
+  max-width: 70%;
+  font-size: 0.95em;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.walkthrough-prompt {
+  text-align: center;
+  min-height: 1.4em;
+}
+
+.draw-status-text {
+  text-align: center;
+  font-style: italic;
+  min-height: 1.4em;
+}
+
+span#wt-prob-text.walkthrough-highlight {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Floating annotation tooltip: positioned via JS next to the highlighted
+   element, out of document flow, so nothing else on the page has to move
+   to make room for it. */
+.wt-tooltip {
+  position: fixed;
+  margin: 0;
+  transform: translateX(-50%);
+  max-width: 320px;
+  z-index: 1500;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Rule explanation stays as regular in-flow text alongside the rule box,
+   not a floating annotation. */
+.wt-static-callout {
+  max-width: 70%;
+}
+
+.wt-block-title {
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+/* Fixed content column: the urns row and page title are bound to the same
+   width (see walkthrough-instructions-plugin.js's applyContentWidth) so
+   they line up consistently as the participant pages back and forth.
+   The rule box and feedback/result text get a standard fixed width from
+   .highlight-box / .draw-feedback-text instead — see those rules. */
+.wt-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+#wt-intro-block,
+#wt-interactive-block {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Let the urns row size to its own natural (responsive) width instead of
+   stretching to fill the page, so it can act as the reference width the
+   page title is bound to via JS (see walkthrough-instructions-plugin.js). */
+.wt-container .urn-display {
+  width: fit-content;
+  margin: 0 auto;
+}
+
+/* Intro/outro text isn't bound to the urn display's width in JS (see
+   walkthrough-instructions-plugin.js's applyContentWidth) — for a 2-urn
+   walkthrough that width is too narrow for comfortable paragraph text, so
+   this just uses the same standard 650px measure as #ConsentStyle and the
+   generic .instructions-container instead of matching the urns. */
+.wt-container .instructions-container {
+  max-width: 650px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.wt-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.wt-page-indicator {
+  font-size: 0.85em;
+  color: #666;
+  min-width: 90px;
+  text-align: center;
+}
+
+#wt-result-box {
+  text-align: center;
+}
+
+/* Interactive draw trial (draw-interactive-plugin.js): same fixed content
+   column as the walkthrough instructions above, bound to the urns row's
+   width via UrnUtils.bindContentWidthToUrns instead of stretching to fill
+   the page. */
+.interactive-draw-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+.interactive-draw-container .urn-display {
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.interactive-draw-container #urns-card-single {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.interactive-draw-container .draw-panel-wrapper {
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.interactive-draw-container .draw-panel-title {
+  text-align: left;
+}
+
+.interactive-draw-container #result-box {
+  text-align: center;
+}
+
+/* 650px so this reads at roughly the same width as the walkthrough
+   instructions and familiarisation trial's content column — those are
+   dynamically bound to the urns row's rendered width (see .wt-container /
+   .interactive-draw-container), which on a typical desktop viewport
+   settles close to this value once the responsive ball sizes hit their
+   own pixel ceilings. Static screens like this one have no urns to bind
+   to, so this is a fixed approximation of that same width, chosen so the
+   margins feel consistent across the whole experiment rather than jumping
+   between a narrow urns-bound column and a much wider static one. */
+#ConsentStyle {
+    max-width: 650px;
+    margin: 0 auto;
+    padding: 30px;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+#ConsentStyle img {
+    display: block;
+    margin: 0;
+}
+
+/* Same 650px reasoning as #ConsentStyle above — matches the width the
+   urns-bound trials typically settle at, so comprehension-check text,
+   demographics, and feedback screens read at a consistent width with the
+   walkthrough and familiarisation trials instead of stretching wider. */
+.instructions-container {
+    max-width: 650px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    text-align: left;
+}
+
+.instructions-container h2 {
+    text-align: justify;
+    margin-bottom: 10px;   
+    margin-top: 30px;         
+}
+
+.instructions-container p {
+    margin-top: 20px;
+    margin-bottom: 10px;    
+}
+
+.instructions-container span {
+    font-weight: bold;
+}
+
+/* Standard fixed width (matching .instructions-container/#ConsentStyle) so
+   the rule box reads at the same size in every context it appears —
+   walkthrough, familiarisation, explanation examples, and the prediction
+   grids — instead of each one binding it to a differently-sized urn
+   display or a container-relative percentage. */
+.highlight-box {
+    width: 100%;
+    max-width: 650px;
+    margin: 20px auto;
+    padding: 18px 24px;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    text-align: center;
+    border: 4px solid #000000;
+    background-color: #f2f2f2;
+    border-radius: 0;
+    box-shadow: 6px 6px 0px #000000;
+    box-sizing: border-box;
+}
+
+.highlight-box h2 {
+    text-align: center;
+    font-weight: 800;
+    font-size: 22px;
+    margin-top: 0;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.highlight-box p {
+    margin: 0;
+}
+
+/* ==========================================================================
+   9. Buttons & Likert Scale Controls
+   ========================================================================== */
+
+.jspsych-html-button-response-btngroup {
+    margin-top: 10px;
+    margin-bottom: 80px;
+}
+
+.jspsych-btn {
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.likert-slider-container {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.likert-slider-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80%;
+    margin: auto;
+    position: relative;
+}
+
+.likert-end-label {
+    position: absolute;
+    top: -20px;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.likert-end-label.left {
+    left: 0;
+    transform: translateX(-50%);
+}
+
+.likert-end-label.right {
+    right: 0;
+    transform: translateX(50%);
+}
+
+.likert-slider {
+    width: 100%;
+    margin: 20px 0 5px 0;
+}
+
+.likert-scale-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 80%;
+    margin: auto;
+    font-size: 0.85em;
+}
+
+/* ==========================================================================
+   10. Layout Rigid Containment Overrides
+   ========================================================================== */
+
+/* Lock Top Segment so bottom content can NEVER displace it */
+.draw-top-segment {
+    flex: 0 0 auto !important;
+    width: 100%;
+    text-align: center;
+}
+
+/* Strict flex box for bottom planes */
+.draw-bottom-segment {
+    flex: 1 1 0px !important; /* Force exact flex calculation */
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 10px;
+    min-height: 0 !important; /* Critical for internal vertical scrolling */
+    overflow: hidden;
+    gap: 10px;
+}
+
+.draw-history-panel {
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    height: 100%;   
+    min-height: 0;  
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.draw-history-panel .draw-table {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.draw-history-panel .draw-row {
+    grid-template-columns: 32px 32px 32px 32px 46px;
+    gap: 3px;
+    margin-bottom: 2px;
+}
+
+.draw-history-panel .draw-cell {
+    height: 18px;
+}
+
+.draw-history-panel .draw-cell b {
+    font-size: 0.68em;
+}
+
+.draw-history-panel .ball {
+    width: 12px;
+    height: 12px;
+}
+
+.draw-history-panel .ball.is-selected {
+    transform: scale(1.15);
+    outline: 2px solid #28a745;
+    outline-offset: 2px;
+    box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+}
+
+/* ==========================================================================
+   12. ISOLATED 2x2 EXPLANATION GRID (Fully Namespaced Layout)
+   ========================================================================== */
+
+/* Namespaced outer container override */
+.explanation-2x2-container {
+    /* Must be a genuinely *definite* height (not height:fit-content, which
+       lets the container silently grow taller than the viewport to fit
+       its content, with no overflow:hidden to stop it). Without a real
+       ceiling, .explanation-2x2-grid's rows never get truly squeezed on a
+       short screen — they just render at their content-driven size and
+       spill past the page, and fitGridBallsToCard ends up measuring that
+       larger, not-actually-available height, sizing the balls too big for
+       what's really on screen and clipping the feedback text beneath
+       them. A fixed height forces genuine compression under real
+       constraints, matching .draw-plugin-container's 98vh elsewhere. */
+    height: 98vh;
+    max-height: 100vh;
+    width: 100%;
+    /* 95vw alone has no ceiling — on a wide screen the grid (and so each
+       card) keeps getting wider even though the page's height budget
+       (max-height:100vh) does not grow with it. The balls/urns below are
+       sized in vw, so they kept growing to match that extra width with no
+       regard for whether the card's fixed-height feedback row left them
+       enough room — an absolute cap stops that growth once the 2x2 grid
+       is already comfortably sized, regardless of how wide the screen is. */
+    max-width: min(95vw, 1200px);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* 1. Top Panel (Rule Header) */
+.explanation-2x2-container .grid-top-panel {
+    flex: 0 0 auto;
+    width: 100%;
+    text-align: center;
+}
+
+.explanation-2x2-container .grid-rule-text {
+    font-size: 0.9em;
+    font-weight: bold;
+    margin: 0 0 2px 0;
+    color: #333;
+}
+
+/* 2. Middle Panel (Strict 2x2 Grid) */
+.explanation-2x2-container .explanation-2x2-grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 4px;
+    width: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+/* Sub-panel Card */
+.explanation-2x2-container .explanation-card-item {
+    background: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    min-height: 0;
+    min-width: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+
+/* CSS Grid instead of flex here: grid rows are laid out in strictly
+   sequential, non-overlapping tracks by definition, unlike the flex
+   justify-content/shrink combination this replaces, which could end up
+   placing the feedback row over the bottom of the urns row once the two
+   no longer both fit. The urns row is a plain 1fr (no minmax floor — see
+   below) and grows into whatever space is left; the feedback row is
+   `auto`, sized to whatever .card-feedback-block's actual content needs
+   right now (it no longer has a fixed height — see .card-feedback-block),
+   so the urns row's 1fr share shrinks or grows to match in real time as
+   the feedback content changes. */
+.explanation-2x2-container .grid-card-scaling-wrapper {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    /* No minmax(Npx, 1fr) floor on the urns row: fitGridBallsToCard
+       (jspsych-urn-utils.js) measures this row's real rendered height to
+       size the balls, and a CSS-level floor would inflate that reading on
+       a short screen — the row would report e.g. 120px even when far less
+       is actually available, so the balls get sized for space that isn't
+       really there and the excess gets clipped below them. Leaving this
+       row uninflated is what lets the measurement (and so the ball size)
+       be accurate; fitGridBallsToCard has its own 6px floor so the urns
+       still can't shrink to nothing. */
+    grid-template-rows: 1fr auto;
+    row-gap: 4px;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+
+.explanation-2x2-container .urns-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.explanation-2x2-container .urns-display-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 0 8px; /* Extra side padding so urns don't touch edges */
+}
+
+.explanation-2x2-container .urns-card-wrapper .urn-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ball/urn sizing is driven by --grid-ball-size, a custom property that
+   UrnUtils.fitGridBallsToCard (jspsych-urn-utils.js) computes by measuring
+   the card's actual rendered space and solving for the largest ball size
+   that fits it exactly — recalculated on resize. Viewport units (vw/vh)
+   can only ever approximate that, since they have no idea how much of the
+   viewport's width/height a given card's grid row/column actually ended
+   up with; the fallback values here only matter for the brief instant
+   before that JS runs. Urn-slot sizes derive from the same measured ball
+   size (via calc(), at the same ratios the old fixed clamps used) so
+   everything scales together and none of it can drift out of sync. */
+.explanation-2x2-container .urns-card-wrapper .urn {
+    padding: var(--grid-urn-padding, 6px);
+    grid-gap: var(--grid-urn-gap, 3px);
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.explanation-2x2-container .urns-card-wrapper .ball {
+    width: var(--grid-ball-size, 18px);
+    height: var(--grid-ball-size, 18px);
+}
+
+.explanation-2x2-container .urns-card-wrapper .urn-slot {
+    width: calc(var(--grid-ball-size, 18px) * 1.5);
+    height: calc(var(--grid-ball-size, 18px) * 1.5);
+}
+
+.explanation-2x2-container .urns-card-wrapper .urn-slot .ball {
+    width: calc(var(--grid-ball-size, 18px) * 1.17);
+    height: calc(var(--grid-ball-size, 18px) * 1.17);
+}
+
+/* The (disabled, decorative) draw button also scales with the measured
+   ball size — otherwise it stays fixed-size while everything around it
+   shrinks/grows, which both looks inconsistent and throws off
+   fitGridBallsToCard's height budget, since that fixed size no longer
+   matches what the controls row actually needs. At these ratios the
+   button's own rendered height stays comfortably under the slot's
+   (1.5x), so the slot keeps determining the row's height — see the
+   matching controlsRowHeight formula in fitGridBallsToCard. */
+.explanation-2x2-container .urns-card-wrapper .push-draw-btn {
+    font-size: calc(var(--grid-ball-size, 18px) * 0.5);
+    padding: calc(var(--grid-ball-size, 18px) * 0.15) calc(var(--grid-ball-size, 18px) * 0.3);
+}
+
+
+.explanation-2x2-container .urns-card-footer {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 1px 4px 1px 0;
+    min-height: 12px;
+}
+
+.explanation-2x2-container .card-probability-text {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #555555;
+    white-space: nowrap;
+}
+
+/* CONTENT-SIZED FEEDBACK BLOCK — no fixed height. It used to be pinned to
+   a hand-picked worst-case height (enough for every line it could ever
+   show, even before they appear), which meant it reserved that much space
+   from the very first render regardless of how much text was actually
+   present, at the urns row's expense. Since it now just sizes to its
+   actual content (the grid's `auto` track handles that — see
+   .grid-card-scaling-wrapper), it only ever takes exactly as much of the
+   card as it currently needs. UrnUtils.fitGridBallsToCard measures
+   whatever's left over for the urns after that — and is re-run by each
+   plugin whenever this block's content changes (a new sentence line
+   appearing, text wrapping) so the urns stay correctly sized as this
+   block grows or shrinks, instead of only being sized once up front. */
+.card-feedback-block {
+    width: 100%;
+    text-align: center !important;
+    background-color: #f8f9fa !important;
+    border-top: 1px solid #e9ecef;
+    padding: 4px !important;
+    box-sizing: border-box;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* Question/prompt text: two self-contained sizes rather than a shared base
+   class plus a size override, so an element only ever needs one of them,
+   never both. .card-question-text is explanation-grid's own (larger)
+   heading; .card-prompt-text is the comprehension grids' (smaller) one. */
+.card-question-text {
+    font-size: 1rem !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
+    text-align: center !important;
+    font-weight: bold !important;
+    font-style: italic;
+    width: 100%;
+}
+
+.card-outcome-text {
+    font-size: 1rem !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
+    text-align: center !important;
+    width: 100%;
+}
+
+.card-prompt-text {
+    font-size: 0.8rem !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    text-align: center !important;
+    font-weight: bold !important;
+    font-style: italic;
+    width: 100%;
+}
+
+/* The dynamic sentence line beneath a card's prompt (the explanation
+   sentence, the selection sentence, the prediction outcome sentence) is
+   styled identically everywhere it appears, so it's one class rather than
+   a different name per trial that all resolve to the same rule. */
+.card-sentence-text {
+    font-size: 1rem !important;
+    margin-top: 1px !important;
+    color: #222222 !important;
+    line-height: 1.1 !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    width: 100%;
+    min-height: 1.1em !important;      /* Tighter reserved height */
+    display: block !important;
+}
+
+/* Fixed non-collapsing hidden state */
+.card-sentence-text.is-hidden {
+    display: block !important;
+    visibility: hidden !important;
+}
+
+/* Compact Validation Feedback Container */
+.validation-feedback-text {
+    font-size: 0.8rem !important;
+    line-height: 1.1 !important;
+    margin-top: 1px !important;
+    text-align: center !important;
+    width: 100%;
+    min-height: 1.1em !important;
+}
+
+/* Comprehension-prediction grid's feedback block: text beside the WON/LOST
+   buttons instead of full-width. Self-contained (not .card-feedback-block
+   plus a row-direction override) so a card only ever needs this one class,
+   not two. */
+.prediction-feedback-block {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #f8f9fa !important;
+    border-top: 1px solid #e9ecef;
+    padding: 2px 6px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 4px;
+}
+
+.prediction-text-col {
+    flex: 1 1 auto;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+    min-width: 0;
+    width: 100%;
+}
+
+.predict-btn-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;            /* Gap between the WON and LOST buttons */
+    flex-shrink: 0 !important;
+}
+
+/* WON/LOST buttons: each self-contained (shared sizing plus its own
+   color), rather than a shared sizing class plus a color-modifier class on
+   top of it. .jspsych-btn stays separate since that's the app-wide button
+   reset every button needs, not something specific to these two. */
+.predict-win-btn,
+.predict-lose-btn {
+    padding: 2px 2px !important;
+    font-size: 1rem !important;
+    font-weight: bold !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.predict-win-btn {
+    color: #28a745 !important;
+    border: 1px solid #28a745 !important;
+    background-color: #ffffff !important;
+}
+
+.predict-win-btn:hover {
+    background-color: #e8f5e9 !important;
+}
+
+.predict-win-btn.is-selected {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
+}
+
+.predict-lose-btn {
+    color: #dc3545 !important;
+    border: 1px solid #dc3545 !important;
+    background-color: #ffffff !important;
+}
+
+.predict-lose-btn:hover {
+    background-color: #fffeeb !important;
+}
+
+.predict-lose-btn.is-selected {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+/* 3. Bottom Action Panel */
+.explanation-2x2-container .explanation-action-segment {
+    flex: 0 0 auto;
+    width: 100%;
+    text-align: center;
+    padding: 2px 0;
+}
+
+/* Same width/centering as .highlight-box above it, so the two line up
+   instead of this stretching to the full 2x2 grid's width. */
+.explanation-2x2-container .explanation-instruction-hint {
+    width: 100%;
+    max-width: 650px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 1em;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+.explanation-2x2-container .grid-submit-btn {
+    margin-top: 2px !important;
+    margin-bottom: 2px !important;
+    padding: 3px 14px !important;
+}
+
+.explanation-set-label {
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   9. Inference task: past-observation highlighting (prediction-grid-plugin.js,
+   prediction-navigator-plugin.js) & prediction-navigator page nav
+   ========================================================================== */
+
+/* Past observations are shown inline within the same grid as the cards
+   still to be predicted (UrnUtils.markHighlightedBall /
+   renderExplanationSentence): the causal ball gets the same green/red ring
+   as .urn-slot.is-selected* (section 6) uses for active click-selection
+   feedback elsewhere, and its full explanation sentence gets a yellow
+   highlighter <mark> — the visual cue that this card is a past
+   observation, not something to predict. */
+mark.hi-lite {
+    background-color: #fff59d;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* prediction-navigator-plugin.js's Submit button carries a live remaining
+   count instead of being swapped for a Continue button like the training
+   grids, so it needs its own disabled treatment. */
+#pn-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
