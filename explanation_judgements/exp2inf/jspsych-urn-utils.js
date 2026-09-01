@@ -235,6 +235,18 @@ window.UrnUtils = (function () {
     return `<mark class="hi-lite">${sentence}</mark>`;
   }
 
+  // No-explanation-condition counterpart to renderExplanationSentence(): the
+  // same yellow-highlighter treatment on a past observation, but stating
+  // only the outcome — no causal ball/box clause, because there's no
+  // explanation to state one. There's deliberately no matching
+  // "mark the ball" helper to pair this with (unlike markHighlightedBall for
+  // renderExplanationSentence) — this condition never singles out a ball.
+  function renderOutcomeOnlySentence(isWin, agentName) {
+    const outcomeText = isWin ? "won" : "lost";
+    const outcomeClass = isWin ? "win" : "lose";
+    return `<mark class="hi-lite">${agentName} <span class="${outcomeClass}">${outcomeText}</span>.</mark>`;
+  }
+
   // Renders the live "With this draw, {agent} Won/Lost." sentence shown
   // under a prediction card once the participant has clicked WON or LOST —
   // shared by prediction-grid-plugin.js and prediction-navigator-plugin.js.
@@ -252,5 +264,5 @@ window.UrnUtils = (function () {
     slotEl.classList.add("is-selected", isWin ? "is-selected-win" : "is-selected-loss");
   }
 
-  return { normalizeColor, getDisplayColor, getArticle, matchesColor, computeDrawProbability, formatGrammarList, renderOutcomeBadge, renderSampleDescription, measureUrnDisplayWidth, applyBoundWidth, bindContentWidthToUrns, fitGridBallsToCard, bindGridBallFit, renderExplanationSentence, renderPredictionSentence, markHighlightedBall };
+  return { normalizeColor, getDisplayColor, getArticle, matchesColor, computeDrawProbability, formatGrammarList, renderOutcomeBadge, renderSampleDescription, measureUrnDisplayWidth, applyBoundWidth, bindContentWidthToUrns, fitGridBallsToCard, bindGridBallFit, renderExplanationSentence, renderOutcomeOnlySentence, renderPredictionSentence, markHighlightedBall };
 })();

@@ -75,6 +75,14 @@ var jsPredictionGrid = (function (jspsych) {
       set_total: {
         type: jspsych.ParameterType.INT,
         default: null
+      },
+      /** false for the no-explanation condition: given cards still get the
+       * yellow-highlighter sentence, but stating only the outcome, and
+       * their ball is never ring-highlighted (there's no causal ball to
+       * point to). */
+      show_explanation: {
+        type: jspsych.ParameterType.BOOL,
+        default: true
       }
     }
   };
@@ -90,6 +98,7 @@ var jsPredictionGrid = (function (jspsych) {
       const scenarios = trial.scenarios || trial.draws || [];
       const questionId = trial.question_id || "prediction_grid";
       const showRule = trial.show_rule !== false;
+      const showExplanation = trial.show_explanation !== false;
       const agentName = trial.agent_name || "John";
       const ruleFn = trial.rule_fn || (() => false);
       const trialStartTime = performance.now();
@@ -119,7 +128,9 @@ var jsPredictionGrid = (function (jspsych) {
           </div>
 
           <div id="instruction-hint" class="explanation-instruction-hint">
-            The highlighted draws have been explained. You must predict the remaining draws. Click the outcome according to the explanation.
+            ${showExplanation
+              ? "The highlighted draws have been explained. You must predict the remaining draws. Click the outcome according to the explanation."
+              : "The highlighted draws show only the outcome. You must predict the remaining draws. Click the outcome shown."}
           </div>
 
           <div id="pg-grid-wrapper" class="explanation-2x2-grid">
@@ -206,7 +217,7 @@ var jsPredictionGrid = (function (jspsych) {
             const displayColor = utils.getDisplayColor(cleanColor);
             slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
 
-            if (isGiven && sc.selected_urn === urnKey) {
+            if (isGiven && showExplanation && sc.selected_urn === urnKey) {
               utils.markHighlightedBall(slotEl, isWin);
             }
           }
@@ -226,8 +237,10 @@ var jsPredictionGrid = (function (jspsych) {
           }
         });
 
-        if (isGiven && sc.selected_urn && sentenceEl) {
-          sentenceEl.innerHTML = utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName);
+        if (isGiven && sentenceEl) {
+          sentenceEl.innerHTML = (showExplanation && sc.selected_urn)
+            ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName)
+            : utils.renderOutcomeOnlySentence(isWin, agentName);
         }
 
         const handleGivenClick = (clickedWin) => {
@@ -256,7 +269,9 @@ var jsPredictionGrid = (function (jspsych) {
           } else {
             state.isPassed = false;
             state.userPrediction = null;
-            if (feedbackEl) feedbackEl.innerHTML = `<span class="lose">That's not what the explanation says — check again.</span>`;
+            if (feedbackEl) feedbackEl.innerHTML = showExplanation
+              ? `<span class="lose">That's not what the explanation says — check again.</span>`
+              : `<span class="lose">That's not the outcome shown — check again.</span>`;
           }
 
           gridBallFit.apply();
@@ -322,7 +337,9 @@ var jsPredictionGrid = (function (jspsych) {
             // here with isPassed still false just means it hasn't been
             // correctly clicked yet.
             allCorrect = false;
-            if (feedbackEl) feedbackEl.innerHTML = `<span class="lose">Click the outcome the explanation states.</span>`;
+            if (feedbackEl) feedbackEl.innerHTML = showExplanation
+              ? `<span class="lose">Click the outcome the explanation states.</span>`
+              : `<span class="lose">Click the outcome shown.</span>`;
             return;
           }
 

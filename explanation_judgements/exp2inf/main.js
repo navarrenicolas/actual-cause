@@ -198,6 +198,16 @@ function showFatalError(message) {
   `;
 }
 
+// When there's no unclaimed experiment_1 data left, route the participant
+// to the no-explanation sibling study instead of a dead end — it never
+// needs experiment_1 data (its rule/urns are generated fresh client-side),
+// so it can always accept them. Sibling folder, so a relative path; any
+// query string (e.g. ?mock=1 while testing) carries over.
+function redirectToNoExplanationStudy() {
+  const search = window.location.search || "";
+  window.location.href = `../exp2noexpl/main.html${search}`;
+}
+
 // ===== Save Data Helper =====
 function saveDataToServerAsCSV(done = null) {
   const csv = jsPsych.data.get().csv();
@@ -236,6 +246,10 @@ async function bootstrap() {
   try {
     record = await fetchDataset();
   } catch (err) {
+    if (err && err.message === "no_data_available") {
+      redirectToNoExplanationStudy();
+      return;
+    }
     console.error(err);
     showFatalError("There was a problem starting the study.");
     return;

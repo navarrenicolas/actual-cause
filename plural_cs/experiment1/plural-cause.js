@@ -53,6 +53,7 @@ const AskID = {
 };
 
 
+// TODO: Edit to the Edinburgh consent form
 const consent = {
   type: jsConsentDec,
   description: 'Show a standard consent form for DEC, collect consent',
@@ -160,25 +161,31 @@ const comprehension_questions = {
 };
 //timeline.push(comprehension_questions)
 
-let indices = ["A", "C", "D", "B"];
-let colors = ["#CC00CC", "orange"]
-// let colors = jsPsych.randomization.shuffle(["#CC00CC", "orange"]);
 
-// var urns_matrix = jsPsych.randomization.shuffle([
-// 	{id: indices[0], ball_color: colors[0], is_result_color: false, n_colored_balls: 14},
-// 	{id: indices[1], ball_color: colors[1], is_result_color: false, n_colored_balls: 4},
-// 	{id: indices[2], ball_color: colors[1], is_result_color: true, n_colored_balls: 2},
-//     {id: indices[3], ball_color: colors[0], is_result_color: true, n_colored_balls: 18}
-// ])
-//For the moment, let's try it without shuffling
-var urns_matrix = [
-	{id: indices[3], ball_color: colors[0], is_result_color: false, n_colored_balls: 14},
-	{id: indices[1], ball_color: colors[1], is_result_color: false, n_colored_balls: 4},
-	{id: indices[2], ball_color: colors[1], is_result_color: true, n_colored_balls: 18},
-    {id: indices[0], ball_color: colors[0], is_result_color: true, n_colored_balls: 2}
-]
+let indeces =  ["A", "C", "D", "B"]; // The urn labels
 
-urns_matrix = urns_matrix.map((urn, index) => ({ ...urn, id: indices[index] }))
+// Define the condition propreties
+let sample = {"A": false,"B":false,"C":false,"D":false}; // TODO: Define this ahead of time
+let prior = {"A": 14,"B":4,"C":18,"D":2}; // TODO: to determine in accordance with rule
+
+
+
+// color settings
+let urn_colors = {'A':"orange",'B':"blue",'C':"purple",'D':"#eb33a1"};
+let background_ball_color = '#CBCDCD';
+let urn_background_color = "white";
+
+// TODO: May want to suffle these in the future
+var urns_matrix = indeces.map((index)=> (
+  {
+    id: index,
+    ball_color: urn_colors[index],
+    is_result_color: sample[index],
+    n_colored_balls: prior[index]
+  }
+))
+
+// urns_matrix = urns_matrix.map((urn, index) => ({ ...urn, id: indeces[index] }))//unsure what this does
 
 const winners = [[14, 18], [18, 14], [4, 18], [14, 18], [4, 14], [18],  [18,14,2], [18, 14], [18, 14], [18]]
 const scoring = (urns) => {

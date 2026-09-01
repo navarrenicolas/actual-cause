@@ -52,6 +52,12 @@ var jsPredictionReview = (function (jspsych) {
       continue_button_label: {
         type: jspsych.ParameterType.STRING,
         default: "Continue"
+      },
+      /** false for the no-explanation condition: given cards' review text
+       * states only the outcome, and their ball is never ring-highlighted. */
+      show_explanation: {
+        type: jspsych.ParameterType.BOOL,
+        default: true
       }
     }
   };
@@ -67,6 +73,7 @@ var jsPredictionReview = (function (jspsych) {
       const scenarios = trial.scenarios || [];
       const perPage = trial.per_page || 4;
       const agentName = trial.agent_name || "John";
+      const showExplanation = trial.show_explanation !== false;
       const pageCount = Math.ceil(scenarios.length / perPage);
 
       const answerRows = this.jsPsych.data.get()
@@ -180,10 +187,12 @@ var jsPredictionReview = (function (jspsych) {
             // given/explained by round 3 — selected_urn is always present
             // on the underlying ledger record regardless, so it's the
             // right (and only) thing to gate the re-highlight on here.
-            if (sc.selected_urn) {
+            if (showExplanation && sc.selected_urn) {
               const slotEl = cardEl.querySelector(`#slot-${sc.selected_urn}`);
               utils.markHighlightedBall(slotEl, isWin);
               textEl.innerHTML = `<div class="card-sentence-text">${utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName)}</div>`;
+            } else if (!showExplanation) {
+              textEl.innerHTML = `<div class="card-sentence-text">${utils.renderOutcomeOnlySentence(isWin, agentName)}</div>`;
             } else {
               textEl.innerHTML = `<div class="card-sentence-text">This draw had already been explained to you.</div>`;
             }

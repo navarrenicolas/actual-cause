@@ -53,6 +53,14 @@ var jsPredictionNavigator = (function (jspsych) {
       submit_button_label: {
         type: jspsych.ParameterType.STRING,
         default: "Submit All"
+      },
+      /** false for the no-explanation condition: given cards still get the
+       * yellow-highlighter sentence, but stating only the outcome, and
+       * their ball is never ring-highlighted (there's no causal ball to
+       * point to). */
+      show_explanation: {
+        type: jspsych.ParameterType.BOOL,
+        default: true
       }
     }
   };
@@ -66,6 +74,7 @@ var jsPredictionNavigator = (function (jspsych) {
       const utils = window.UrnUtils;
       const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
       const scenarios = trial.scenarios || [];
+      const showExplanation = trial.show_explanation !== false;
       const perPage = trial.per_page || 4;
       const questionId = trial.question_id || "prediction_navigator";
       const agentName = trial.agent_name || "John";
@@ -79,7 +88,9 @@ var jsPredictionNavigator = (function (jspsych) {
       display_element.innerHTML = `
         <div class="explanation-2x2-container">
           <div id="pn-instruction-hint" class="explanation-instruction-hint">
-            The highlighted draws have been explained. You must predict the remaining draws. Click the outcome according to the explanation.
+            ${showExplanation
+              ? "The highlighted draws have been explained. You must predict the remaining draws. Click the outcome according to the explanation."
+              : "The highlighted draws show only the outcome. You must predict the remaining draws. Click the outcome shown."}
           </div>
 
           <div id="pn-grid-wrapper" class="explanation-2x2-grid"></div>
@@ -173,7 +184,7 @@ var jsPredictionNavigator = (function (jspsych) {
               const displayColor = utils.getDisplayColor(cleanColor);
               slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
 
-              if (isGiven && sc.selected_urn === urnKey) {
+              if (isGiven && showExplanation && sc.selected_urn === urnKey) {
                 utils.markHighlightedBall(slotEl, isWin);
               }
             }
@@ -192,8 +203,10 @@ var jsPredictionNavigator = (function (jspsych) {
             }
           });
 
-          if (isGiven && sentenceEl && sc.selected_urn) {
-            sentenceEl.innerHTML = utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName);
+          if (isGiven && sentenceEl) {
+            sentenceEl.innerHTML = (showExplanation && sc.selected_urn)
+              ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName)
+              : utils.renderOutcomeOnlySentence(isWin, agentName);
           }
 
           // Restore any answer already made on a previous visit to this page
@@ -236,7 +249,9 @@ var jsPredictionNavigator = (function (jspsych) {
               if (feedbackEl) feedbackEl.innerHTML = `<span class="win">✓</span>`;
             } else {
               answers[globalIdx] = null;
-              if (feedbackEl) feedbackEl.innerHTML = `<span class="lose">That's not what the explanation says — check again.</span>`;
+              if (feedbackEl) feedbackEl.innerHTML = showExplanation
+                ? `<span class="lose">That's not what the explanation says — check again.</span>`
+                : `<span class="lose">That's not the outcome shown — check again.</span>`;
             }
 
             updateSubmitState();
