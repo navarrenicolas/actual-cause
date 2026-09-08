@@ -7,6 +7,14 @@ function shuffleArray(array) {
   return array;
 }
 
+// Red, centered "Practice Task N/2" banner, prepended to the plain
+// html-button-response blurbs during the 2-urn training block (steps 2-4)
+// — jsExplanationExample/jsPredictionGrid take the same text via their own
+// practice_label param instead, since they build their markup themselves.
+function practiceLabelHTML(n, total) {
+  return `<div class="practice-task-label">Practice Task ${n}/${total}</div>`;
+}
+
 // ===== Generalized urn rendering (parameterized by urn_map) — this file
 // needs both a 2-urn training map and a 4-urn real map. =====
 function buildUrnLabels(urnMap) {
@@ -77,8 +85,7 @@ const twoUrnBallsData = getOrCreateUrnsData(twoUrnMap);
 const twoUrnHtmlInteractive = renderUrnsHTML(twoUrnMap, twoUrnLabels, twoUrnBallsData, true);
 const twoUrnHtmlStatic = renderUrnsHTML(twoUrnMap, twoUrnLabels, twoUrnBallsData, false);
 
-const disjunctiveRuleText = `<div class="highlight-box"><h2>RULE</h2><p><strong>To win, you need an <span style="color:orange">orange</span> ball, a <span style="color:blue">blue</span> ball, or both.</strong></p></div>`;
-const conjunctiveRuleText = `<div class="highlight-box"><h2>RULE</h2><p><strong>To win, you need both an <span style="color:orange">orange</span> ball AND a <span style="color:blue">blue</span> ball.</strong></p></div>`;
+const disjunctiveRuleText = `<div class="highlight-box"><h2 style="color: red;">EXAMPLE RULE</h2><p><strong>To win, you need an <span style="color:orange">orange</span> ball, a <span style="color:blue">blue</span> ball, or both.</strong></p></div>`;
 
 const disjunctiveRuleFn = (draw) => draw.A !== "lightgrey" || draw.B !== "lightgrey";
 const conjunctiveRuleFn = (draw) => draw.A !== "lightgrey" && draw.B !== "lightgrey";
@@ -103,12 +110,18 @@ function generateTwoUrnCombos(urnMap) {
 // can render them inline as already-shown instead of a separate history
 // view. No selected_urn/selected_color here — with show_explanation:false
 // the plugins never look at those fields.
+// Given cards always come first (top row of the 2x2 grid) — not
+// randomized in with the predict cards — so the layout is consistent
+// while participants are still learning what "given" means; only the
+// order *within* each group is shuffled for variety.
 function buildTwoUrnScenarios(urnMap, givenExamples) {
   const scenarios = generateTwoUrnCombos(urnMap).map((draw, idx) => {
     const match = givenExamples.find((ex) => ex.draw.A === draw.A && ex.draw.B === draw.B);
     return { id: idx + 1, draw: draw, given: !!match };
   });
-  return shuffleArray(scenarios);
+  const given = shuffleArray(scenarios.filter((sc) => sc.given));
+  const predict = shuffleArray(scenarios.filter((sc) => !sc.given));
+  return given.concat(predict);
 }
 
 // Returns a copy of `scenarios` with `given: true` on the first
@@ -256,7 +269,23 @@ function bootstrap() {
     on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
   });
 
-  // ===== Step 1: 2-urn mechanics walkthrough (no rule yet) =====
+  // ===== Steps 2-3 setup: needed before step 1, since the walkthrough now
+  // demonstrates this same example (draw, rule, outcome) end to end, using
+  // the first of these two examples verbatim. =====
+  const disjunctiveExamples = [
+    { id: 1, draw: { A: twoUrnMap.A.color, B: "lightgrey" }, outcome: "win" },
+    { id: 2, draw: { A: "lightgrey", B: twoUrnMap.B.color }, outcome: "win" }
+  ];
+
+  // ===== Step 1: 2-urn mechanics + rule walkthrough =====
+  // The rule concept is introduced right here, inside the same walkthrough
+  // that teaches drawing mechanics — via the plugin's own rule/result
+  // pages. The draw is fixed (not random) so every participant sees the
+  // same probability/outcome text, and so it can double as the first of
+  // the two examples shown right after. (No explanation pages here — this
+  // condition never shows one, and pages 6-8 already cover the outcome.)
+  // Repeated/free-practice draws are reserved for the four-urn stage
+  // (step 5); this walkthrough has just the one guided draw.
   const mechanicsIntroHTML = `
     <div class="instructions-container">
       <h2>Instructions</h2>
@@ -265,70 +294,54 @@ function bootstrap() {
       <p style="font-style: italic;">Some boxes have more colored balls than others, so the chances of drawing a colored ball differ from box to box.</p>
     </div>
   `;
-  const mechanicsOutroHTML = `
-    <div class="instructions-container">
-      <h2>Your turn</h2>
-      <p>Now try drawing from the boxes yourself a few times, so you can get a feel for how it works.</p>
-    </div>
-  `;
   timeline.push({
     type: jsWalkthroughInstructions,
     intro_html: mechanicsIntroHTML,
-    outro_html: mechanicsOutroHTML,
     urn_html: twoUrnHtmlInteractive,
     urn_map: twoUrnMap,
-    draw: sampleDraw(twoUrnMap),
+    draw: disjunctiveExamples[0].draw,
     urn_keys: ["A", "B"],
-    rule_fn: null,
-    include_rule_pages: false,
+    rule_fn: disjunctiveRuleFn,
+    rule_text: disjunctiveRuleText,
+    include_rule_pages: true,
+    show_explanation: false,
     question_id: "mechanics_walkthrough",
     finish_button_label: "Continue",
     data: { question_id: "mechanics_walkthrough" }
   });
 
-  timeline.push({
-    type: jsInteractiveDrawSingle,
-    show_rule: false,
-    show_result: false,
-    urn_html: twoUrnHtmlInteractive,
-    urn_map: twoUrnMap,
-    draws: shuffleArray(Array.from({ length: 4 }, () => sampleDraw(twoUrnMap))),
-    urn_keys: ["A", "B"],
-    agent_name: "you",
-    question_id: "mechanics_familiarisation",
-    max_samples: 4,
-    finish_button_label: "Continue",
-    data: { question_id: "mechanics_familiarisation" },
-    on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
-  });
-
-  // ===== Steps 2-3: disjunctive rule — outcome examples, then predict =====
-  const disjunctiveExamples = [
-    { id: 1, draw: { A: twoUrnMap.A.color, B: "lightgrey" }, outcome: "win" },
-    { id: 2, draw: { A: "lightgrey", B: twoUrnMap.B.color }, outcome: "win" }
-  ];
-
+  // ===== Steps 2-3: disjunctive rule — "Practice Task 1/2": task
+  // description, both examples, then predict. No rule box anywhere in this
+  // block — they're playing the (practice) inference game now, same as
+  // the real task, so the rule has to be inferred from the two given
+  // examples rather than read off a box. (The rule box they saw inside
+  // the walkthrough doesn't count against that — that was before "the
+  // task" began.) =====
   timeline.push({
     type: jsPsychHtmlButtonResponse,
     stimulus: `
+      ${practiceLabelHTML(1, 2)}
       <div class="instructions-container">
-        <h2>The rule</h2>
-        <p>Each set of boxes has a <b>rule</b> that determines whether a draw results in a <span class="win">win</span> or a <span class="lose">loss</span>.</p>
-        <p>We'll show you two example draws, along with their outcome.</p>
+        <h2>Practice Task</h2>
+        <p>Your task is to observe a few draws from another player, John. A fixed but hidden rule determines whether John won or lost. Based on these observations, you will make predictions about whether John would win or lose under the fixed (but hidden) rule.</p>
       </div>`,
     choices: ["Continue"],
-    data: { question_id: "pre_disjunctive_examples" }
+    data: { question_id: "task_description" },
+    on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
   });
 
   timeline.push({
     type: jsExplanationExample,
+    // Both examples, no rule_text — the rule box they saw inside the
+    // walkthrough doesn't get repeated here, since from this point on
+    // they're practicing the same rule-inference the real task asks for.
     examples: disjunctiveExamples,
-    rule_text: disjunctiveRuleText,
     urn_html: twoUrnHtmlStatic,
     urn_map: twoUrnMap,
     urn_keys: ["A", "B"],
-    agent_name: "You",
+    agent_name: "John",
     show_explanation: false,
+    practice_label: "Practice Task 1/2",
     question_id: "disjunctive_examples",
     finish_button_label: "Continue",
     data: { question_id: "disjunctive_examples" },
@@ -338,9 +351,10 @@ function bootstrap() {
   timeline.push({
     type: jsPsychHtmlButtonResponse,
     stimulus: `
+      ${practiceLabelHTML(1, 2)}
       <div class="instructions-container">
-        <h2>Now you try</h2>
-        <p>Here are all 4 possible draws from these two boxes. Two of them are the examples you just saw — highlighted in yellow — so just confirm the outcome shown. Predict the outcome for the other two. You'll need to get everything correct to continue.</p>
+        <h2>Your task: predict the outcomes</h2>
+        <p>Next, you'll see a grid of 4 scenarios, including the two draws you just saw — those are highlighted in yellow. You must predict the other two scenarios by selecting the <b>WON</b> or <b>LOST</b> buttons.</p>
       </div>`,
     choices: ["Continue"],
     data: { question_id: "pre_disjunctive_prediction" }
@@ -349,19 +363,21 @@ function bootstrap() {
   timeline.push({
     type: jsPredictionGrid,
     scenarios: buildTwoUrnScenarios(twoUrnMap, disjunctiveExamples),
-    rule_text: disjunctiveRuleText,
     urn_html: twoUrnHtmlStatic,
     urn_map: twoUrnMap,
     urn_keys: ["A", "B"],
-    agent_name: "You",
+    agent_name: "John",
     rule_fn: disjunctiveRuleFn,
     show_explanation: false,
+    practice_label: "Practice Task 1/2",
     question_id: "disjunctive_prediction",
     data: { question_id: "disjunctive_prediction" },
     on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
   });
 
-  // ===== Step 4: conjunctive rule — same two-step pattern, loss examples =====
+  // ===== Step 4: conjunctive rule — "Practice Task 2/2": one consolidated
+  // intro, then the same examples-then-predict pattern with a genuinely
+  // new rule, again with no rule box shown anywhere. =====
   const conjunctiveExamples = [
     { id: 1, draw: { A: twoUrnMap.A.color, B: "lightgrey" }, outcome: "lose" },
     { id: 2, draw: { A: "lightgrey", B: twoUrnMap.B.color }, outcome: "lose" }
@@ -370,24 +386,25 @@ function bootstrap() {
   timeline.push({
     type: jsPsychHtmlButtonResponse,
     stimulus: `
+      ${practiceLabelHTML(2, 2)}
       <div class="instructions-container">
         <h2>A different rule</h2>
-        <p>Boxes can have different rules. Here's another example.</p>
-        <p>This time we'll show you two example draws that lost, along with their outcome.</p>
+        <p>Now you will try a different rule. Let's practice the same task with a new example rule: you'll see two example draws that lost, along with their outcome. Then, just like before, you'll predict the remaining two scenarios in a grid using the WON/LOST buttons.</p>
       </div>`,
     choices: ["Continue"],
-    data: { question_id: "pre_conjunctive_examples" }
+    data: { question_id: "pre_conjunctive_examples" },
+    on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
   });
 
   timeline.push({
     type: jsExplanationExample,
     examples: conjunctiveExamples,
-    rule_text: conjunctiveRuleText,
     urn_html: twoUrnHtmlStatic,
     urn_map: twoUrnMap,
     urn_keys: ["A", "B"],
-    agent_name: "You",
+    agent_name: "John",
     show_explanation: false,
+    practice_label: "Practice Task 2/2",
     question_id: "conjunctive_examples",
     finish_button_label: "Continue",
     data: { question_id: "conjunctive_examples" },
@@ -395,26 +412,15 @@ function bootstrap() {
   });
 
   timeline.push({
-    type: jsPsychHtmlButtonResponse,
-    stimulus: `
-      <div class="instructions-container">
-        <h2>Now you try</h2>
-        <p>Here are all 4 possible draws under this new rule. Two are the examples you just saw — highlighted in yellow — so just confirm the outcome shown. Predict the outcome for the other two.</p>
-      </div>`,
-    choices: ["Continue"],
-    data: { question_id: "pre_conjunctive_prediction" }
-  });
-
-  timeline.push({
     type: jsPredictionGrid,
     scenarios: buildTwoUrnScenarios(twoUrnMap, conjunctiveExamples),
-    rule_text: conjunctiveRuleText,
     urn_html: twoUrnHtmlStatic,
     urn_map: twoUrnMap,
     urn_keys: ["A", "B"],
-    agent_name: "You",
+    agent_name: "John",
     rule_fn: conjunctiveRuleFn,
     show_explanation: false,
+    practice_label: "Practice Task 2/2",
     question_id: "conjunctive_prediction",
     data: { question_id: "conjunctive_prediction" },
     on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
@@ -451,23 +457,28 @@ function bootstrap() {
   });
 
   // ===== Steps 6-8: the main inference task =====
-  // One fixed shuffled order for all 16 scenarios (generated above, no
-  // experiment_1 record involved), used across all 3 rounds. Each round
-  // widens the "given" prefix (4, then 8, then 12) — those scenarios are
-  // shown with just their outcome highlighted (no explanation, since there
-  // is none) right inside the same 4-page nav as the still-to-predict
-  // ones. The last 4 scenarios are never shown, in any round — they're the
-  // held-out generalization test.
+  // One fixed shuffled order for all 16 scenarios, used across all 3
+  // rounds. Round 1 starts with the first 4 already given (highlighted) —
+  // the participant predicts the remaining 12. After Submit, a
+  // streamlined feedback slide shows just a correct/incorrect flag for
+  // the *first* 4 of those 12 predictions (comparing their own submitted
+  // answer against the truth) — then round 2 shows those same 4
+  // pre-filled as "given," predicting the remaining 8, flags the next 4,
+  // and so on. The last 4 scenarios (round 3's remaining predictions) are
+  // never revealed at all, and get no feedback — they're the held-out
+  // generalization test.
   const roundGivenCounts = [4, 8, 12];
+  const totalRounds = roundGivenCounts.length;
 
   timeline.push({
     type: jsPsychHtmlButtonResponse,
     stimulus: `
       <div class="instructions-container">
         <h2>You are now ready for the study!</h2>
-        <p>You will see a set of draws that were taken by another player, John, made from these same four boxes under one fixed rule. The outcome of some of John's draws will be shown to you.</p>
-        <p>All 16 possible draws are shown across 4 pages (4 per page), which you can navigate freely. Draws whose outcome has already been shown are highlighted — for those, click the outcome shown. For the rest, predict whether John would win or lose. You will not be told whether your predictions are correct.</p>
-        <p class="instruction-callout">If you have trouble seeing the balls and boxes clearly, please set your browser zoom to <b>100%</b> (Ctrl+0, or Cmd+0 on Mac).</p>
+        <p>You will see a set of draws that were taken by another player, John, made from these same four boxes under one fixed rule.</p>
+        <p>You will be given 4 observations of John playing the game. You will be required to predict the remaining scenarios.</p>
+        <p>This is round 1 of ${totalRounds}. Every round, the outcome of 4 more scenarios will be shown, so the number of predictions you need to make shrinks each round: 12 now, then 8, then 4.</p>
+        <p>All 16 possible draws are shown across 4 pages (4 per page), which you can navigate freely. Draws whose outcome has already been shown are highlighted. For the rest, predict whether John would win or lose. You will not be told whether your predictions are correct, except for the first 4 of them — after you submit, we'll show you whether those specific ones were right before moving to the next round.</p>
         <p>When you are ready, click the <b>Start</b> button.</p>
       </div>`,
     choices: ["Start"],
@@ -475,18 +486,7 @@ function bootstrap() {
   });
 
   roundGivenCounts.forEach((givenCount, roundIdx) => {
-    if (roundIdx > 0) {
-      timeline.push({
-        type: jsPsychHtmlButtonResponse,
-        stimulus: `
-          <div class="instructions-container">
-            <h2>More outcomes shown</h2>
-            <p>The outcome has now been shown for ${givenCount} of the 16 draws — those are highlighted below. Confirm the outcome shown for those, and predict the rest.</p>
-          </div>`,
-        choices: ["Continue"],
-        data: { question_id: `pre_round_${roundIdx + 1}` }
-      });
-    }
+    const roundNumber = roundIdx + 1;
 
     timeline.push({
       type: jsPredictionNavigator,
@@ -496,16 +496,66 @@ function bootstrap() {
       urn_keys: urnKeysFour,
       agent_name: "John",
       show_explanation: false,
-      question_id: `prediction_round_${roundIdx + 1}`,
+      round_number: roundNumber,
+      total_rounds: totalRounds,
+      question_id: `prediction_round_${roundNumber}`,
       submit_button_label: "Submit All",
-      data: { question_id: `prediction_round_${roundIdx + 1}` },
+      data: { question_id: `prediction_round_${roundNumber}` },
       on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
     });
+
+    // No feedback after the last round — it goes straight to the rule
+    // guess text response instead.
+    const isLastRound = roundIdx === totalRounds - 1;
+    if (!isLastRound) {
+      timeline.push({
+        type: jsBatchFeedback,
+        scenarios: shuffledScenarios.slice(givenCount, givenCount + 4),
+        review_question_id: `prediction_round_${roundNumber}`,
+        urn_html: fourUrnHtmlStatic,
+        urn_map: fourUrnMap,
+        urn_keys: urnKeysFour,
+        agent_name: "John",
+        question_id: `batch_feedback_${roundNumber}`,
+        data: { question_id: `batch_feedback_${roundNumber}` },
+        on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
+      });
+    }
   });
 
-  const finalRoundQuestionId = `prediction_round_${roundGivenCounts.length}`;
+  // ----- Rule guess, then a plain-text reveal of the actual rule (not a
+  // grid auditing every prediction against the truth — the point here is
+  // learning what the rule was) -----
+  // ruleKey is one of "rule1".."rule5" (see the RULES object above); which
+  // of the 4 urns plays the "high"/"medHigh"/"medLow"/"low" role in that
+  // rule's template is determined by relative draw probability
+  // (fourUrnMap's .prob), not a fixed urn key.
+  const RULE_SENTENCE_TEMPLATES = {
+    rule1: (c) => `Either both ${c.low} and ${c.high}, or ${c.medLow} (or all three).`,
+    rule2: (c) => `Either ${c.high} and ${c.medLow} together, or ${c.low} and ${c.medLow} together (or all three).`,
+    rule3: (c) => `${c.high}, ${c.medHigh}, and ${c.low}, all together.`,
+    rule4: (c) => `At least one of: ${c.high}, ${c.medHigh}, or ${c.low}.`,
+    rule5: (c) => `Either ${c.high} or ${c.medLow}, but not both.`
+  };
 
-  // ----- Rule guess, then a debrief showing how the final round's answers compared to the truth -----
+  function buildRuleSentence(ruleKeyValue, urnMap) {
+    const utils = window.UrnUtils;
+    const rankedKeys = Object.keys(urnMap).sort((a, b) => urnMap[b].prob - urnMap[a].prob);
+    const [highKey, medHighKey, medLowKey, lowKey] = rankedKeys;
+    const coloredBall = (urnKey) => {
+      const color = urnMap[urnKey].color;
+      return `${utils.getArticle(color)} <span class="urn-ball-text" style="color:${utils.getDisplayColor(color)};">${color}</span> ball`;
+    };
+    const template = RULE_SENTENCE_TEMPLATES[ruleKeyValue];
+    if (!template) return null;
+    return template({
+      high: coloredBall(highKey),
+      medHigh: coloredBall(medHighKey),
+      medLow: coloredBall(medLowKey),
+      low: coloredBall(lowKey)
+    });
+  }
+
   timeline.push({
     type: jsPsychSurveyText,
     questions: [
@@ -522,16 +572,19 @@ function bootstrap() {
   });
 
   timeline.push({
-    type: jsPredictionReview,
-    scenarios: shuffledScenarios,
-    review_question_id: finalRoundQuestionId,
-    urn_html: fourUrnHtmlStatic,
-    urn_map: fourUrnMap,
-    urn_keys: urnKeysFour,
-    agent_name: "John",
-    show_explanation: false,
-    question_id: "prediction_review",
-    data: { question_id: "prediction_review" },
+    type: jsPsychHtmlButtonResponse,
+    stimulus: `
+      <div class="instructions-container">
+        <h2>The rule</h2>
+        <p>Here's the rule that determined whether John won or lost, along with the four boxes used throughout the study.</p>
+      </div>
+      <div class="highlight-box">
+        <h2 style="color: red;">THE RULE</h2>
+        <p><strong>The rule was: ${buildRuleSentence(ruleKey, fourUrnMap) || "we couldn't determine the exact rule for this session — sorry about that!"}</strong></p>
+      </div>
+      ${fourUrnHtmlStatic}`,
+    choices: ["Continue"],
+    data: { question_id: "rule_reveal" },
     on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
   });
 

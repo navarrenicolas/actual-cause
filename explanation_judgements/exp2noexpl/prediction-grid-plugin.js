@@ -8,10 +8,10 @@
  * to render it as an already-explained observation right inside the same
  * grid instead of a separate history view: its causal ball and explanation
  * sentence get a yellow-highlighter treatment (UrnUtils.markHighlightedBall
- * / renderExplanationSentence), and instead of a free prediction it's an
- * attention check — only the objectively-correct WON/LOST click counts as
- * answered. The remaining (non-given) cards keep the original
- * submit-then-feedback, retry-until-all-correct flow.
+ * / renderExplanationSentence). Given cards are pure display — no buttons,
+ * no click, nothing to answer — since the participant isn't being asked
+ * anything about them; only the remaining (non-given) cards keep the
+ * original submit-then-feedback, retry-until-all-correct prediction flow.
  */
 var jsPredictionGrid = (function (jspsych) {
   "use strict";
@@ -83,6 +83,12 @@ var jsPredictionGrid = (function (jspsych) {
       show_explanation: {
         type: jspsych.ParameterType.BOOL,
         default: true
+      },
+      /** e.g. "Practice Task 1/2" — shown in red above the rule box (or in
+       * its place, if there is none). Empty/omitted shows nothing. */
+      practice_label: {
+        type: jspsych.ParameterType.STRING,
+        default: ""
       }
     }
   };
@@ -114,8 +120,10 @@ var jsPredictionGrid = (function (jspsych) {
           given: !!sc.given,
           userPrediction: null,
           actualOutcome: actualOutcome,
+          // Given cards have nothing to answer, so they start already
+          // "passed" for the all-correct/submit-gating check below.
           attempts: 0,
-          isPassed: false,
+          isPassed: !!sc.given,
           lastAttemptTime: trialStartTime,
           lastPressTime: trialStartTime
         };
@@ -124,13 +132,14 @@ var jsPredictionGrid = (function (jspsych) {
       let html = `
         <div class="explanation-2x2-container">
           <div class="grid-top-panel">
+            ${trial.practice_label ? `<div class="practice-task-label">${trial.practice_label}</div>` : ""}
             ${showRule && trial.rule_text ? `<div id="rule-text" class="grid-rule-text">${trial.rule_text}</div>` : ""}
           </div>
 
           <div id="instruction-hint" class="explanation-instruction-hint">
             ${showExplanation
-              ? "The highlighted draws have been explained. You must predict the remaining draws. Click the outcome according to the explanation."
-              : "The highlighted draws show only the outcome. You must predict the remaining draws. Click the outcome shown."}
+              ? "The highlighted draws have already been explained.<br>Click the WON or LOST buttons to predict the rest."
+              : "The highlighted draws show the outcome.<br>Click the WON or LOST buttons to predict the rest."}
           </div>
 
           <div id="pg-grid-wrapper" class="explanation-2x2-grid">
@@ -164,15 +173,16 @@ var jsPredictionGrid = (function (jspsych) {
 
               <div class="prediction-feedback-block">
                 <div class="prediction-text-col">
-                  <div class="card-prompt-text">Did ${agentName} win or lose this draw?</div>
-                  ${isGiven ? `<div class="card-sentence-text" id="card-outcome-sentence-${idx}"></div>` : `<div class="card-sentence-text is-hidden" id="card-outcome-sentence-${idx}"></div>`}
-                  <div class="validation-feedback-text" id="card-feedback-${idx}"></div>
+                  ${isGiven ? "" : `<div class="card-prompt-text">Did ${agentName} win or lose this draw?</div>`}
+                  <div class="card-sentence-text${isGiven ? "" : " is-hidden"}" id="card-outcome-sentence-${idx}"></div>
+                  ${isGiven ? "" : `<div class="validation-feedback-text" id="card-feedback-${idx}"></div>`}
                 </div>
 
+                ${isGiven ? "" : `
                 <div class="predict-btn-group">
                   <button type="button" class="jspsych-btn predict-win-btn" data-action="win">WON</button>
                   <button type="button" class="jspsych-btn predict-lose-btn" data-action="lose">LOST</button>
-                </div>
+                </div>`}
               </div>
             </div>
           </div>
@@ -203,10 +213,7 @@ var jsPredictionGrid = (function (jspsych) {
         const isGiven = !!sc.given;
         const isWin = cardStates[idx].actualOutcome;
         const cardEl = display_element.querySelector(`[data-sample-idx="${idx}"]`);
-        const winBtn = cardEl.querySelector('[data-action="win"]');
-        const loseBtn = cardEl.querySelector('[data-action="lose"]');
         const sentenceEl = cardEl.querySelector(`#card-outcome-sentence-${idx}`);
-        const feedbackEl = cardEl.querySelector(`#card-feedback-${idx}`);
 
         urnKeys.forEach((urnKey) => {
           const drawnColor = draw[urnKey];
@@ -237,45 +244,18 @@ var jsPredictionGrid = (function (jspsych) {
           }
         });
 
-        if (isGiven && sentenceEl) {
-          sentenceEl.innerHTML = (showExplanation && sc.selected_urn)
-            ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName)
-            : utils.renderOutcomeOnlySentence(isWin, agentName);
+        if (isGiven) {
+          if (sentenceEl) {
+            sentenceEl.innerHTML = (showExplanation && sc.selected_urn)
+              ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName)
+              : utils.renderOutcomeOnlySentence(isWin, agentName);
+          }
+          return; // no interaction on given cards — nothing else to wire up
         }
 
-        const handleGivenClick = (clickedWin) => {
-          const state = cardStates[idx];
-          const isCorrect = clickedWin === state.actualOutcome;
-
-          winBtn.classList.toggle("is-selected", clickedWin);
-          loseBtn.classList.toggle("is-selected", !clickedWin);
-
-          this.jsPsych.data.write({
-            event_type: "attention_check_response",
-            question_id: questionId,
-            scenario_id: sc.id || `task_${idx + 1}`,
-            stated_outcome: state.actualOutcome ? "win" : "lose",
-            clicked_outcome: clickedWin ? "win" : "lose",
-            is_correct: isCorrect
-          });
-
-          if (isCorrect) {
-            state.isPassed = true;
-            state.userPrediction = clickedWin;
-            if (feedbackEl) feedbackEl.innerHTML = `<span class="win">✓</span>`;
-            cardEl.classList.add("card-passed");
-            winBtn.disabled = true;
-            loseBtn.disabled = true;
-          } else {
-            state.isPassed = false;
-            state.userPrediction = null;
-            if (feedbackEl) feedbackEl.innerHTML = showExplanation
-              ? `<span class="lose">That's not what the explanation says — check again.</span>`
-              : `<span class="lose">That's not the outcome shown — check again.</span>`;
-          }
-
-          gridBallFit.apply();
-        };
+        const winBtn = cardEl.querySelector('[data-action="win"]');
+        const loseBtn = cardEl.querySelector('[data-action="lose"]');
+        const feedbackEl = cardEl.querySelector(`#card-feedback-${idx}`);
 
         const handlePredictClick = (predictedWin) => {
           const state = cardStates[idx];
@@ -312,9 +292,8 @@ var jsPredictionGrid = (function (jspsych) {
           gridBallFit.apply();
         };
 
-        const handleClick = isGiven ? handleGivenClick : handlePredictClick;
-        winBtn.onclick = () => handleClick(true);
-        loseBtn.onclick = () => handleClick(false);
+        winBtn.onclick = () => handlePredictClick(true);
+        loseBtn.onclick = () => handlePredictClick(false);
       });
 
       const submitBtn = display_element.querySelector("#grid-submit-btn");
@@ -327,21 +306,10 @@ var jsPredictionGrid = (function (jspsych) {
 
         scenarios.forEach((sc, idx) => {
           const state = cardStates[idx];
+          if (state.given || state.isPassed) return; // given cards have nothing to check; passed predict cards are done
+
           const cardEl = display_element.querySelector(`[data-sample-idx="${idx}"]`);
           const feedbackEl = cardEl.querySelector(`#card-feedback-${idx}`);
-
-          if (state.isPassed) return; // already correct (given cards lock in immediately on click, same as passed predict cards)
-
-          if (state.given) {
-            // Given cards gate on their own click, not on Submit — being
-            // here with isPassed still false just means it hasn't been
-            // correctly clicked yet.
-            allCorrect = false;
-            if (feedbackEl) feedbackEl.innerHTML = showExplanation
-              ? `<span class="lose">Click the outcome the explanation states.</span>`
-              : `<span class="lose">Click the outcome shown.</span>`;
-            return;
-          }
 
           if (state.userPrediction === null) {
             allCorrect = false;

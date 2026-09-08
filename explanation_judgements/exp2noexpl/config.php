@@ -15,7 +15,7 @@ $config = [
     'mock_mode' => false,
 
     'real' => [
-        'exp2_data_dir' => '/home/s2518809/server_data/cs/exp2noexpl-0',
+        'exp2_data_dir' => '/home/s2518809/server_data/cs/exp2inf/exp2noexpl/data-0',
     ],
 
     'mock' => [

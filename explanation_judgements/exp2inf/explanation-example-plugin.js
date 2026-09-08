@@ -55,6 +55,12 @@ var jsExplanationExample = (function (jspsych) {
       finish_button_label: {
         type: jspsych.ParameterType.STRING,
         default: "Continue"
+      },
+      /** e.g. "Practice Task 1/2" — shown in red above the rule box (or in
+       * its place, if there is none). Empty/omitted shows nothing. */
+      practice_label: {
+        type: jspsych.ParameterType.STRING,
+        default: ""
       }
     }
   };
@@ -79,6 +85,7 @@ var jsExplanationExample = (function (jspsych) {
           <div id="ee-intro-block" class="is-hidden"></div>
 
           <div id="ee-example-block" class="is-hidden">
+            ${trial.practice_label ? `<div class="practice-task-label">${trial.practice_label}</div>` : ""}
             ${trial.rule_text ? `<div id="ee-rule-slot">${trial.rule_text}</div>` : ""}
 
             <div class="urns-card-wrapper" id="ee-urns-wrapper">
@@ -88,6 +95,7 @@ var jsExplanationExample = (function (jspsych) {
               </div>
             </div>
 
+            <div id="ee-feedback-text" class="draw-feedback-text"></div>
             <div id="ee-sentence-box" class="draw-feedback-text"></div>
           </div>
 
@@ -104,6 +112,7 @@ var jsExplanationExample = (function (jspsych) {
       const exampleBlock = display_element.querySelector("#ee-example-block");
       const ruleSlot = display_element.querySelector("#ee-rule-slot");
       const probText = display_element.querySelector("#ee-prob-text");
+      const feedbackText = display_element.querySelector("#ee-feedback-text");
       const sentenceBox = display_element.querySelector("#ee-sentence-box");
       const urnsWrapper = display_element.querySelector("#ee-urns-wrapper");
       const backBtn = display_element.querySelector("#ee-back-btn");
@@ -169,11 +178,12 @@ var jsExplanationExample = (function (jspsych) {
           }
         });
 
+        feedbackText.innerHTML = utils.renderDrawDescription(draw, urnKeys, agentName);
+
         if (showExplanation && ex.cause_urn) {
           sentenceBox.innerHTML = `<p>${utils.renderExplanationSentence(isWin, ex.cause_color, ex.cause_urn, agentName)}</p>`;
         } else {
-          const outcomeMarkup = isWin ? `<span class="win">won</span>` : `<span class="lose">lost</span>`;
-          sentenceBox.innerHTML = `<p>${agentName} ${outcomeMarkup}.</p>`;
+          sentenceBox.innerHTML = `<p>${utils.renderOutcomeOnlySentence(isWin, agentName)}</p>`;
         }
 
         this.jsPsych.data.write({

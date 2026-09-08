@@ -22,7 +22,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json; charset=utf-8');
 
 $config = require __DIR__ . '/config.php';
-$resultsDir = $config['exp2_data_dir'] . '/results';
+$resultsDir = $config['exp2_data_dir'] . '/data';
 $logFile = $config['exp2_data_dir'] . '/assign_log.csv';
 $inProgressDir = $config['datasets_dir'] . '/in_progress';
 $usedDir = $config['datasets_dir'] . '/used';

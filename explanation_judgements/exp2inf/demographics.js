@@ -51,6 +51,14 @@ const demographicTrial = {
       </label><br><br>
 
       <div class="likert-slider-container">
+        <style>
+          .likert-slider.untouched::-webkit-slider-thumb {
+            opacity: 0;
+          }
+          .likert-slider.untouched::-moz-range-thumb {
+            opacity: 0;
+          }
+        </style>
         <label>How difficult do you think the rule from the previous task was?</label><br><br>
         <div class="likert-slider-row">
           <span class="likert-end-label left">Very Easy</span>
@@ -61,21 +69,20 @@ const demographicTrial = {
           <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
         </div>
       </div><br>
-
-      <div class="likert-slider-container">
-        <label>How difficult was it to predict the outcome of the new draws?</label><br><br>
-        <div class="likert-slider-row">
-          <span class="likert-end-label left">Very Easy</span>
-          <input type="range" name="prediction_difficulty" min="1" max="5" step="1" value="1" required class="likert-slider">
-          <span class="likert-end-label right">Very Difficult</span>
-        </div>
-        <div class="likert-scale-labels">
-          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
-        </div>
-      </div><br>
+      
     </div>
   `,
   button_label: "Submit",
   data: { question_id: "demographics" },
+  on_load: function() {
+    const slider = document.querySelector('input[name="rule_understanding_difficulty"]');
+    if (!slider) return;
+
+    slider.classList.add('untouched');
+
+    const revealThumb = () => slider.classList.remove('untouched');
+    slider.addEventListener('input', revealThumb, { once: true });
+    slider.addEventListener('click', revealThumb, { once: true });
+  },
   on_finish: function(data) {}
 };

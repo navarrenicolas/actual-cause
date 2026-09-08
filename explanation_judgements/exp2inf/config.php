@@ -33,9 +33,9 @@ $config = [
     'mock_mode' => true,
 
     'real' => [
-        'exp2_data_dir' => '/home/s2518809/server_data/cs/exp2inf-0/',
-        'exp1_data_dir' => '/home/s2518809/server_data/cs/exp1cs-1',
-        'datasets_dir'  => '/home/s2518809/server_data/cs/inference_exp2/datasets',
+        'exp2_data_dir' => '/home/s2518809/server_data/cs/exp2inf/exp2inf-0',
+        'exp1_data_dir' => '/home/s2518809/server_data/cs/exp1cs/exp1cs-1',
+        'datasets_dir'  => '/home/s2518809/server_data/cs/exp2inf/datasets',
     ],
 
     'mock' => [

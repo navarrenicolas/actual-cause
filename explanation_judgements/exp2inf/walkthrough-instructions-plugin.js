@@ -60,6 +60,24 @@ var jsWalkthroughInstructions = (function (jspsych) {
       include_rule_pages: {
         type: jspsych.ParameterType.BOOL,
         default: true
+      },
+      /** Set false to drop the explanation pages entirely (no-explanation
+       * condition) — there's nothing to introduce there, not even an
+       * outcome-only version, since pages 6-8 already cover the outcome.
+       * Only meaningful when include_rule_pages is true. */
+      show_explanation: {
+        type: jspsych.ParameterType.BOOL,
+        default: true
+      },
+      /** Which urn's ball caused the outcome, for the explanation pages —
+       * required (with cause_color) whenever show_explanation is true. */
+      cause_urn: {
+        type: jspsych.ParameterType.STRING,
+        default: null
+      },
+      cause_color: {
+        type: jspsych.ParameterType.STRING,
+        default: null
       }
     }
   };
@@ -68,8 +86,10 @@ var jsWalkthroughInstructions = (function (jspsych) {
   // Each page is a pure function of which blocks/highlight should be visible.
   // Re-rendering a page never inserts/removes layout content beyond simple
   // show/hide toggles, so navigating Back/Next never loses state.
-  const PROB_TOOLTIP = "This is how likely it would be to draw these balls from the boxes at random.";
+  const PROB_TOOLTIP = "This is the probability of drawing this combination of balls.";
   const FEEDBACK_TOOLTIP = "This text describes which balls were drawn in this trial.";
+  const RESULT_TOOLTIP = "This shows whether the draw resulted in a win or a loss, based on the rule.";
+  const EXPLANATION_TOOLTIP = "This explains which ball caused the outcome.";
 
   function makePage(overrides) {
     return Object.assign({
@@ -81,24 +101,30 @@ var jsWalkthroughInstructions = (function (jspsych) {
       feedback: false,
       rule: false,
       result: false,
+      explanation: false,
       highlight: null,
       tooltip: null
     }, overrides);
   }
 
-  function buildPages(includeRulePages) {
+  function buildPages(includeRulePages, includeExplanationPages, includeOutro) {
     const pages = [
-      makePage({ intro: true }),
-      makePage({ interactive: true, title: "Drawing from the boxes", promptDraw: true }),
-      makePage({ interactive: true, title: "What you drew", feedback: true }),
-      makePage({ interactive: true, title: "What you drew", feedback: true, highlight: "prob", tooltip: PROB_TOOLTIP }),
-      makePage({ interactive: true, title: "What you drew", feedback: true, highlight: "feedback", tooltip: FEEDBACK_TOOLTIP })
+      makePage({ intro: true }),                                                                                          // 1. Introduction to the boxes
+      makePage({ interactive: true, title: "Drawing from the boxes", promptDraw: true }),                                  // 2. Interactive draws with descriptions
+      makePage({ interactive: true, title: "What you drew", feedback: true }),                                             // 3. Text description and scenario probability
+      makePage({ interactive: true, title: "What you drew", feedback: true, highlight: "prob", tooltip: PROB_TOOLTIP }),   // 4. Pop up: probability
+      makePage({ interactive: true, title: "What you drew", feedback: true, highlight: "feedback", tooltip: FEEDBACK_TOOLTIP }) // 5. Pop up: draws
     ];
     if (includeRulePages) {
-      pages.push(makePage({ interactive: true, title: "The rule", feedback: true, rule: true }));
-      pages.push(makePage({ interactive: true, title: "The result", feedback: true, rule: true, result: true }));
+      pages.push(makePage({ interactive: true, title: "The rule", feedback: true, rule: true }));                                                          // 6. Introduction of the rule
+      pages.push(makePage({ interactive: true, title: "The result", feedback: true, rule: true, result: true }));                                          // 7. Rule outcome
+      pages.push(makePage({ interactive: true, title: "The result", feedback: true, rule: true, result: true, highlight: "result", tooltip: RESULT_TOOLTIP })); // 8. Pop up: outcome
+      if (includeExplanationPages) {
+        pages.push(makePage({ interactive: true, title: "The explanation", feedback: true, rule: true, result: true, explanation: true }));                                                        // 9. Introduction of explanation
+        pages.push(makePage({ interactive: true, title: "The explanation", feedback: true, rule: true, result: true, explanation: true, highlight: "explanation", tooltip: EXPLANATION_TOOLTIP })); // 10. Pop up: explanation
+      }
     }
-    pages.push(makePage({ outro: true }));
+    if (includeOutro) pages.push(makePage({ outro: true }));
     return pages;
   }
 
@@ -112,7 +138,8 @@ var jsWalkthroughInstructions = (function (jspsych) {
       const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
       const targetDraw = trial.draw || {};
       const questionId = trial.question_id || "walkthrough";
-      const PAGES = buildPages(trial.include_rule_pages !== false);
+      const showExplanation = trial.show_explanation !== false;
+      const PAGES = buildPages(trial.include_rule_pages !== false, showExplanation, !!trial.outro_html);
 
       const drawnSoFar = {};
 
@@ -139,6 +166,7 @@ var jsWalkthroughInstructions = (function (jspsych) {
 
             <div id="wt-feedback-box" class="draw-feedback-text is-hidden"></div>
             <div id="wt-result-box" class="draw-feedback-text is-hidden"></div>
+            <div id="wt-explanation-box" class="draw-feedback-text is-hidden"></div>
           </div>
 
           <div id="wt-annotation-tooltip" class="instruction-callout wt-tooltip is-hidden"></div>
@@ -162,6 +190,7 @@ var jsWalkthroughInstructions = (function (jspsych) {
       const promptText = display_element.querySelector("#wt-prompt");
       const feedbackBox = display_element.querySelector("#wt-feedback-box");
       const resultBox = display_element.querySelector("#wt-result-box");
+      const explanationBox = display_element.querySelector("#wt-explanation-box");
       const urnsCardWrapper = display_element.querySelector("#wt-urns-wrapper");
       const tooltip = display_element.querySelector("#wt-annotation-tooltip");
       const backBtn = display_element.querySelector("#wt-back-btn");
@@ -173,7 +202,8 @@ var jsWalkthroughInstructions = (function (jspsych) {
         prob: probText,
         feedback: feedbackBox,
         rule: ruleSlot,
-        result: resultBox
+        result: resultBox,
+        explanation: explanationBox
       };
 
       const finishTrial = () => {
@@ -244,13 +274,16 @@ var jsWalkthroughInstructions = (function (jspsych) {
       };
 
       const applyContentWidth = () => {
-        // Intro/outro text, the rule box, and the feedback/result panels
-        // aren't included here — they get a standard fixed width from CSS
-        // (.instructions-container / .highlight-box / .draw-feedback-text)
-        // instead of matching the urn display's width, which differed by
-        // urn count and interactive-vs-static rendering and made them a
-        // different size in every context.
-        utils.applyBoundWidth(contentWidth, [blockTitle, urnsCardWrapper]);
+        // Only the urns wrapper is bound to the urn display's own width
+        // here. The title, intro/outro text, rule box, and feedback/
+        // result/explanation panels all get a standard fixed width from
+        // CSS instead (.wt-block-title / .instructions-container /
+        // .highlight-box / .draw-feedback-text) — binding the title to the
+        // urn display's width too used to make it (and everything sized
+        // off it) shrink for a 2-urn walkthrough while the rule box below
+        // stayed at the standard width, so the rule box visibly overhung
+        // the title above it.
+        utils.applyBoundWidth(contentWidth, [urnsCardWrapper]);
       };
 
       function remeasureContentWidth() {
@@ -269,8 +302,42 @@ var jsWalkthroughInstructions = (function (jspsych) {
 
       const renderResultContent = () => {
         const isWin = trial.rule_fn ? trial.rule_fn(drawnSoFar) : false;
-        const outcomeMarkup = isWin ? `<span class="win">WON!</span>` : `<span class="lose">LOST!</span>`;
-        resultBox.innerHTML = `<p><b>With this draw, you ${outcomeMarkup}</b></p>`;
+        resultBox.innerHTML = `<p><b>${utils.renderPredictionSentence("You", isWin)}</b></p>`;
+      };
+
+      const renderExplanationContent = () => {
+        const isWin = trial.rule_fn ? trial.rule_fn(drawnSoFar) : false;
+        explanationBox.innerHTML = `<p>${utils.renderExplanationSentence(isWin, trial.cause_color, trial.cause_urn, "you")}</p>`;
+      };
+
+      // Once the draw is complete (page 3 onward), the rule/result/
+      // explanation content never changes for the rest of the trial — only
+      // whether it's revealed does. Populating it as soon as it's reachable
+      // (rather than only on the page that first shows it) means the rule
+      // box, result box, and explanation box already have their real,
+      // final size (via .wt-invisible, not display:none) from page 3
+      // onward, so revealing one of them later just reveals it in place
+      // instead of pushing everything below it down.
+      const renderReflowStableContent = () => {
+        renderResultContent();
+        if (trial.cause_urn) renderExplanationContent();
+      };
+
+      // The explanation ball's ring highlight lives on the slot's ball div
+      // directly (UrnUtils.markHighlightedBall), not through the tooltip
+      // spotlight system above — and unlike the tooltip, it isn't cleared
+      // by re-rendering the ball (the ball is drawn once, in
+      // completeDrawVisual, and never redrawn per page), so it has to be
+      // explicitly toggled on/off here to stay in sync with Back/Next.
+      const updateExplanationBallHighlight = (show) => {
+        if (!trial.cause_urn) return;
+        const slotEl = display_element.querySelector(`#slot-${trial.cause_urn}`);
+        if (!slotEl) return;
+        slotEl.classList.remove("is-selected", "is-selected-win", "is-selected-loss");
+        if (show) {
+          const isWin = trial.rule_fn ? trial.rule_fn(drawnSoFar) : false;
+          utils.markHighlightedBall(slotEl, isWin);
+        }
       };
 
       let pageIndex = 0;
@@ -300,11 +367,32 @@ var jsWalkthroughInstructions = (function (jspsych) {
         if (page.feedback) renderFeedbackContent();
         feedbackBox.classList.toggle("is-hidden", !page.feedback);
 
+        // The rule box sits above the urns display, so reserving its space
+        // ahead of page 6 (when it's actually revealed) kept the urns
+        // pinned to the same position throughout — but it also left a
+        // large permanent gap between the title and the urns on every page
+        // before that. Simple show/hide instead: the urns sit right under
+        // the title on the drawing/"what you drew" pages, and the one-time
+        // shift when the rule box appears on page 6 is an accepted
+        // trade-off for that.
         ruleSlot.classList.toggle("is-hidden", !page.rule);
         ruleExplain.classList.toggle("is-hidden", !page.rule);
 
-        if (page.result) renderResultContent();
-        resultBox.classList.toggle("is-hidden", !page.result);
+        // Everything below the urns (result/explanation) only needs a
+        // stable layout from "what you drew" onward — their content
+        // depends on the completed draw, so populating them any earlier
+        // (still on the drawing page) would show transient, wrong values
+        // while invisible for no benefit, since nothing above the urns
+        // depends on their reserved space.
+        const reflowStablePage = page.interactive && !page.promptDraw;
+        if (reflowStablePage) renderReflowStableContent();
+
+        resultBox.classList.toggle("is-hidden", !reflowStablePage);
+        resultBox.classList.toggle("wt-invisible", reflowStablePage && !page.result);
+
+        explanationBox.classList.toggle("is-hidden", !reflowStablePage);
+        explanationBox.classList.toggle("wt-invisible", reflowStablePage && !page.explanation);
+        updateExplanationBallHighlight(page.explanation);
 
         // Single spotlight: clear every highlight, then apply this page's one.
         Object.values(highlightTargets).forEach((el) => el.classList.remove("walkthrough-highlight"));
@@ -372,7 +460,7 @@ var jsWalkthroughInstructions = (function (jspsych) {
 
           const remaining = urnKeys.filter((k) => drawnSoFar[k] === undefined);
           promptText.innerHTML = remaining.length > 0
-            ? `<b>Now draw the rest of the balls from the other boxes.</b>`
+            ? `<b>Now, draw a ball from the other box.</b>`
             : `<b>All balls drawn. Click Next to continue.</b>`;
 
           // Stay on the draw page; just reveal the Next button once ready.

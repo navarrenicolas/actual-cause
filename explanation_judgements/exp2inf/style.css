@@ -16,8 +16,12 @@ html {
     flex-direction: column;
     justify-content: center; /* Centers trial segments vertically on screen */
     align-items: center;     /* Centers trial segments horizontally */
-    height: 98vh;
-    max-height: 100vh;
+    /* min-height, not height: a fixed height with overflow:visible lets
+       content spill past the box's own bottom edge instead of growing it,
+       which stops a sticky nav bar (.wt-nav) inside it from being able to
+       track all the way down to the real bottom of tall content — see
+       .wt-nav below. */
+    min-height: 98vh;
     width: 90vw;
     margin: 0 auto;
     box-sizing: border-box;
@@ -489,15 +493,31 @@ span.lose {
   text-align: center;
 }
 
+/* Same standard 650px width/centering as .wt-block-title, for the same
+   reason: without an explicit width, these default to the full width of
+   #wt-interactive-block (up to 1000px) — wider than, and centered on a
+   different axis than, the 650px title above them — so the draw prompt
+   text visibly shifts relative to the title as its content changes while
+   drawing (empty -> "Now draw from the other box" -> "All balls drawn"). */
 .walkthrough-prompt {
+  max-width: 650px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
   text-align: center;
-  min-height: 1.4em;
+  min-height: 2.8em;
 }
 
 .draw-status-text {
+  max-width: 650px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
   text-align: center;
   font-style: italic;
-  min-height: 1.4em;
+  min-height: 2.8em;
 }
 
 span#wt-prob-text.walkthrough-highlight {
@@ -520,27 +540,84 @@ span#wt-prob-text.walkthrough-highlight {
 }
 
 /* Rule explanation stays as regular in-flow text alongside the rule box,
-   not a floating annotation. */
+   not a floating annotation. Same standard 650px width as
+   .instructions-container/.highlight-box/.draw-feedback-text, not a
+   percentage of whatever's currently on screen — see .wt-block-title
+   below for why. */
 .wt-static-callout {
-  max-width: 70%;
+  max-width: 650px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
 }
 
+/* Same standard 650px width as the intro/outro text and every other fixed
+   text block (.instructions-container/.highlight-box/.draw-feedback-text)
+   — NOT bound to the urn display's width in JS. It used to be (see
+   applyContentWidth), which matched the 2x2 grid plugins' width-binding
+   convention, but here it meant the title (and everything sized off it)
+   shrank to the 2-urn display's narrower width while the rule box below
+   stayed at the standard 650px, so the rule box visibly overhung the
+   title above it. */
 .wt-block-title {
+  max-width: 650px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   text-align: left;
   margin-bottom: 10px;
+  box-sizing: border-box;
 }
 
-/* Fixed content column: the urns row and page title are bound to the same
-   width (see walkthrough-instructions-plugin.js's applyContentWidth) so
-   they line up consistently as the participant pages back and forth.
-   The rule box and feedback/result text get a standard fixed width from
-   .highlight-box / .draw-feedback-text instead — see those rules. */
+/* The walkthrough's feedback/result/explanation text reads better
+   centered (it's a short sentence or two, not a long paragraph) —
+   distinct from the plain left-aligned .draw-feedback-text default used
+   for longer prose elsewhere (e.g. draw-interactive-plugin.js). */
+#wt-feedback-box,
+#wt-result-box,
+#wt-explanation-box {
+  text-align: center;
+}
+
+/* Up to three of these boxes stack at once on "the rule"/"the
+   explanation" pages, so the default .draw-feedback-text p spacing
+   (20px/10px, meant for a single standalone block of prose) adds up fast
+   — tightened here to help these dense pages fit without scrolling. */
+#wt-feedback-box p,
+#wt-result-box p,
+#wt-explanation-box p {
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+/* Fixed content column: the urns row is bound to its own natural width in
+   JS (see walkthrough-instructions-plugin.js's applyContentWidth), so it
+   doesn't stretch to fill the page. The title, rule box, and
+   feedback/result/explanation text all get the same standard fixed width
+   instead — .wt-block-title / .highlight-box / .draw-feedback-text — so
+   they read consistently across every page regardless of urn count. */
 .wt-container {
   width: 100%;
   max-width: 1000px;
   margin: 0 auto;
   padding: 0 32px;
   box-sizing: border-box;
+  /* Each page is centered vertically within the viewport on its own
+     terms (inherited from .draw-plugin-container's justify-content:
+     center) — no top-anchoring override, so no extra padding is needed
+     to create breathing room above the title; centering does that
+     symmetrically instead. */
+  justify-content: center;
+}
+
+/* Reserves layout space for a box that's revealed later in a walkthrough
+   page sequence (see walkthrough-instructions-plugin.js's
+   reflowStablePage) without removing it from flow, so revealing it can't
+   push later content down — pair with is-hidden (display:none) only for
+   phases where the box's slot genuinely isn't allocated yet at all. */
+.wt-invisible {
+  visibility: hidden;
 }
 
 #wt-intro-block,
@@ -889,6 +966,25 @@ span#wt-prob-text.walkthrough-highlight {
     font-weight: bold;
     margin: 0 0 2px 0;
     color: #333;
+}
+
+/* Shown on every page of the 2-urn training block, from "Practice task"
+   onward through that block's own prediction grid — main.js passes
+   "Practice Task 1/2" or "2/2" so it's always clear which of the two
+   practice rounds (disjunctive/conjunctive) is currently on screen, and
+   that it's practice, not the real task. One unscoped class since it's
+   used across several different plugins/contexts (plain instructions
+   screens, explanation-example-plugin.js, prediction-grid-plugin.js). */
+.practice-task-label {
+    font-size: 1.1em;
+    font-weight: 800;
+    color: red;
+    text-align: center;
+    text-transform: uppercase;
+    max-width: 650px;
+    width: 100%;
+    margin: 0 auto 8px;
+    box-sizing: border-box;
 }
 
 /* 2. Middle Panel (Strict 2x2 Grid) */

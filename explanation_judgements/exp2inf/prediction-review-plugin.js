@@ -5,9 +5,12 @@
  * against the true outcome. Nothing is looked up from trial parameters —
  * it reads its own answers straight out of jsPsych's data table (the rows
  * prediction-navigator-plugin.js already wrote at that round's Submit:
- * `attention_check_final` for cards that were given/explained by then,
+ * `observation_shown` for cards that were given/explained by then (purely
+ * informational — nothing was answered, so no correctness to report),
  * `prediction_navigator_attempt` for cards the participant actually
- * predicted), joined back to `scenarios` by scenario_id.
+ * predicted (these get real correct/incorrect feedback — by round 3
+ * that's only the last 4, since the other 12 were already given), joined
+ * back to `scenarios` by scenario_id.
  */
 var jsPredictionReview = (function (jspsych) {
   "use strict";
@@ -79,7 +82,7 @@ var jsPredictionReview = (function (jspsych) {
       const answerRows = this.jsPsych.data.get()
         .filter({ question_id: trial.review_question_id })
         .values()
-        .filter((row) => row.event_type === "attention_check_final" || row.event_type === "prediction_navigator_attempt");
+        .filter((row) => row.event_type === "observation_shown" || row.event_type === "prediction_navigator_attempt");
 
       const answersByScenarioId = {};
       answerRows.forEach((row) => { answersByScenarioId[row.scenario_id] = row; });
@@ -182,7 +185,7 @@ var jsPredictionReview = (function (jspsych) {
             return;
           }
 
-          if (answer.event_type === "attention_check_final") {
+          if (answer.event_type === "observation_shown") {
             // The recorded answer type already tells us this scenario was
             // given/explained by round 3 — selected_urn is always present
             // on the underlying ledger record regardless, so it's the

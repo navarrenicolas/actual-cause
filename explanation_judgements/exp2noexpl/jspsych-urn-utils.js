@@ -210,13 +210,24 @@ window.UrnUtils = (function () {
 
     const probPct = computeDrawProbability(drawObj, urnMap);
     const probHTML = probPct !== null ? `<p class="draw-prob-text">The probability of drawing these balls from the boxes is <b>${probPct}%</b>.</p>` : "";
-    const outcomeMarkup = isWin 
-      ? `<span class="win">${agentName === "You" ? "WON!" : "won."}</span>` 
-      : `<span class="lose">${agentName === "You" ? "LOST!" : "lost."}</span>`;
 
-    const resultHTML = showResult ? ` <b>With this draw ${agentName} ${outcomeMarkup}</b>` : "";
+    const resultHTML = showResult ? ` <b>${renderPredictionSentence(agentName, isWin)}</b>` : "";
 
     return `${probHTML}<p>In this trial, ${agentName} drew ${formatGrammarList(items)}.${resultHTML}</p>`;
+  }
+
+  // Plain "In this trial, {agent} drew X, Y." feedback text with no
+  // probability line (unlike renderSampleDescription, which bundles one
+  // in) and no outcome — for contexts like explanation-example-plugin.js's
+  // cards, which already show probability in their own footer and the
+  // outcome in a separate highlighted sentence below this.
+  function renderDrawDescription(drawObj, urnKeys, agentName) {
+    const keys = urnKeys || Object.keys(drawObj);
+    const items = keys.map((k) => {
+      const cleanColor = normalizeColor(drawObj[k]);
+      return `${getArticle(cleanColor)} <span class="urn-ball-text" style="color: ${getDisplayColor(cleanColor)};">${cleanColor}</span> ball from box ${k}`;
+    });
+    return `<p>In this trial, ${agentName} drew ${formatGrammarList(items)}.</p>`;
   }
 
   // Shared by explanation-example-plugin.js, prediction-grid-plugin.js, and
@@ -241,19 +252,22 @@ window.UrnUtils = (function () {
   // explanation to state one. There's deliberately no matching
   // "mark the ball" helper to pair this with (unlike markHighlightedBall for
   // renderExplanationSentence) — this condition never singles out a ball.
+  // Uses the same "With this draw, {agent} won/lost." wording as
+  // renderPredictionSentence so outcome text reads identically everywhere.
   function renderOutcomeOnlySentence(isWin, agentName) {
-    const outcomeText = isWin ? "won" : "lost";
-    const outcomeClass = isWin ? "win" : "lose";
-    return `<mark class="hi-lite">${agentName} <span class="${outcomeClass}">${outcomeText}</span>.</mark>`;
+    return `<mark class="hi-lite">${renderPredictionSentence(agentName, isWin)}</mark>`;
   }
 
-  // Renders the live "With this draw, {agent} Won/Lost." sentence shown
-  // under a prediction card once the participant has clicked WON or LOST —
-  // shared by prediction-grid-plugin.js and prediction-navigator-plugin.js.
+  // Renders the "With this draw, {agent} won/lost." sentence — the one
+  // canonical outcome-text form used everywhere an outcome is stated
+  // (prediction-grid-plugin.js, prediction-navigator-plugin.js,
+  // batch-feedback-plugin.js, walkthrough-instructions-plugin.js), so it
+  // reads identically regardless of which trial or agent it's shown for.
   function renderPredictionSentence(agentName, predictedWin) {
     if (predictedWin === null || predictedWin === undefined) return "";
-    const statusTag = predictedWin ? `<span class="win">Won</span>` : `<span class="lose">Lost</span>`;
-    return `With this draw, ${agentName} ${statusTag}.`;
+    const displayAgent = agentName === "You" ? "you" : agentName;
+    const statusTag = predictedWin ? `<span class="win">won.</span>` : `<span class="lose">lost.</span>`;
+    return `With this draw, ${displayAgent} ${statusTag}`;
   }
 
   // Rings the ball in its urn-slot with the same green/red used for active
@@ -264,5 +278,5 @@ window.UrnUtils = (function () {
     slotEl.classList.add("is-selected", isWin ? "is-selected-win" : "is-selected-loss");
   }
 
-  return { normalizeColor, getDisplayColor, getArticle, matchesColor, computeDrawProbability, formatGrammarList, renderOutcomeBadge, renderSampleDescription, measureUrnDisplayWidth, applyBoundWidth, bindContentWidthToUrns, fitGridBallsToCard, bindGridBallFit, renderExplanationSentence, renderOutcomeOnlySentence, renderPredictionSentence, markHighlightedBall };
+  return { normalizeColor, getDisplayColor, getArticle, matchesColor, computeDrawProbability, formatGrammarList, renderOutcomeBadge, renderSampleDescription, renderDrawDescription, measureUrnDisplayWidth, applyBoundWidth, bindContentWidthToUrns, fitGridBallsToCard, bindGridBallFit, renderExplanationSentence, renderOutcomeOnlySentence, renderPredictionSentence, markHighlightedBall };
 })();

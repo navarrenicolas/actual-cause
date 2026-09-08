@@ -12,7 +12,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json; charset=utf-8');
 
 $config = require __DIR__ . '/config.php';
-$resultsDir = $config['exp2_data_dir'] . '/results';
+$resultsDir = $config['exp2_data_dir'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);

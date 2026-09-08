@@ -5,15 +5,14 @@
  * of the fixed shuffled order, depending on round) marking it as already
  * explained to the agent: its causal ball and explanation sentence get a
  * yellow-highlighter treatment (UrnUtils.markHighlightedBall /
- * renderExplanationSentence) right inside the grid, and instead of
- * predicting, the participant does an attention check: click the outcome
- * the explanation states. The remaining scenarios have no explanation and
- * get a genuine "did they win or lose?" prediction.
+ * renderExplanationSentence) right inside the grid. Given cards are pure
+ * display — no buttons, no click, nothing to answer — since the
+ * participant isn't being asked anything about them; only the remaining
+ * (not-yet-given) scenarios get a genuine "did they win or lose?"
+ * prediction.
  * No feedback is shown on predictions — that's the thing being measured —
  * but predicted vs. actual outcome is still written to jsPsych.data for
- * later analysis. Attention-check cards *do* gate on correctness (an
- * incorrect click doesn't count as answered) since their point is to
- * confirm the participant read the explanation, not to measure a judgment.
+ * later analysis.
  */
 var jsPredictionNavigator = (function (jspsych) {
   "use strict";
@@ -61,6 +60,17 @@ var jsPredictionNavigator = (function (jspsych) {
       show_explanation: {
         type: jspsych.ParameterType.BOOL,
         default: true
+      },
+      /** For the top-of-page "Round X of Y" header — the given/explained
+       * count itself is derived from scenarios' own `given` flags, not a
+       * separate param. */
+      round_number: {
+        type: jspsych.ParameterType.INT,
+        default: 1
+      },
+      total_rounds: {
+        type: jspsych.ParameterType.INT,
+        default: 1
       }
     }
   };
@@ -81,16 +91,21 @@ var jsPredictionNavigator = (function (jspsych) {
       const trialStartTime = performance.now();
 
       const pageCount = Math.ceil(scenarios.length / perPage);
-      // true = win, false = lose, null = unanswered. For given (attention
-      // check) cards, only the objectively-correct click counts as answered.
+      // true = win, false = lose, null = unanswered. Given cards have
+      // nothing to answer, so they never appear in the "remaining" count
+      // (see updateSubmitState) and their entry here is simply unused.
       const answers = scenarios.map(() => null);
+
+      const givenCount = scenarios.filter((sc) => sc.given).length;
+      const roundNumber = trial.round_number || 1;
+      const totalRounds = trial.total_rounds || 1;
 
       display_element.innerHTML = `
         <div class="explanation-2x2-container">
           <div id="pn-instruction-hint" class="explanation-instruction-hint">
-            ${showExplanation
-              ? "The highlighted draws have been explained. You must predict the remaining draws. Click the outcome according to the explanation."
-              : "The highlighted draws show only the outcome. You must predict the remaining draws. Click the outcome shown."}
+            <h2 style="margin:0 0 6px;">Round ${roundNumber} of ${totalRounds}</h2>
+            <p style="margin:0;">${givenCount} of ${agentName}'s draws have now been ${showExplanation ? "explained" : "shown"}.</p>
+            <p style="margin:0;">Select 'Won' or 'Lost' on the remaining draws to make a prediction.</p>
           </div>
 
           <div id="pn-grid-wrapper" class="explanation-2x2-grid"></div>
@@ -116,7 +131,7 @@ var jsPredictionNavigator = (function (jspsych) {
       const gridBallFit = utils.bindGridBallFit(display_element);
 
       const updateSubmitState = () => {
-        const remaining = answers.filter((a) => a === null).length;
+        const remaining = scenarios.filter((sc, idx) => !sc.given && answers[idx] === null).length;
         remainingCountEl.textContent = remaining;
         submitBtn.disabled = remaining > 0;
       };
@@ -152,14 +167,14 @@ var jsPredictionNavigator = (function (jspsych) {
                 </div>
                 <div class="prediction-feedback-block">
                   <div class="prediction-text-col">
-                    <div class="card-prompt-text">Did ${agentName} win or lose this draw?</div>
+                    ${isGiven ? "" : `<div class="card-prompt-text">Did ${agentName} win or lose this draw?</div>`}
                     <div class="card-sentence-text${isGiven ? "" : " is-hidden"}" id="pn-sentence-${globalIdx}"></div>
-                    ${isGiven ? `<div class="validation-feedback-text" id="pn-feedback-${globalIdx}"></div>` : ""}
                   </div>
+                  ${isGiven ? "" : `
                   <div class="predict-btn-group">
                     <button type="button" class="jspsych-btn predict-win-btn" data-action="win">WON</button>
                     <button type="button" class="jspsych-btn predict-lose-btn" data-action="lose">LOST</button>
-                  </div>
+                  </div>`}
                 </div>
               </div>
             </div>
@@ -172,8 +187,6 @@ var jsPredictionNavigator = (function (jspsych) {
           const draw = sc.urns || sc.draw || sc;
           const isWin = String(sc.outcome || sc.result).toLowerCase() === "win";
           const cardEl = gridWrapper.querySelector(`[data-global-idx="${globalIdx}"]`);
-          const winBtn = cardEl.querySelector('[data-action="win"]');
-          const loseBtn = cardEl.querySelector('[data-action="lose"]');
           const sentenceEl = cardEl.querySelector(`#pn-sentence-${globalIdx}`);
 
           urnKeys.forEach((urnKey) => {
@@ -203,59 +216,27 @@ var jsPredictionNavigator = (function (jspsych) {
             }
           });
 
-          if (isGiven && sentenceEl) {
-            sentenceEl.innerHTML = (showExplanation && sc.selected_urn)
-              ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName)
-              : utils.renderOutcomeOnlySentence(isWin, agentName);
+          if (isGiven) {
+            if (sentenceEl) {
+              sentenceEl.innerHTML = (showExplanation && sc.selected_urn)
+                ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName)
+                : utils.renderOutcomeOnlySentence(isWin, agentName);
+            }
+            return; // no interaction on given cards — nothing else to wire up
           }
 
-          // Restore any answer already made on a previous visit to this page
-          // (the explanation sentence for given cards is already set above,
-          // unconditionally — only predict cards need their sentence
-          // restored; given cards need their correct/incorrect feedback
-          // restored instead, since only a correct click ever sets a
-          // non-null answer for them).
+          const winBtn = cardEl.querySelector('[data-action="win"]');
+          const loseBtn = cardEl.querySelector('[data-action="lose"]');
+
+          // Restore any prediction already made on a previous visit to this page.
           if (answers[globalIdx] !== null) {
             winBtn.classList.toggle("is-selected", answers[globalIdx] === true);
             loseBtn.classList.toggle("is-selected", answers[globalIdx] === false);
-            if (!isGiven && sentenceEl) {
+            if (sentenceEl) {
               sentenceEl.innerHTML = utils.renderPredictionSentence(agentName, answers[globalIdx]);
               sentenceEl.classList.remove("is-hidden");
             }
-            if (isGiven) {
-              const feedbackEl = cardEl.querySelector(`#pn-feedback-${globalIdx}`);
-              if (feedbackEl) feedbackEl.innerHTML = `<span class="win">✓</span>`;
-            }
           }
-
-          const handleGivenClick = (clickedWin) => {
-            const isCorrect = clickedWin === isWin;
-            const feedbackEl = cardEl.querySelector(`#pn-feedback-${globalIdx}`);
-
-            winBtn.classList.toggle("is-selected", clickedWin);
-            loseBtn.classList.toggle("is-selected", !clickedWin);
-
-            this.jsPsych.data.write({
-              event_type: "attention_check_response",
-              question_id: questionId,
-              scenario_id: sc.id || `scenario_${globalIdx + 1}`,
-              stated_outcome: isWin ? "win" : "lose",
-              clicked_outcome: clickedWin ? "win" : "lose",
-              is_correct: isCorrect
-            });
-
-            if (isCorrect) {
-              answers[globalIdx] = clickedWin;
-              if (feedbackEl) feedbackEl.innerHTML = `<span class="win">✓</span>`;
-            } else {
-              answers[globalIdx] = null;
-              if (feedbackEl) feedbackEl.innerHTML = showExplanation
-                ? `<span class="lose">That's not what the explanation says — check again.</span>`
-                : `<span class="lose">That's not the outcome shown — check again.</span>`;
-            }
-
-            updateSubmitState();
-          };
 
           const handlePredictClick = (predictedWin) => {
             answers[globalIdx] = predictedWin;
@@ -283,9 +264,8 @@ var jsPredictionNavigator = (function (jspsych) {
             updateSubmitState();
           };
 
-          const handleClick = isGiven ? handleGivenClick : handlePredictClick;
-          winBtn.onclick = () => handleClick(true);
-          loseBtn.onclick = () => handleClick(false);
+          winBtn.onclick = () => handlePredictClick(true);
+          loseBtn.onclick = () => handlePredictClick(false);
         });
 
         gridBallFit.apply();
@@ -304,7 +284,7 @@ var jsPredictionNavigator = (function (jspsych) {
       nextBtn.addEventListener("click", () => goTo(pageIndex + 1));
 
       submitBtn.addEventListener("click", () => {
-        if (answers.some((a) => a === null)) return;
+        if (scenarios.some((sc, idx) => !sc.given && answers[idx] === null)) return;
 
         scenarios.forEach((sc, idx) => {
           const draw = sc.urns || sc.draw || sc;
@@ -312,17 +292,19 @@ var jsPredictionNavigator = (function (jspsych) {
           const actualOutcome = String(sc.outcome || sc.result).toLowerCase() === "win";
 
           if (isGiven) {
+            // Purely informational — there was nothing to answer, so no
+            // correctness fields here (see prediction-review-plugin.js,
+            // which only shows correct/incorrect feedback for the
+            // genuinely-predicted scenarios below).
             this.jsPsych.data.write({
-              event_type: "attention_check_final",
+              event_type: "observation_shown",
               question_id: questionId,
               scenario_id: sc.id || `scenario_${idx + 1}`,
               draw_A: draw.A,
               draw_B: draw.B,
               draw_C: draw.C,
               draw_D: draw.D,
-              stated_outcome: actualOutcome ? "win" : "lose",
-              clicked_outcome: answers[idx] ? "win" : "lose",
-              is_correct: answers[idx] === actualOutcome
+              result: actualOutcome ? "win" : "lose"
             });
           } else {
             this.jsPsych.data.write({
