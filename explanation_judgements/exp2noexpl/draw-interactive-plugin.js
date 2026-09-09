@@ -249,8 +249,7 @@ var jsInteractiveDrawSingle = (function (jspsych) {
 
             setTimeout(() => {
               clone.remove();
-              const cleanColor = utils.normalizeColor(drawnColor);
-              const displayColor = cleanColor === "grey" ? "#c0c0c0" : cleanColor;
+              const displayColor = utils.getDisplayColor(drawnColor);
 
               slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
 

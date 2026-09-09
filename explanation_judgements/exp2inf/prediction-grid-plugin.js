@@ -221,7 +221,7 @@ var jsPredictionGrid = (function (jspsych) {
 
           if (slotEl && drawnColor) {
             const cleanColor = utils.normalizeColor(drawnColor);
-            const displayColor = utils.getDisplayColor(cleanColor);
+            const displayColor = utils.getDisplayColor(drawnColor);
             slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
 
             if (isGiven && showExplanation && sc.selected_urn === urnKey) {

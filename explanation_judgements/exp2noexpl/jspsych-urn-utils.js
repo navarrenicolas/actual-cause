@@ -7,9 +7,22 @@ window.UrnUtils = (function () {
     return clean === "#d3d3d3" ? "grey" : clean;
   }
 
+  // For the actual CSS color a ball renders with — distinct from
+  // normalizeColor, which is for the *word* shown in text. Pass the raw,
+  // un-normalized color in (e.g. "hotpink", not "pink"): only grey/absent
+  // balls get special-cased (to the same #c0c0c0 the boxes' own balls use
+  // — see main.js's renderUrnsHTML — for higher contrast against white
+  // than the pale CSS "grey"/"lightgrey" keywords), every other color is
+  // passed straight through so it renders exactly as vividly as it does
+  // in the box. Stripping "hot"/"light" here (as normalizeColor does) was
+  // the bug behind drawn hotpink balls rendering as a faded pastel pink.
   function getDisplayColor(color) {
-    const clean = normalizeColor(color);
-    return clean === "grey" ? "#888888" : clean;
+    if (!color) return "";
+    const lower = color.toLowerCase().trim();
+    if (lower === "grey" || lower === "gray" || lower === "lightgrey" || lower === "lightgray" || lower === "#d3d3d3") {
+      return "#c0c0c0";
+    }
+    return color;
   }
 
   function getArticle(word) {
@@ -205,7 +218,7 @@ window.UrnUtils = (function () {
     const keys = urnKeys || Object.keys(drawObj);
     const items = keys.map((k) => {
       const cleanColor = normalizeColor(drawObj[k]);
-      return `${getArticle(cleanColor)} <span class="urn-ball-text" style="color: ${getDisplayColor(cleanColor)};">${cleanColor}</span> ball from box ${k}`;
+      return `${getArticle(cleanColor)} <span class="urn-ball-text" style="color: ${getDisplayColor(drawObj[k])};">${cleanColor}</span> ball from box ${k}`;
     });
 
     const probPct = computeDrawProbability(drawObj, urnMap);
@@ -225,7 +238,7 @@ window.UrnUtils = (function () {
     const keys = urnKeys || Object.keys(drawObj);
     const items = keys.map((k) => {
       const cleanColor = normalizeColor(drawObj[k]);
-      return `${getArticle(cleanColor)} <span class="urn-ball-text" style="color: ${getDisplayColor(cleanColor)};">${cleanColor}</span> ball from box ${k}`;
+      return `${getArticle(cleanColor)} <span class="urn-ball-text" style="color: ${getDisplayColor(drawObj[k])};">${cleanColor}</span> ball from box ${k}`;
     });
     return `<p>In this trial, ${agentName} drew ${formatGrammarList(items)}.</p>`;
   }
@@ -239,7 +252,7 @@ window.UrnUtils = (function () {
   // selection feedback elsewhere.
   function renderExplanationSentence(isWin, color, urnKey, agentName) {
     const cleanColor = normalizeColor(color);
-    const displayColor = getDisplayColor(cleanColor);
+    const displayColor = getDisplayColor(color);
     const outcomeText = isWin ? "won" : "lost";
     const outcomeClass = isWin ? "win" : "lose";
     const sentence = `${agentName} <span class="${outcomeClass}">${outcomeText}</span> because of the <span class="urn-ball-text" style="color: ${displayColor};">${cleanColor}</span> ball from box ${urnKey}.`;

@@ -59,7 +59,7 @@ const demographicTrial = {
             opacity: 0;
           }
         </style>
-        <label>How difficult do you think the rule from the previous task was?</label><br><br>
+        <label>How difficult do you think the rule you had to guess was?</label><br><br>
         <div class="likert-slider-row">
           <span class="likert-end-label left">Very Easy</span>
           <input type="range" name="rule_understanding_difficulty" min="1" max="5" step="1" value="1" required class="likert-slider">

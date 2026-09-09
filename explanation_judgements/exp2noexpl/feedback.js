@@ -4,7 +4,7 @@ const feedbackTrial = {
   html: `
   <div class="instructions-container">
       <h2>Final Feedback</h2>
-      <p>Before you finish, we'd love to hear about your experience. These questions are optional — leave any of them blank if you'd rather not answer.</p>
+      <p>Before you finish, we'd love to hear about your experience. These questions are optional; leave any of them blank if you'd rather not answer.</p>
       <br>
 
       <label>Did you experience any technical difficulties during this study (e.g. images not loading, buttons not responding)? If so, please describe them.<br>
