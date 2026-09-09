@@ -398,7 +398,7 @@ function bootstrap() {
   });
 
   timeline.push({
-    type: jsPredictionGrid,
+    type: jsPredictionColumns,
     scenarios: buildTwoUrnScenarios(twoUrnMap, disjunctiveExamples),
     urn_html: twoUrnHtmlStatic,
     urn_map: twoUrnMap,
@@ -407,6 +407,7 @@ function bootstrap() {
     rule_fn: disjunctiveRuleFn,
     show_explanation: false,
     rule_text: disjunctivePracticeRuleText,
+    feedback_mode: "retry",
     question_id: "disjunctive_prediction",
     data: { question_id: "disjunctive_prediction" },
     on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
@@ -450,7 +451,7 @@ function bootstrap() {
   });
 
   timeline.push({
-    type: jsPredictionGrid,
+    type: jsPredictionColumns,
     scenarios: buildTwoUrnScenarios(twoUrnMap, conjunctiveExamples),
     urn_html: twoUrnHtmlStatic,
     urn_map: twoUrnMap,
@@ -459,6 +460,7 @@ function bootstrap() {
     rule_fn: conjunctiveRuleFn,
     show_explanation: false,
     rule_text: conjunctivePracticeRuleText,
+    feedback_mode: "retry",
     question_id: "conjunctive_prediction",
     data: { question_id: "conjunctive_prediction" },
     on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
@@ -532,7 +534,7 @@ function bootstrap() {
     const roundNumber = roundIdx + 1;
 
     timeline.push({
-      type: jsPredictionNavigator,
+      type: jsPredictionColumns,
       scenarios: withGivenFlags(shuffledScenarios, givenCount),
       urn_html: fourUrnHtmlStatic,
       urn_map: fourUrnMap,

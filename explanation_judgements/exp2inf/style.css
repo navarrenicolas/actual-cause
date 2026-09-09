@@ -1368,3 +1368,254 @@ mark.hi-lite {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* ==========================================================================
+   13. Two-column prediction layout (prediction-columns-plugin.js)
+   ========================================================================== */
+
+/* Content-sized, not fixed-height: a short round (2-4 cards per column,
+   the practice tasks) should end with the footer sitting right below the
+   columns, not stretched down to the bottom of an almost-full-screen box
+   with a lot of empty grey space in between. max-height (not height) is
+   the cap — .pcol-columns below is flex:0 1 auto (grow never, shrink if
+   it must) so it only ever claims the space its own content actually
+   needs, up to that cap; past it, .pcol-column-scroll's own overflow-y
+   takes over and the header/footer (both flex:0 0 auto, so never
+   shrink) stay in place. Because the *outer* page never scrolls either
+   way, the footer's Submit button is always on screen without needing
+   position:sticky/fixed. */
+.pcol-container {
+    max-height: 98vh;
+    width: 100%;
+    /* 70% of the viewport, capped at 1800px — on a screen wide enough to
+       hit the cap, the extra width becomes margin either side rather than
+       stretching further; below that, it scales down with the viewport
+       (see .pcol-card .ball below, calibrated against this same 70vw). */
+    max-width: min(90vw, 1800px);
+    margin: 0 auto;
+    padding: 8px 16px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.pcol-header {
+    flex: 0 0 auto;
+    text-align: center;
+    max-width: 650px;
+    margin: 0 auto 8px;
+    width: 100%;
+}
+
+.pcol-rule-text {
+    margin-bottom: 8px;
+}
+
+.pcol-round-title {
+    margin: 0 0 4px;
+}
+
+.pcol-round-sub {
+    margin: 0 0 4px;
+}
+
+.pcol-instructions {
+    font-weight: bold;
+    margin: 4px 0;
+}
+
+.pcol-columns {
+    /* grow:0 — never stretch past what the cards actually need just
+       because the container has more room (that's the grey-space bug);
+       shrink:1 plus min-height:0 below — still free to compress once a
+       long round's content genuinely exceeds max-height, at which point
+       .pcol-column-scroll's own overflow-y takes over. */
+    flex: 0 1 auto;
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.pcol-column {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fafafa;
+    box-sizing: border-box;
+}
+
+.pcol-column-header {
+    flex: 0 0 auto;
+    font-weight: bold;
+    text-align: center;
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+    background: #f0f0f0;
+    border-radius: 8px 8px 0 0;
+}
+
+/* The independently-scrollable region the user asked for: each column
+   scrolls on its own, unrelated to the other column's scroll position or
+   to the page itself (the page/.pcol-container never scrolls). */
+.pcol-column-scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pcol-card {
+    flex: 0 0 auto;
+    min-width: 0;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+/* The scenario's index number (1-4/8/12 on the left, continuing 5/9/13-16
+   on the right) — embedded inside the card like .pcol-prob-text, instead
+   of sitting beside it in its own column: that used to cost every card
+   ~30px of the column's width (its own width plus the gap to the card),
+   width the 4-urn case badly needed back. */
+.pcol-card-index {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #888888;
+    text-align: left;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+/* No --grid-ball-size scaling here (unlike .explanation-2x2-container's
+   urns-card-wrapper) — the point of this layout is a scrollable list of
+   urns that don't get squeezed to fit a shrinking grid cell. They do,
+   however, need their own (smaller-than-the-rest-of-the-app) sizing
+   formula below, since two of these sit side by side in a column that's
+   narrower than the near-full-width single urn display everywhere else
+   uses — see .pcol-card .ball. Horizontal overflow is a safety net for a
+   very narrow column, not the normal case. */
+.pcol-urns-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    overflow-x: auto;
+}
+
+/* align-items:center above works fine while the urn display fits; once
+   it's wider than the column and actually needs that overflow-x scroll,
+   a *centered* child overflows equally on both sides — and a scroll
+   container's origin (scrollLeft:0) can only ever reveal a centered
+   child's right-side overflow, never its left-side one, so the left
+   edge stayed permanently clipped and unreachable no matter how far you
+   scrolled. Left-aligning just this child means any overflow is only
+   ever on the right, which scrolling *can* actually reach.
+   Only the 4-urn case (main task) actually needs this, though — the
+   2-urn practice display rarely if ever gets wide enough to overflow,
+   and forcing it flush-left there just reads as lopsided, unbalanced
+   whitespace inside the card instead. .pcol-two-urns (set by the plugin
+   from urn_keys.length) overrides back to centered for that case. */
+.pcol-urns-wrapper .urns-display-container {
+    align-self: flex-start;
+}
+
+.pcol-container.pcol-two-urns .urns-display-container {
+    align-self: center;
+}
+
+.pcol-prob-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #555555;
+    text-align: center;
+    margin-top: 2px;
+}
+
+/* Read-only cards — nothing here is ever actually drawable, so the
+   disabled DRAW button was purely decorative, and at the smaller sizes
+   this layout needs it was costing width the urn slot needed more. */
+.pcol-card .push-draw-btn {
+    display: none;
+}
+
+/* Calibrated specifically for this two-column layout's overhead
+   (.pcol-container's own padding, the two columns plus the gap between
+   them, each column's border/scroll-padding/reserved scrollbar width,
+   the card's own border/padding) so the 4-urn case — the tighter of the
+   two — actually fits without clipping, while still scaling down on a
+   narrower viewport instead of just clipping there too. Tied to
+   .pcol-container's own width formula (min(70vw, 1800px)): at a 1800px
+   container, one column is ~876px; after subtracting that overhead
+   (~150px, roughly) and dividing across 4 urns (5 balls each, plus their
+   own small gaps), a ball comfortably fits at 20px — the coefficient
+   below reaches 20px almost exactly at the viewport width where 70vw
+   hits the 1800px cap, then stays capped past that point (screen gets
+   wider, the container doesn't). Below that, the container shrinks with
+   70vw and this shrinks proportionately with it — the constant being
+   subtracted is what accounts for the overhead *not* itself shrinking
+   with the viewport, unlike a plain vw multiplier. The floor is an
+   absolute length (0.3cm, ≈11.3px per CSS's fixed 96px/inch reference)
+   rather than shrinking indefinitely — past that point the ball stops
+   getting smaller and the card scrolls horizontally instead (now
+   actually reachable — see .pcol-urns-wrapper .urns-display-container
+   above) rather than becoming illegibly tiny. One shared custom property
+   so the slot (ring) around a drawn ball scales together with the ball
+   itself, instead of the ring staying a fixed size while the ball inside
+   it shrinks — see .pcol-card .urn-slot below. Deliberately conservative
+   (real margin under the exact fit, not a razor's edge) since none of
+   this can be checked in a browser here — if it's still clipping, or
+   leaving too much unused margin, these are the two numbers to retune. */
+.pcol-card {
+    --pcol-ball-size: clamp(0.3cm, calc(1.2vw - 5px), 20px);
+}
+
+.pcol-card .ball {
+    width: var(--pcol-ball-size);
+    height: var(--pcol-ball-size);
+}
+
+.pcol-card .urn-slot {
+    width: calc(var(--pcol-ball-size) * 1.5);
+    height: calc(var(--pcol-ball-size) * 1.5);
+}
+
+.pcol-card .urn-display {
+    gap: 8px;
+}
+
+.pcol-card .urn {
+    padding: 4px;
+    grid-gap: 2px;
+}
+
+.pcol-explanation-row {
+    margin-top: 4px;
+}
+
+.pcol-footer {
+    flex: 0 0 auto;
+    text-align: center;
+    padding: 10px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.pcol-remaining-text {
+    font-size: 0.9em;
+    color: #555555;
+}
