@@ -72,6 +72,26 @@ var jsPredictionColumns = (function (jspsych) {
         type: jspsych.ParameterType.BOOL,
         default: true
       },
+      /** Default true: one full urn display is shown once, above both
+       * columns, as a size/probability reference; each card then shows
+       * only a compact single row of drawn balls in their slots (one per
+       * urn) instead of repeating the full urn stack — this is what lets
+       * several draws fit on screen at once without scrolling. Set false
+       * to revert to the old per-card full urn display. */
+      shared_urns_display: {
+        type: jspsych.ParameterType.BOOL,
+        default: true
+      },
+      /** Default false (unchanged main-task look: each given sentence gets
+       * its own yellow <mark> highlighter). Set true for the practice
+       * trials, where the "already observed" column is short enough that
+       * a whole column of individually-marked sentences reads as
+       * visually heavy — instead the whole "already observed" column
+       * gets a light yellow tint and its sentences render as plain text. */
+      given_column_highlight: {
+        type: jspsych.ParameterType.BOOL,
+        default: false
+      },
       /** Practice-task rule box (PRACTICE RULE N/2, EXAMPLE RULE, ...); empty shows nothing. */
       rule_text: {
         type: jspsych.ParameterType.HTML_STRING,
@@ -128,6 +148,8 @@ var jsPredictionColumns = (function (jspsych) {
       const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
       const scenarios = trial.scenarios || [];
       const showExplanation = trial.show_explanation !== false;
+      const sharedUrnsDisplay = trial.shared_urns_display !== false;
+      const givenColumnHighlight = !!trial.given_column_highlight;
       const agentName = trial.agent_name || "John";
       const questionId = trial.question_id || "prediction_columns";
       const retryMode = trial.feedback_mode === "retry";
@@ -174,6 +196,21 @@ var jsPredictionColumns = (function (jspsych) {
         </p>
       `;
 
+      // Compact per-urn "ball in its slot" row (shared_urns_display:true,
+      // the default) — reuses .urn-slot's id convention (slot-${urnKey}),
+      // so the exact same populate/highlight code below works unchanged
+      // whether it's targeting this or the old full urn display.
+      const renderCompactDraw = () => `
+        <div class="pcol-compact-draw">
+          ${urnKeys.map((urnKey) => `
+            <div class="pcol-compact-slot" data-urn="${urnKey}">
+              <div class="pcol-compact-slot-label"${trial.urn_map && trial.urn_map[urnKey] ? ` style="color:${trial.urn_map[urnKey].color};"` : ""}>${urnKey}</div>
+              <div class="urn-slot" id="slot-${urnKey}"></div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+
       const renderCard = (sc, idx, isGiven) => {
         const draw = sc.urns || sc.draw || sc;
         let probText = "";
@@ -184,15 +221,28 @@ var jsPredictionColumns = (function (jspsych) {
           probText = calculatedProb ? `${calculatedProb}%` : "";
         }
 
-        return `
-          <div class="pcol-card" data-idx="${idx}">
-            <div class="pcol-card-index">#${idx + 1}</div>
+        const drawBlockHTML = sharedUrnsDisplay
+          ? `
+            ${renderCompactDraw()}
+            <div class="pcol-prob-text">${probText ? `Scenario Probability ${probText}` : ""}</div>
+          `
+          : `
             <div class="pcol-urns-wrapper" id="pcol-urns-${idx}">
               <div class="urns-display-container">${trial.urn_html}</div>
               <div class="pcol-prob-text">${probText ? `Scenario Probability ${probText}` : ""}</div>
             </div>
+          `;
+
+        return `
+          <div class="pcol-card" data-idx="${idx}">
+            <div class="pcol-card-index">#${idx + 1}</div>
+            ${drawBlockHTML}
             ${isGiven ? `
-              <div class="pcol-explanation-row card-sentence-text" id="pcol-sentence-${idx}"></div>
+              <div class="prediction-feedback-block pcol-given-feedback-block">
+                <div class="prediction-text-col">
+                  <div class="card-sentence-text" id="pcol-sentence-${idx}"></div>
+                </div>
+              </div>
             ` : `
               <div class="prediction-feedback-block">
                 <div class="prediction-text-col">
@@ -210,11 +260,16 @@ var jsPredictionColumns = (function (jspsych) {
         `;
       };
 
+      const sharedUrnsBlockHTML = sharedUrnsDisplay
+        ? `<div class="pcol-shared-urns"><div class="urns-display-container">${trial.urn_html}</div></div>`
+        : "";
+
       display_element.innerHTML = `
         <div class="pcol-container${urnKeys.length <= 2 ? " pcol-two-urns" : ""}">
           <div class="pcol-header">${headerHTML}</div>
+          ${sharedUrnsBlockHTML}
           <div class="pcol-columns">
-            <div class="pcol-column">
+            <div class="pcol-column${givenColumnHighlight ? " pcol-column-given-highlight" : ""}">
               <div class="pcol-column-header">Already observed (${givenEntries.length})</div>
               <div class="pcol-column-scroll" id="pcol-given-scroll">
                 ${givenEntries.map(({ sc, idx }) => renderCard(sc, idx, true)).join("")}
@@ -258,25 +313,31 @@ var jsPredictionColumns = (function (jspsych) {
             }
           }
 
-          const urnContainer = cardEl.querySelector(`#urn-container-${urnKey}`) ||
-                             cardEl.querySelector(`[data-urn="${urnKey}"]`) ||
-                             cardEl.querySelectorAll(".urn")[urnKeys.indexOf(urnKey)];
-          if (urnContainer && drawnColor) {
-            const candidateBalls = Array.from(urnContainer.querySelectorAll(".ball")).filter((b) => {
-              if (b.closest(".urn-slot") || b.classList.contains("drawn-hidden")) return false;
-              return utils.matchesColor(b, drawnColor);
-            });
-            if (candidateBalls.length > 0) {
-              candidateBalls[Math.floor(Math.random() * candidateBalls.length)].classList.add("drawn-hidden");
+          // Only the old full-per-card urn display has an actual ball
+          // stack to hide one back into — the compact draw row's slot IS
+          // the only ball, nothing to mark "drawn-hidden" alongside it.
+          if (!sharedUrnsDisplay) {
+            const urnContainer = cardEl.querySelector(`#urn-container-${urnKey}`) ||
+                               cardEl.querySelector(`[data-urn="${urnKey}"]`) ||
+                               cardEl.querySelectorAll(".urn")[urnKeys.indexOf(urnKey)];
+            if (urnContainer && drawnColor) {
+              const candidateBalls = Array.from(urnContainer.querySelectorAll(".ball")).filter((b) => {
+                if (b.closest(".urn-slot") || b.classList.contains("drawn-hidden")) return false;
+                return utils.matchesColor(b, drawnColor);
+              });
+              if (candidateBalls.length > 0) {
+                candidateBalls[Math.floor(Math.random() * candidateBalls.length)].classList.add("drawn-hidden");
+              }
             }
           }
         });
 
         if (isGiven) {
           if (sentenceEl) {
+            const wrapInMark = !givenColumnHighlight;
             sentenceEl.innerHTML = (showExplanation && sc.selected_urn)
-              ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName)
-              : utils.renderOutcomeOnlySentence(isWin, agentName);
+              ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName, wrapInMark)
+              : utils.renderOutcomeOnlySentence(isWin, agentName, wrapInMark);
           }
           return; // no interaction on given cards
         }

@@ -1,17 +1,17 @@
 /**
  * jsPsych plugin for the main inference task's feedback interludes: a
- * read-only, two-column reveal of exactly one batch (4 scenarios), shown
- * right after a prediction round for the 4 scenarios the participant just
- * predicted. Same layout convention as prediction-columns-plugin.js (two
- * independently-scrollable columns, one full urn display per card, index
- * badge embedded in the card) but for a different comparison: the left
- * column shows what actually happened (the real outcome, styled like a
- * "given" observation — ball ring + explanation sentence if applicable),
- * the right column shows the participant's own prediction sentence with
- * a correct/incorrect line beneath it. Both columns show all 4 scenarios,
- * index-matched (card #2 on the left is the same draw as card #2 on the
- * right) — unlike prediction-columns-plugin.js's two columns, which split
- * a single larger set into given/still-to-predict.
+ * read-only, single-column reveal of exactly one batch (4 scenarios),
+ * shown right after a prediction round for the 4 scenarios the participant
+ * just predicted. Same layout convention as prediction-columns-plugin.js
+ * (one scrollable column, index badge embedded in the card, and — when
+ * shared_urns_display is true, the default — one full urn display shown
+ * once above the column with each card showing just a compact row of
+ * drawn balls in their slots) but for a different comparison: each card
+ * combines what actually happened (the real outcome, styled like a
+ * "given" observation — ball ring + explanation sentence if applicable)
+ * with the participant's own prediction sentence and a correct/incorrect
+ * line beneath it, all in the same card, rather than splitting the two
+ * across separate left/right columns.
  * Reads predicted/actual outcome back out of jsPsych's data table (the
  * `prediction_navigator_attempt` rows prediction-columns-plugin.js wrote
  * at that round's Submit) rather than requiring them as trial params.
@@ -56,6 +56,25 @@ var jsBatchFeedback = (function (jspsych) {
         type: jspsych.ParameterType.BOOL,
         default: true
       },
+      /** Default true: one full urn display is shown once, above the
+       * column, as a size/probability reference; each card then shows
+       * only a compact single row of drawn balls in their slots instead
+       * of repeating the full urn stack. Set false to revert to the old
+       * per-card full urn display. */
+      shared_urns_display: {
+        type: jspsych.ParameterType.BOOL,
+        default: true
+      },
+      /** How far into the full main-task scenario order this batch's
+       * first scenario sits — e.g. round 1's feedback batch is
+       * scenarios[4..8), so start_index:4 labels its cards #5-8, matching
+       * the numbers those same scenarios were shown under (as
+       * still-to-predict) in the prediction round just completed, rather
+       * than restarting at #1 for every batch. */
+      start_index: {
+        type: jspsych.ParameterType.INT,
+        default: 0
+      },
       question_id: {
         type: jspsych.ParameterType.STRING,
         default: "batch_feedback"
@@ -79,6 +98,7 @@ var jsBatchFeedback = (function (jspsych) {
       const questionId = trial.question_id || "batch_feedback";
       const agentName = trial.agent_name || "John";
       const showExplanation = trial.show_explanation !== false;
+      const sharedUrnsDisplay = trial.shared_urns_display !== false;
 
       const attemptsByScenarioId = {};
       this.jsPsych.data.get()
@@ -96,55 +116,67 @@ var jsBatchFeedback = (function (jspsych) {
         return "";
       };
 
-      const renderUrnsBlock = (draw, sc) => {
+      // Compact per-urn "ball in its slot" row (shared_urns_display:true,
+      // the default) — see prediction-columns-plugin.js's identical
+      // helper; reuses .urn-slot's id convention (slot-${urnKey}) so
+      // populateDraw() below works unchanged either way.
+      const renderCompactDraw = () => `
+        <div class="pcol-compact-draw">
+          ${urnKeys.map((urnKey) => `
+            <div class="pcol-compact-slot" data-urn="${urnKey}">
+              <div class="pcol-compact-slot-label"${trial.urn_map && trial.urn_map[urnKey] ? ` style="color:${trial.urn_map[urnKey].color};"` : ""}>${urnKey}</div>
+              <div class="urn-slot" id="slot-${urnKey}"></div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      const renderDrawBlock = (draw, sc) => {
         const probText = probTextFor(draw, sc);
-        return `
-          <div class="pcol-urns-wrapper">
-            <div class="urns-display-container">${trial.urn_html}</div>
+        return sharedUrnsDisplay
+          ? `
+            ${renderCompactDraw()}
             <div class="pcol-prob-text">${probText ? `Scenario Probability ${probText}` : ""}</div>
+          `
+          : `
+            <div class="pcol-urns-wrapper">
+              <div class="urns-display-container">${trial.urn_html}</div>
+              <div class="pcol-prob-text">${probText ? `Scenario Probability ${probText}` : ""}</div>
+            </div>
+          `;
+      };
+
+      const startIndex = trial.start_index || 0;
+
+      const renderFeedbackCard = (sc, idx) => {
+        const draw = sc.urns || sc.draw || sc;
+        return `
+          <div class="pcol-card" data-idx="${idx}">
+            <div class="pcol-card-index">#${idx + startIndex + 1}</div>
+            ${renderDrawBlock(draw, sc)}
+            <div class="pcol-explanation-row card-sentence-text" id="bf-actual-sentence-${idx}"></div>
+            <div class="card-prompt-text">Your prediction:</div>
+            <div class="card-sentence-text" id="bf-pred-sentence-${idx}"></div>
+            <div class="validation-feedback-text" id="bf-correctness-${idx}"></div>
           </div>
         `;
       };
 
-      const renderObsCard = (sc, idx) => {
-        const draw = sc.urns || sc.draw || sc;
-        return `
-          <div class="pcol-card" data-idx="${idx}" data-side="obs">
-            <div class="pcol-card-index">#${idx + 1}</div>
-            ${renderUrnsBlock(draw, sc)}
-            <div class="pcol-explanation-row card-sentence-text" id="bf-obs-sentence-${idx}"></div>
-          </div>
-        `;
-      };
-
-      const renderPredCard = (sc, idx) => {
-        const draw = sc.urns || sc.draw || sc;
-        return `
-          <div class="pcol-card" data-idx="${idx}" data-side="pred">
-            <div class="pcol-card-index">#${idx + 1}</div>
-            ${renderUrnsBlock(draw, sc)}
-            <div class="pcol-explanation-row card-sentence-text" id="bf-pred-sentence-${idx}"></div>
-            <div class="validation-feedback-text" id="bf-pred-correctness-${idx}"></div>
-          </div>
-        `;
-      };
+      const sharedUrnsBlockHTML = sharedUrnsDisplay
+        ? `<div class="pcol-shared-urns"><div class="urns-display-container">${trial.urn_html}</div></div>`
+        : "";
 
       display_element.innerHTML = `
         <div class="pcol-container${urnKeys.length <= 2 ? " pcol-two-urns" : ""}">
           <div class="pcol-header">
             <p class="pcol-instructions">Here's what actually happened on your last ${scenarios.length} draws, alongside what you predicted.</p>
           </div>
-          <div class="pcol-columns">
+          ${sharedUrnsBlockHTML}
+          <div class="pcol-columns pcol-columns-single">
             <div class="pcol-column">
-              <div class="pcol-column-header">What actually happened</div>
-              <div class="pcol-column-scroll" id="bf-obs-scroll">
-                ${scenarios.map((sc, idx) => renderObsCard(sc, idx)).join("")}
-              </div>
-            </div>
-            <div class="pcol-column">
-              <div class="pcol-column-header">Your predictions</div>
-              <div class="pcol-column-scroll" id="bf-pred-scroll">
-                ${scenarios.map((sc, idx) => renderPredCard(sc, idx)).join("")}
+              <div class="pcol-column-header">Feedback (${scenarios.length} draws)</div>
+              <div class="pcol-column-scroll" id="bf-scroll">
+                ${scenarios.map((sc, idx) => renderFeedbackCard(sc, idx)).join("")}
               </div>
             </div>
           </div>
@@ -154,14 +186,12 @@ var jsBatchFeedback = (function (jspsych) {
         </div>
       `;
 
-      const obsCards = Array.from(display_element.querySelectorAll('.pcol-card[data-side="obs"]'));
-      const predCards = Array.from(display_element.querySelectorAll('.pcol-card[data-side="pred"]'));
+      const cards = Array.from(display_element.querySelectorAll(".pcol-card"));
 
-      // Places the drawn ball in its slot and hides one matching ball back
-      // in the urn — identical mechanism to every other draw-display
-      // plugin, factored out here since it now runs twice per scenario
-      // (once for the observation card, once for the prediction card).
-      const populateUrns = (cardEl, draw) => {
+      // Places the drawn ball in its slot and (full-urn mode only) hides
+      // one matching ball back in the urn — identical mechanism to every
+      // other draw-display plugin.
+      const populateDraw = (cardEl, draw) => {
         urnKeys.forEach((urnKey) => {
           const drawnColor = draw[urnKey];
           const slotEl = cardEl.querySelector(`#slot-${urnKey}`);
@@ -170,16 +200,18 @@ var jsBatchFeedback = (function (jspsych) {
             slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
           }
 
-          const urnContainer = cardEl.querySelector(`#urn-container-${urnKey}`) ||
-                             cardEl.querySelector(`[data-urn="${urnKey}"]`) ||
-                             cardEl.querySelectorAll(".urn")[urnKeys.indexOf(urnKey)];
-          if (urnContainer && drawnColor) {
-            const candidateBalls = Array.from(urnContainer.querySelectorAll(".ball")).filter((b) => {
-              if (b.closest(".urn-slot") || b.classList.contains("drawn-hidden")) return false;
-              return utils.matchesColor(b, drawnColor);
-            });
-            if (candidateBalls.length > 0) {
-              candidateBalls[Math.floor(Math.random() * candidateBalls.length)].classList.add("drawn-hidden");
+          if (!sharedUrnsDisplay) {
+            const urnContainer = cardEl.querySelector(`#urn-container-${urnKey}`) ||
+                               cardEl.querySelector(`[data-urn="${urnKey}"]`) ||
+                               cardEl.querySelectorAll(".urn")[urnKeys.indexOf(urnKey)];
+            if (urnContainer && drawnColor) {
+              const candidateBalls = Array.from(urnContainer.querySelectorAll(".ball")).filter((b) => {
+                if (b.closest(".urn-slot") || b.classList.contains("drawn-hidden")) return false;
+                return utils.matchesColor(b, drawnColor);
+              });
+              if (candidateBalls.length > 0) {
+                candidateBalls[Math.floor(Math.random() * candidateBalls.length)].classList.add("drawn-hidden");
+              }
             }
           }
         });
@@ -192,25 +224,22 @@ var jsBatchFeedback = (function (jspsych) {
           ? attempt.actual_outcome === "win"
           : String(sc.outcome !== undefined ? sc.outcome : sc.result).toLowerCase() === "win";
 
-        // ----- Left: what actually happened -----
-        const obsCardEl = obsCards[idx];
-        populateUrns(obsCardEl, draw);
+        const cardEl = cards[idx];
+        populateDraw(cardEl, draw);
         if (showExplanation && sc.selected_urn) {
-          const slotEl = obsCardEl.querySelector(`#slot-${sc.selected_urn}`);
+          const slotEl = cardEl.querySelector(`#slot-${sc.selected_urn}`);
           if (slotEl) utils.markHighlightedBall(slotEl, actualWin);
         }
-        const obsSentenceEl = obsCardEl.querySelector(`#bf-obs-sentence-${idx}`);
-        if (obsSentenceEl) {
-          obsSentenceEl.innerHTML = (showExplanation && sc.selected_urn)
+
+        const actualSentenceEl = cardEl.querySelector(`#bf-actual-sentence-${idx}`);
+        if (actualSentenceEl) {
+          actualSentenceEl.innerHTML = (showExplanation && sc.selected_urn)
             ? utils.renderExplanationSentence(actualWin, sc.selected_color, sc.selected_urn, agentName)
             : utils.renderOutcomeOnlySentence(actualWin, agentName);
         }
 
-        // ----- Right: the participant's own prediction -----
-        const predCardEl = predCards[idx];
-        populateUrns(predCardEl, draw);
-        const predSentenceEl = predCardEl.querySelector(`#bf-pred-sentence-${idx}`);
-        const correctnessEl = predCardEl.querySelector(`#bf-pred-correctness-${idx}`);
+        const predSentenceEl = cardEl.querySelector(`#bf-pred-sentence-${idx}`);
+        const correctnessEl = cardEl.querySelector(`#bf-correctness-${idx}`);
         if (attempt) {
           const predictedWin = attempt.predicted_outcome === "win";
           if (predSentenceEl) predSentenceEl.innerHTML = utils.renderPredictionSentence(agentName, predictedWin);

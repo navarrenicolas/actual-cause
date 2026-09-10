@@ -11,9 +11,9 @@ window.UrnUtils = (function () {
   // normalizeColor, which is for the *word* shown in text. Pass the raw,
   // un-normalized color in (e.g. "hotpink", not "pink"): only grey/absent
   // balls get special-cased (to the same #c0c0c0 the boxes' own balls use
-  // — see main.js's renderUrnsHTML — for higher contrast against white
-  // than the pale CSS "grey"/"lightgrey" keywords), every other color is
-  // passed straight through so it renders exactly as vividly as it does
+  // — see shared-stimuli.js's renderUrnsHTML — for higher contrast
+  // against white than the pale CSS "grey"/"lightgrey" keywords), every
+  // other color is passed straight through so it renders exactly as vividly as it does
   // in the box. Stripping "hot"/"light" here (as normalizeColor does) was
   // the bug behind drawn hotpink balls rendering as a faded pastel pink.
   function getDisplayColor(color) {
@@ -250,13 +250,20 @@ window.UrnUtils = (function () {
   // observation, not something to predict. Pair with markHighlightedBall()
   // to ring the ball itself in the same green/red used for active
   // selection feedback elsewhere.
-  function renderExplanationSentence(isWin, color, urnKey, agentName) {
+  // wrapInMark defaults to true (the highlighter look every existing
+  // caller expects); pass false where the "past observation" cue is
+  // already carried some other way instead — e.g. prediction-columns-
+  // plugin.js's given_column_highlight mode, which tints the whole
+  // "already observed" column light yellow instead of marking each
+  // sentence, since a whole column of individually-marked sentences read
+  // as visually heavy in the practice trials' shorter given/predict lists.
+  function renderExplanationSentence(isWin, color, urnKey, agentName, wrapInMark = true) {
     const cleanColor = normalizeColor(color);
     const displayColor = getDisplayColor(color);
     const outcomeText = isWin ? "won" : "lost";
     const outcomeClass = isWin ? "win" : "lose";
     const sentence = `${agentName} <span class="${outcomeClass}">${outcomeText}</span> because of the <span class="urn-ball-text" style="color: ${displayColor};">${cleanColor}</span> ball from box ${urnKey}.`;
-    return `<mark class="hi-lite">${sentence}</mark>`;
+    return wrapInMark ? `<mark class="hi-lite">${sentence}</mark>` : sentence;
   }
 
   // No-explanation-condition counterpart to renderExplanationSentence(): the
@@ -267,8 +274,10 @@ window.UrnUtils = (function () {
   // renderExplanationSentence) — this condition never singles out a ball.
   // Uses the same "With this draw, {agent} won/lost." wording as
   // renderPredictionSentence so outcome text reads identically everywhere.
-  function renderOutcomeOnlySentence(isWin, agentName) {
-    return `<mark class="hi-lite">${renderPredictionSentence(agentName, isWin)}</mark>`;
+  // wrapInMark: see renderExplanationSentence above.
+  function renderOutcomeOnlySentence(isWin, agentName, wrapInMark = true) {
+    const sentence = renderPredictionSentence(agentName, isWin);
+    return wrapInMark ? `<mark class="hi-lite">${sentence}</mark>` : sentence;
   }
 
   // Renders the "With this draw, {agent} won/lost." sentence — the one
