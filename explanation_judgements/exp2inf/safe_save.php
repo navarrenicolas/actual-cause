@@ -1,20 +1,28 @@
 <?php
 declare(strict_types=1);
 
-// Saves this experiment's own participant CSVs — a separate directory from
-// nic_experiment1's (and from this experiment's own datasets/ ledger),
-// same validated-append pattern as nic_experiment1/safe_save.php.
+// Saves this experiment's own participant CSVs. Two possible destinations,
+// keyed by which condition the session actually ran as — recorded
+// client-side by main.js and sent as `condition` in the request body,
+// since that's the only place that knows whether the session claimed a
+// real experiment_1 record ("explanation") or fell back to a client-side
+// generated rule/urn config once experiment_1 data ran out
+// ("no_explanation"). A missing/unrecognized `condition` defaults to
+// "explanation", matching this endpoint's original (single-condition)
+// behavior.
 //
-// Also completes the dataset lifecycle: once the CSV is safely written, if
-// the request identifies which session saved it (exp2_subject_id), this
-// looks up which experiment_1 record was assigned to that session (via
-// assign_dataset.php's assign_log.csv) and promotes it from
-// datasets/in_progress/ to datasets/used/ — the confirmation that this
-// claim actually completed, not just started. See check_datasets.php,
-// which verifies every used/ record has a matching saved result and vice
-// versa. A missing/unmatched exp2_subject_id doesn't fail the save itself
-// (saving the participant's data is the primary job here) — it's just
-// logged, and check_datasets.php will surface the resulting inconsistency.
+// Only "explanation" sessions ever complete the dataset lifecycle: once
+// the CSV is safely written, if the request identifies which session
+// saved it (exp2_subject_id), this looks up which experiment_1 record was
+// assigned to that session (via assign_dataset.php's assign_log.csv) and
+// promotes it from datasets/in_progress/ to datasets/used/ — the
+// confirmation that this claim actually completed, not just started. See
+// check_datasets.php, which verifies every used/ record has a matching
+// saved result and vice versa. A missing/unmatched exp2_subject_id doesn't
+// fail the save itself (saving the participant's data is the primary job
+// here) — it's just logged, and check_datasets.php will surface the
+// resulting inconsistency. "no_explanation" sessions never claim a ledger
+// record in the first place, so that whole step is skipped for them.
 
 header('Access-Control-Allow-Origin: https://eco.ppls.ed.ac.uk');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -22,10 +30,9 @@ header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json; charset=utf-8');
 
 $config = require __DIR__ . '/config.php';
-$resultsDir = $config['exp2_data_dir'] . '/data';
-$logFile = $config['exp2_data_dir'] . '/assign_log.csv';
 $inProgressDir = $config['datasets_dir'] . '/in_progress';
 $usedDir = $config['datasets_dir'] . '/used';
+$logFile = $config['explanation']['exp2_data_dir'] . '/assign_log.csv';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
@@ -67,6 +74,12 @@ if (!is_array($obj)
     || !is_string($obj['filedata'])) {
     fail(400, 'filename, filedata must be strings');
 }
+
+$isExplanation = !(isset($obj['condition']) && $obj['condition'] === 'no_explanation');
+
+$resultsDir = $isExplanation
+    ? $config['explanation']['exp2_data_dir'] . '/data'
+    : $config['no_explanation']['exp2_data_dir'];
 
 $base = realpath($resultsDir);
 
@@ -110,9 +123,10 @@ if ($bytes === false) {
 }
 
 // Promote the assigned dataset from in_progress/ to used/ now that this
-// session's data is actually saved. Best-effort: the participant's data is
-// already safely written above, so nothing here should turn that into a
-// failure response.
+// session's data is actually saved. Only "explanation" sessions ever
+// claim a ledger record. Best-effort: the participant's data is already
+// safely written above, so nothing here should turn that into a failure
+// response.
 $exp2SubjectId = null;
 if (isset($obj['exp2_subject_id']) && is_string($obj['exp2_subject_id'])) {
     if (preg_match('/\A[A-Za-z0-9_-]{1,100}\z/D', $obj['exp2_subject_id'])) {
@@ -120,7 +134,7 @@ if (isset($obj['exp2_subject_id']) && is_string($obj['exp2_subject_id'])) {
     }
 }
 
-if ($exp2SubjectId !== null && is_file($logFile)) {
+if ($isExplanation && $exp2SubjectId !== null && is_file($logFile)) {
     $datasetFilename = null;
     $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     if ($lines !== false) {

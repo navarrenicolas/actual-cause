@@ -30,7 +30,10 @@ $config = require __DIR__ . '/config.php';
 $datasetsDir = $config['datasets_dir'];
 $availableDir = $datasetsDir . '/available';
 $inProgressDir = $datasetsDir . '/in_progress';
-$logFile = $config['exp2_data_dir'] . '/assign_log.csv';
+// Only ever called while trying to run a session as "explanation" (the
+// no_explanation fallback never claims a ledger record), so the claim log
+// always lives alongside that condition's own saved data.
+$logFile = $config['explanation']['exp2_data_dir'] . '/assign_log.csv';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);

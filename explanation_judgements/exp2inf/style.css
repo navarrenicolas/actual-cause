@@ -1386,12 +1386,28 @@ mark.hi-lite {
    position:sticky/fixed. */
 .pcol-container {
     max-height: 98vh;
-    width: 100%;
-    /* 70% of the viewport, capped at 1800px — on a screen wide enough to
-       hit the cap, the extra width becomes margin either side rather than
-       stretching further; below that, it scales down with the viewport
-       (see .pcol-card .ball below, calibrated against this same 70vw). */
-    max-width: min(90vw, 1800px);
+    /* Deliberately a `width` (not `width:100%` + `max-width`): this
+       element's actual parent is jsPsych's own .jspsych-content, which
+       (per jspsych.css) is a flex item with no explicit width/flex-grow —
+       its size is content-driven ("shrink-to-fit"), not a fixed 95% of
+       the viewport despite its max-width:95%. A percentage width here
+       against that *indefinite* parent resolves as `auto` per the CSS
+       spec, which made this element ALSO shrink-to-fit its own content
+       (bounded only from above by the max-width formula below, never
+       actually reaching it) — so two runs with different card content
+       (e.g. explanation vs. no-explanation practice trials, which render
+       different amounts of given-card text) ended up genuinely different
+       widths, one bounded by .pcol-header's own max-width:650px winning
+       out as the widest shrink-to-fit contributor. `vw` units are always
+       relative to the viewport itself, never to an ancestor box, so
+       setting `width` directly with the same formula sidesteps the
+       indefinite-parent problem entirely: 90% of the viewport, capped at
+       1800px — on a screen wide enough to hit the cap, the extra width
+       becomes margin either side rather than stretching further; below
+       that, it scales down with the viewport (see .pcol-card .ball below,
+       calibrated against this same 90vw), and is now identical
+       regardless of which condition's content is inside it. */
+    width: min(90vw, 1800px);
     margin: 0 auto;
     padding: 8px 16px;
     display: flex;
@@ -1416,11 +1432,11 @@ mark.hi-lite {
 }
 
 .pcol-round-sub {
+    font-weight: bold;
     margin: 0 0 4px;
 }
 
 .pcol-instructions {
-    font-weight: bold;
     margin: 4px 0;
 }
 
@@ -1557,14 +1573,14 @@ mark.hi-lite {
    the card's own border/padding) so the 4-urn case — the tighter of the
    two — actually fits without clipping, while still scaling down on a
    narrower viewport instead of just clipping there too. Tied to
-   .pcol-container's own width formula (min(70vw, 1800px)): at a 1800px
+   .pcol-container's own width formula (min(90vw, 1800px)): at a 1800px
    container, one column is ~876px; after subtracting that overhead
    (~150px, roughly) and dividing across 4 urns (5 balls each, plus their
    own small gaps), a ball comfortably fits at 20px — the coefficient
-   below reaches 20px almost exactly at the viewport width where 70vw
+   below reaches 20px almost exactly at the viewport width where 90vw
    hits the 1800px cap, then stays capped past that point (screen gets
    wider, the container doesn't). Below that, the container shrinks with
-   70vw and this shrinks proportionately with it — the constant being
+   90vw and this shrinks proportionately with it — the constant being
    subtracted is what accounts for the overhead *not* itself shrinking
    with the viewport, unlike a plain vw multiplier. The floor is an
    absolute length (0.3cm, ≈11.3px per CSS's fixed 96px/inch reference)

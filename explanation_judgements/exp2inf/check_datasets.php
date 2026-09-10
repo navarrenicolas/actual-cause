@@ -35,7 +35,9 @@ if (PHP_SAPI !== 'cli') {
 
 $config = require __DIR__ . '/config.php';
 $exp1DataDir = $config['exp1_data_dir'];
-$exp2DataDir = $config['exp2_data_dir'];
+// Only the "explanation" condition ever claims a ledger record, so that's
+// the only side of the dataset lifecycle worth reconciling here.
+$exp2DataDir = $config['explanation']['exp2_data_dir'];
 $datasetsDir = $config['datasets_dir'];
 $resultsDir = $exp2DataDir . '/results';
 $logFile = $exp2DataDir . '/assign_log.csv';

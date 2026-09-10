@@ -11,9 +11,9 @@ window.UrnUtils = (function () {
   // normalizeColor, which is for the *word* shown in text. Pass the raw,
   // un-normalized color in (e.g. "hotpink", not "pink"): only grey/absent
   // balls get special-cased (to the same #c0c0c0 the boxes' own balls use
-  // — see main.js's renderUrnsHTML — for higher contrast against white
-  // than the pale CSS "grey"/"lightgrey" keywords), every other color is
-  // passed straight through so it renders exactly as vividly as it does
+  // — see shared-stimuli.js's renderUrnsHTML — for higher contrast
+  // against white than the pale CSS "grey"/"lightgrey" keywords), every
+  // other color is passed straight through so it renders exactly as vividly as it does
   // in the box. Stripping "hot"/"light" here (as normalizeColor does) was
   // the bug behind drawn hotpink balls rendering as a faded pastel pink.
   function getDisplayColor(color) {
