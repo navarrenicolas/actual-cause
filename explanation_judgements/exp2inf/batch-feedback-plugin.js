@@ -154,10 +154,10 @@ var jsBatchFeedback = (function (jspsych) {
           <div class="pcol-card" data-idx="${idx}">
             <div class="pcol-card-index">#${idx + startIndex + 1}</div>
             ${renderDrawBlock(draw, sc)}
-            <div class="pcol-explanation-row card-sentence-text" id="bf-actual-sentence-${idx}"></div>
             <div class="card-prompt-text">Your prediction:</div>
             <div class="card-sentence-text" id="bf-pred-sentence-${idx}"></div>
             <div class="validation-feedback-text" id="bf-correctness-${idx}"></div>
+            <div class="pcol-explanation-row card-sentence-text" id="bf-actual-sentence-${idx}"></div>
           </div>
         `;
       };
@@ -166,10 +166,12 @@ var jsBatchFeedback = (function (jspsych) {
         ? `<div class="pcol-shared-urns"><div class="urns-display-container">${trial.urn_html}</div></div>`
         : "";
 
+      const explanationsClause = showExplanation ? " and explanations" : "";
+
       display_element.innerHTML = `
         <div class="pcol-container${urnKeys.length <= 2 ? " pcol-two-urns" : ""}">
           <div class="pcol-header">
-            <p class="pcol-instructions">Here's what actually happened on your last ${scenarios.length} draws, alongside what you predicted.</p>
+            <p class="pcol-instructions"><strong>Here are your predictions with the correct outcomes${explanationsClause} in highlighted text. These will also be provided in the next round.</strong></p>
           </div>
           ${sharedUrnsBlockHTML}
           <div class="pcol-columns pcol-columns-single">

@@ -257,13 +257,29 @@ window.UrnUtils = (function () {
   // "already observed" column light yellow instead of marking each
   // sentence, since a whole column of individually-marked sentences read
   // as visually heavy in the practice trials' shorter given/predict lists.
-  function renderExplanationSentence(isWin, color, urnKey, agentName, wrapInMark = true) {
+  // includeOutcomeLine: false by default (unchanged behavior for every
+  // existing caller — explanation-example-plugin.js and
+  // walkthrough-instructions-plugin.js already show the outcome in their
+  // own separate box, so repeating it here would just duplicate it). Pass
+  // true (prediction-columns-plugin.js's given cards only) to prepend a
+  // standalone "With this draw, {agent} won/lost." line — its own
+  // renderPredictionSentence() output, not wrapped in <mark> — above the
+  // explanation sentence, so the outcome reads as its own line rather than
+  // being buried inside the causal clause.
+  function renderExplanationSentence(isWin, color, urnKey, agentName, wrapInMark = true, includeOutcomeLine = false) {
     const cleanColor = normalizeColor(color);
     const displayColor = getDisplayColor(color);
     const outcomeText = isWin ? "won" : "lost";
     const outcomeClass = isWin ? "win" : "lose";
     const sentence = `${agentName} <span class="${outcomeClass}">${outcomeText}</span> because of the <span class="urn-ball-text" style="color: ${displayColor};">${cleanColor}</span> ball from box ${urnKey}.`;
-    return wrapInMark ? `<mark class="hi-lite">${sentence}</mark>` : sentence;
+    const explanationHTML = wrapInMark ? `<mark class="hi-lite">${sentence}</mark>` : sentence;
+    if (!includeOutcomeLine) return explanationHTML;
+    // Both lines wrapped in their own block-level div (rather than the
+    // second line being left as bare inline/<mark> content flowing right
+    // after the first) — guarantees the explanation always starts on its
+    // own line, with its own margin-top, instead of relying on <mark>'s
+    // default inline layout to not ride up against the line above it.
+    return `<div class="card-outcome-line">${renderPredictionSentence(agentName, isWin)}</div><div class="card-explanation-line">${explanationHTML}</div>`;
   }
 
   // No-explanation-condition counterpart to renderExplanationSentence(): the

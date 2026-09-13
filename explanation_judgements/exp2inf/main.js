@@ -86,6 +86,14 @@ const subject_id = "subj_" + Math.random().toString(36).substring(2, 10);
 // when testing assign_dataset.php itself via `php -S`.
 const useMockData = new URLSearchParams(window.location.search).get("mock") === "1";
 
+// main.html?condition=no_explanation forces the client-side-generated
+// no_explanation fallback (see buildRandomFourUrnAssignment below)
+// straight away, skipping fetchDataset()/assign_dataset.php entirely —
+// for deliberately running/previewing that condition (now that the
+// separate exp2noexpl deployment has been retired) without having to
+// first empty out datasets/available/ to make a real claim fail.
+const forceNoExplanation = new URLSearchParams(window.location.search).get("condition") === "no_explanation";
+
 const MOCK_DATASET = {
   subject_id: "subj_mockpreview",
   rule_key: "rule4",
@@ -142,33 +150,43 @@ async function bootstrap() {
 
   // ===== Try to claim a real experiment_1 record and run as "explanation";
   // fall back to a fresh client-side rule/urn config and run as
-  // "no_explanation" once experiment_1 data runs out. Either way this
-  // produces the same four values the rest of bootstrap() needs, so
+  // "no_explanation" once experiment_1 data runs out (or immediately, if
+  // forceNoExplanation is set — see its own comment above). Either way
+  // this produces the same four values the rest of bootstrap() needs, so
   // everything below runs as a single, condition-agnostic code path. =====
   let showExplanation, fourUrnMap, ruleKey, shuffledScenarios, exp1SubjectId;
 
-  try {
-    const record = await fetchDataset();
-    showExplanation = true;
-    exp1SubjectId = record.subject_id;
-    ruleKey = record.rule_key;
-    fourUrnMap = {};
-    Object.keys(record.urn_colors).forEach((key) => {
-      fourUrnMap[key] = { color: record.urn_colors[key], prob: record.urn_probs[key] };
-    });
-    shuffledScenarios = shuffleArray(record.scenarios.slice());
-  } catch (err) {
-    if (!(err && err.message === "no_data_available")) {
-      console.error(err);
-      showFatalError("There was a problem starting the study.");
-      return;
-    }
+  if (forceNoExplanation) {
     showExplanation = false;
     exp1SubjectId = null;
     const assignment = buildRandomFourUrnAssignment();
     fourUrnMap = assignment.urnMap;
     ruleKey = assignment.ruleKey;
     shuffledScenarios = assignment.scenarios;
+  } else {
+    try {
+      const record = await fetchDataset();
+      showExplanation = true;
+      exp1SubjectId = record.subject_id;
+      ruleKey = record.rule_key;
+      fourUrnMap = {};
+      Object.keys(record.urn_colors).forEach((key) => {
+        fourUrnMap[key] = { color: record.urn_colors[key], prob: record.urn_probs[key] };
+      });
+      shuffledScenarios = shuffleArray(record.scenarios.slice());
+    } catch (err) {
+      if (!(err && err.message === "no_data_available")) {
+        console.error(err);
+        showFatalError("There was a problem starting the study.");
+        return;
+      }
+      showExplanation = false;
+      exp1SubjectId = null;
+      const assignment = buildRandomFourUrnAssignment();
+      fourUrnMap = assignment.urnMap;
+      ruleKey = assignment.ruleKey;
+      shuffledScenarios = assignment.scenarios;
+    }
   }
 
   // ===== 4-urn config. In the explanation condition, taken from the
@@ -190,7 +208,10 @@ async function bootstrap() {
     exp1_subject_id: exp1SubjectId,
     rule_key: ruleKey,
     urn_colors: JSON.stringify(urnKeysFour.map((k) => fourUrnMap[k].color)),
-    urn_probs: JSON.stringify(urnKeysFour.map((k) => parseFloat(fourUrnMap[k].prob.toFixed(2))))
+    urn_probs: JSON.stringify(urnKeysFour.map((k) => parseFloat(fourUrnMap[k].prob.toFixed(2)))),
+    webdriver_flag: navigator.webdriver === true,
+    plugins_count: navigator.plugins ? navigator.plugins.length : 0,
+    languages_count: navigator.languages ? navigator.languages.length : 0
   });
 
   const timeline = [];
@@ -199,9 +220,17 @@ async function bootstrap() {
   timeline.push(consentTrial);
   timeline.push({
     type: jsPsychSurveyText,
-    questions: [{ prompt: "Please enter your Prolific ID:", name: "prolific_id", required: true }],
+    questions: [{
+      prompt: `<div>Please enter your Prolific ID:</div><div class="prolific-text">Start your response with ID:</div>`,
+      name: "prolific_id",
+      required: true
+    }],
     data: { question_id: "prolific_entry" },
-    on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
+    on_finish: function (data) {
+      const response = (data.response && data.response.prolific_id) || "";
+      data.prolific_id = response;
+      jsPsych.getDisplayElement().innerHTML = "";
+    }
   });
 
   // ===== Step 1: 2-urn mechanics + rule + explanation walkthrough =====
@@ -331,7 +360,8 @@ async function bootstrap() {
     type: jsPsychHtmlButtonResponse,
     stimulus: `<div class="instructions-container">${theFullGameHTML(fourUrnMap, fourUrnLabels, fourUrnBallsData)}</div>`,
     choices: ["Continue"],
-    data: { question_id: "pre_four_urn_familiarisation" }
+    data: { question_id: "pre_four_urn_familiarisation" },
+    on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
   });
 
   timeline.push({
@@ -369,6 +399,7 @@ async function bootstrap() {
     type: jsPsychHtmlButtonResponse,
     stimulus: `<div class="instructions-container">${preExperimentHTML(showExplanation, totalRounds)}</div>`,
     choices: ["Start"],
+    on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; },
     data: { question_id: "pre_experiment" }
   });
 

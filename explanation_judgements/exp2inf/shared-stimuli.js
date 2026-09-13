@@ -344,14 +344,17 @@ function preExperimentHTML(showExplanation, totalRounds) {
     : "The given outcomes are highlighted.";
   return `
     <h2>You are now ready for the study!</h2>
-    <p><b>Unlike the practice rounds, you will not be shown the rule this time. Your task is to predict whether John would win or lose based on the observations you're given.</b></p>
+    <p><b>Unlike the practice rounds, you will not be shown the rule this time.
+    Your task is to find the rule that determines John's outcomes, which applies to all scenarios.
+    You will make predictions on John's draws based on the rule you think determines the outcomes.</b></p>
     <p>Here's how the task works:</p>
     <ul>
-      <li>You'll be given 4 observations of John playing the game${givenClause}.</li>
-      <li>Your task is to predict whether John would win or lose on the remaining scenarios.</li>
-      <li>There will be ${totalRounds} prediction rounds. Each round, 4 more outcomes are ${revealedVerb}, so the number of predictions you need to make shrinks: 12, then 8, then 4.</li>
+      <li>You will be given 4 outcomes of John playing the game${givenClause}.</li>
+      <li>The remaining set of scenarios from John's draws are left for you to predict.</li>
       <li>${highlightedClause} For the rest, select WON or LOST to make your prediction.</li>
+      <li>There are ${totalRounds} prediction rounds. Each round, 4 more outcomes are ${revealedVerb}, so the number of predictions you need to make shrinks: 12, then 8, then 4.</li>
       <li>After each round except the last, you'll receive feedback on your first four predictions. Those same four scenarios will then be given in the next round.</li>
+      <li>The rule will be shown to you at the end of the study.</li>
     </ul>
     <p>When you are ready, click the <b>Start</b> button.</p>
   `;

@@ -200,7 +200,12 @@ var jsPredictionColumns = (function (jspsych) {
       // the default) — reuses .urn-slot's id convention (slot-${urnKey}),
       // so the exact same populate/highlight code below works unchanged
       // whether it's targeting this or the old full urn display.
-      const renderCompactDraw = () => `
+      // badgeHTML: renderOutcomeBadge() output for given cards (the outcome
+      // is already known), "" for predict cards (nothing to show — that's
+      // the thing being predicted). Rendered as its own flex item in the
+      // same row as the drawn balls, so it reads as a tag "next to" them
+      // rather than a separate line.
+      const renderCompactDraw = (badgeHTML = "") => `
         <div class="pcol-compact-draw">
           ${urnKeys.map((urnKey) => `
             <div class="pcol-compact-slot" data-urn="${urnKey}">
@@ -208,6 +213,7 @@ var jsPredictionColumns = (function (jspsych) {
               <div class="urn-slot" id="slot-${urnKey}"></div>
             </div>
           `).join("")}
+          ${badgeHTML ? `<div class="pcol-outcome-badge-slot">${badgeHTML}</div>` : ""}
         </div>
       `;
 
@@ -221,14 +227,17 @@ var jsPredictionColumns = (function (jspsych) {
           probText = calculatedProb ? `${calculatedProb}%` : "";
         }
 
+        const badgeHTML = isGiven && utils ? utils.renderOutcomeBadge(actualOutcomeFor(sc)) : "";
+
         const drawBlockHTML = sharedUrnsDisplay
           ? `
-            ${renderCompactDraw()}
+            ${renderCompactDraw(badgeHTML)}
             <div class="pcol-prob-text">${probText ? `Scenario Probability ${probText}` : ""}</div>
           `
           : `
             <div class="pcol-urns-wrapper" id="pcol-urns-${idx}">
               <div class="urns-display-container">${trial.urn_html}</div>
+              ${badgeHTML ? `<div class="pcol-outcome-badge-slot">${badgeHTML}</div>` : ""}
               <div class="pcol-prob-text">${probText ? `Scenario Probability ${probText}` : ""}</div>
             </div>
           `;
@@ -334,10 +343,17 @@ var jsPredictionColumns = (function (jspsych) {
 
         if (isGiven) {
           if (sentenceEl) {
-            const wrapInMark = !givenColumnHighlight;
+            // Explanation cards: always keep the causal clause highlighted
+            // (wrapInMark forced true, ignoring given_column_highlight)
+            // and prepend a standalone outcome line above it — per
+            // explicit request, the explanation itself must stay visually
+            // marked even in the column-tinted (practice/main-task)
+            // layout. No-explanation cards are unaffected: there's no
+            // separate causal clause to highlight, so they keep
+            // respecting given_column_highlight as before.
             sentenceEl.innerHTML = (showExplanation && sc.selected_urn)
-              ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName, wrapInMark)
-              : utils.renderOutcomeOnlySentence(isWin, agentName, wrapInMark);
+              ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName, true, true)
+              : utils.renderOutcomeOnlySentence(isWin, agentName, !givenColumnHighlight);
           }
           return; // no interaction on given cards
         }
@@ -372,6 +388,21 @@ var jsPredictionColumns = (function (jspsych) {
         winBtn.onclick = () => handlePredictClick(true);
         loseBtn.onclick = () => handlePredictClick(false);
       });
+
+      // Start the "already observed" column scrolled to its bottom, so the
+      // most-recently-added batch (the last cards in the list, still
+      // numbered in ascending order — this only changes the initial
+      // scroll position, not the cards' own order/numbering) is what's
+      // in view without the participant having to scroll down for it.
+      // rAF so this runs after the browser has laid the column out (its
+      // real scrollHeight isn't reliable in the same tick the innerHTML
+      // was set).
+      const givenScrollEl = display_element.querySelector("#pcol-given-scroll");
+      if (givenScrollEl) {
+        requestAnimationFrame(() => {
+          givenScrollEl.scrollTop = givenScrollEl.scrollHeight;
+        });
+      }
 
       const remainingTextEl = display_element.querySelector("#pcol-remaining-text");
       const submitBtn = display_element.querySelector("#pcol-submit-btn");

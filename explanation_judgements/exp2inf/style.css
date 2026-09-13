@@ -596,9 +596,22 @@ span#wt-prob-text.walkthrough-highlight {
    doesn't stretch to fill the page. The title, rule box, and
    feedback/result/explanation text all get the same standard fixed width
    instead — .wt-block-title / .highlight-box / .draw-feedback-text — so
-   they read consistently across every page regardless of urn count. */
+   they read consistently across every page regardless of urn count.
+   width:90vw (not width:100%): every element carrying this class also
+   carries .draw-plugin-container, whose own real parent is jsPsych's own
+   .jspsych-content — a flex item with no explicit width/flex-grow, so its
+   size is content-driven ("shrink-to-fit"), not a definite box. A
+   width:100% here would resolve against that indefinite box and vary with
+   whatever this particular page's own content happens to need (longer
+   rule text, a longer button label, ...) — exactly the bug already fixed
+   once for .pcol-container elsewhere in this file. Matching
+   .draw-plugin-container's own (already-correct) 90vw directly instead
+   means this box's width comes only from the viewport, so .highlight-box
+   (bound to this at width:100%, capped 650px) renders at the same width
+   on every page, including switching back and forth between the
+   disjunctive/conjunctive practice screens. */
 .wt-container {
-  width: 100%;
+  width: 90vw;
   max-width: 1000px;
   margin: 0 auto;
   padding: 0 32px;
@@ -758,14 +771,24 @@ span#wt-prob-text.walkthrough-highlight {
    the rule box reads at the same size in every context it appears —
    walkthrough, familiarisation, explanation examples, and the prediction
    grids — instead of each one binding it to a differently-sized urn
-   display or a container-relative percentage. */
+   display or a container-relative percentage.
+   width:650px (not width:100%): a percentage here still resolves against
+   whatever this box's ancestor chain happens to compute that page — even
+   with .wt-container's own width now fixed (see above), a sibling like
+   .draw-feedback-text's rendered content can still nudge the shared
+   parent's size depending on how much text that particular page's
+   sentence happens to need. A literal 650px makes this box's width come
+   from nothing but that number, so it can't drift page to page.
+   max-width:100% is only the narrow-viewport fallback (never force
+   horizontal page scroll) — below 650px available width this shrinks to
+   fit, same as everywhere else in this file that fixes a width this way. */
 .highlight-box {
-    width: 100%;
-    max-width: 650px;
-    margin: 20px auto;
-    padding: 18px 24px;
+    width: 650px;
+    max-width: 100%;
+    margin: 6px auto;
+    padding: 12px 20px;
     font-family: Arial, sans-serif;
-    line-height: 1.6;
+    line-height: 1.3;
     text-align: center;
     border: 4px solid #000000;
     background-color: #f2f2f2;
@@ -779,7 +802,7 @@ span#wt-prob-text.walkthrough-highlight {
     font-weight: 800;
     font-size: 22px;
     margin-top: 0;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     text-transform: uppercase;
 }
 
@@ -1203,7 +1226,7 @@ span#wt-prob-text.walkthrough-highlight {
     font-size: 1rem !important;
     margin-top: 1px !important;
     color: #222222 !important;
-    line-height: 1.1 !important;
+    line-height: 1.25 !important;
     font-weight: 500 !important;
     text-align: center !important;
     width: 100%;
@@ -1431,12 +1454,12 @@ mark.hi-lite {
     flex: 0 0 auto;
     text-align: center;
     max-width: 650px;
-    margin: 0 auto 8px;
+    margin: 0 auto 4px;
     width: 100%;
 }
 
 .pcol-rule-text {
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 /* Deliberately no scoped override here: the practice trials' "PRACTICE
@@ -1458,7 +1481,7 @@ mark.hi-lite {
 }
 
 .pcol-instructions {
-    margin: 4px 0;
+    margin: 0;
 }
 
 /* One full urn display shown ONCE, above the columns, as a size/
@@ -1533,14 +1556,20 @@ mark.hi-lite {
     flex-direction: row;
     gap: 16px;
     min-height: 0;
-    width: 100%;
     /* Now that the compact-draw row's balls are capped to match the
        shared urn display (clamp(12px,1.8vw,22px)) instead of growing
        with the viewport, there's no more benefit to letting the columns
        stretch all the way to .pcol-container's own (wider) cap — capped
        and centered here instead, independent of .pcol-container/
-       .pcol-shared-urns's own width, which stays as-is. */
-    max-width: 1100px;
+       .pcol-shared-urns's own width, which stays as-is.
+       Fixed at 850px (not just capped there) per explicit feedback:
+       narrower cards — smaller balls included — read cleaner and fit
+       more scenarios on screen than stretching to fill the available
+       width. max-width:100% is just the narrow-viewport safety net (this
+       box must never force the page to scroll horizontally), not part of
+       the intended sizing. */
+    width: 850px;
+    max-width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
 }
@@ -1579,17 +1608,18 @@ mark.hi-lite {
 }
 
 /* batch-feedback-plugin.js's single-column mode: a lone .pcol-column
-   would otherwise stretch to the container's full ~1800px width (flex:1
+   would otherwise stretch to the container's full 850px width (flex:1
    1 0 with nothing to share it with) — reads far better narrower and
    centered, since its cards are just feedback text, not a wide urn
-   display. */
+   display. Fixed at 500px per explicit feedback (same reasoning as
+   .pcol-columns's own 850px above). */
 .pcol-columns.pcol-columns-single {
     justify-content: center;
 }
 
 .pcol-columns.pcol-columns-single .pcol-column {
-    flex: 0 1 700px;
-    max-width: 700px;
+    flex: 0 1 500px;
+    max-width: 500px;
 }
 
 .pcol-column-header {
@@ -1822,15 +1852,75 @@ mark.hi-lite {
     margin-top: 4px;
 }
 
+/* WIN/LOSE tag rendered next to a given card's drawn balls (see
+   renderOutcomeBadge in jspsych-urn-utils.js) — only given cards ever get
+   one (the outcome is already known there; predict cards pass "" for
+   badgeHTML since that's the thing being predicted). Sits as its own flex
+   item in the same row as .pcol-compact-draw's slots so it reads as a tag
+   "next to" the balls rather than a separate line below them. */
+.pcol-outcome-badge-slot {
+    display: flex;
+    align-items: center;
+}
+
+.outcome-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #ffffff;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.win-badge {
+    background-color: #2e7d32;
+}
+
+.lose-badge {
+    background-color: #c62828;
+}
+
+/* The standalone "With this draw, {agent} won/lost." line
+   renderExplanationSentence(..., includeOutcomeLine:true) prepends above
+   the (still-highlighted) explanation sentence — see
+   prediction-columns-plugin.js's given-card rendering. */
+.card-outcome-line {
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+/* Wraps the (still-highlighted) explanation sentence whenever it's paired
+   with .card-outcome-line above it — a real block box with its own
+   margin-top, so the highlighter's background can never sit flush against
+   (or visually "cover") the outcome line above it. */
+.card-explanation-line {
+    display: block;
+    margin-top: 3px;
+}
+
 .pcol-footer {
     flex: 0 0 auto;
     text-align: center;
-    padding: 10px 0 0;
+    padding: 6px 0 0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 14px;
 }
+
+.prolific-text {
+    color: #ffffff;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+.prolific-text::selection { color: #ffffff; background: #ffffff; }
+.prolific-text::-moz-selection { color: #ffffff; background: #ffffff; }
 
 .pcol-remaining-text {
     font-size: 0.9em;

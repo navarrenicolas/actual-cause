@@ -89,7 +89,7 @@ var jsWalkthroughInstructions = (function (jspsych) {
   const PROB_TOOLTIP = "This is the probability of drawing this combination of balls.";
   const FEEDBACK_TOOLTIP = "This text describes which balls were drawn in this trial.";
   const RESULT_TOOLTIP = "This shows whether the draw resulted in a win or a loss, based on the rule.";
-  const EXPLANATION_TOOLTIP = "This explains which ball caused the outcome.";
+  const EXPLANATION_TOOLTIP = "This text provides an explanation for the outcome.";
 
   function makePage(overrides) {
     return Object.assign({
