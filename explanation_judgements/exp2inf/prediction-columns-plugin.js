@@ -297,6 +297,15 @@ var jsPredictionColumns = (function (jspsych) {
             <button id="pcol-continue-btn" class="jspsych-btn grid-submit-btn" style="display:none;">${trial.continue_button_label}</button>
           </div>
         </div>
+        <div class="pcol-modal-overlay is-hidden" id="pcol-modal-overlay">
+          <div class="pcol-modal-box">
+            <p class="pcol-modal-message" id="pcol-modal-message"></p>
+            <div class="pcol-modal-actions">
+              <button type="button" class="jspsych-btn" id="pcol-modal-cancel-btn">Cancel</button>
+              <button type="button" class="jspsych-btn grid-submit-btn" id="pcol-modal-confirm-btn">OK</button>
+            </div>
+          </div>
+        </div>
       `;
 
       // ----- Populate every card's urns (ball placement, drawn-hidden
@@ -388,6 +397,42 @@ var jsPredictionColumns = (function (jspsych) {
         winBtn.onclick = () => handlePredictClick(true);
         loseBtn.onclick = () => handlePredictClick(false);
       });
+
+      // In-page replacement for window.alert()/window.confirm(): those
+      // native browser dialogs force the browser out of fullscreen mode
+      // (a browser-level side effect no amount of CSS/JS can prevent),
+      // which is disruptive now that the study puts participants into
+      // fullscreen right after consent. This renders entirely inside the
+      // page instead, so fullscreen is never interrupted. Resolves true
+      // if the confirm/OK button was clicked, false if Cancel was
+      // clicked; an informational alert (showCancel:false) always
+      // resolves true once dismissed.
+      const modalOverlay = display_element.querySelector("#pcol-modal-overlay");
+      const modalMessageEl = display_element.querySelector("#pcol-modal-message");
+      const modalCancelBtn = display_element.querySelector("#pcol-modal-cancel-btn");
+      const modalConfirmBtn = display_element.querySelector("#pcol-modal-confirm-btn");
+
+      const showModalDialog = ({ message, showCancel = false, confirmLabel = "OK", cancelLabel = "Cancel" }) => {
+        return new Promise((resolve) => {
+          modalMessageEl.textContent = message;
+          modalConfirmBtn.textContent = confirmLabel;
+          modalCancelBtn.textContent = cancelLabel;
+          modalCancelBtn.classList.toggle("is-hidden", !showCancel);
+          modalOverlay.classList.remove("is-hidden");
+
+          const cleanup = (result) => {
+            modalOverlay.classList.add("is-hidden");
+            modalConfirmBtn.removeEventListener("click", onConfirm);
+            modalCancelBtn.removeEventListener("click", onCancel);
+            resolve(result);
+          };
+          const onConfirm = () => cleanup(true);
+          const onCancel = () => cleanup(false);
+
+          modalConfirmBtn.addEventListener("click", onConfirm);
+          modalCancelBtn.addEventListener("click", onCancel);
+        });
+      };
 
       // Start the "already observed" column scrolled to its bottom, so the
       // most-recently-added batch (the last cards in the list, still
@@ -517,16 +562,21 @@ var jsPredictionColumns = (function (jspsych) {
         });
       };
 
-      submitBtn.addEventListener("click", () => {
+      submitBtn.addEventListener("click", async () => {
         if (retryMode) {
           handleRetrySubmit();
           return;
         }
         if (countRemaining() > 0) {
-          alert(trial.incomplete_message);
+          await showModalDialog({ message: trial.incomplete_message, showCancel: false });
           return;
         }
-        if (window.confirm(trial.confirm_submit_message)) {
+        const confirmed = await showModalDialog({
+          message: trial.confirm_submit_message,
+          showCancel: true,
+          confirmLabel: "Submit"
+        });
+        if (confirmed) {
           finalizeSubmit();
         }
       });

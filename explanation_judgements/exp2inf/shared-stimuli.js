@@ -330,7 +330,7 @@ function aDifferentRuleHTML(showExplanation) {
 function theFullGameHTML(fourUrnMap, fourUrnLabels, fourUrnBallsData) {
   return `
     <h2>The full game</h2>
-    <p>Now you will be interacting with a game with four boxes instead of two, the same as the ones used in the main study.</p>
+    <p>Now you will be interacting with a game with four boxes instead of two.</p>
     ${renderUrnsHTML(fourUrnMap, fourUrnLabels, fourUrnBallsData, false, false)}
     <p>Try drawing from all four boxes to get familiar with them. There's no rule to worry about yet, just get a feel for the boxes.</p>
   `;

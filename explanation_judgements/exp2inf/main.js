@@ -154,7 +154,7 @@ async function bootstrap() {
   // forceNoExplanation is set — see its own comment above). Either way
   // this produces the same four values the rest of bootstrap() needs, so
   // everything below runs as a single, condition-agnostic code path. =====
-  let showExplanation, fourUrnMap, ruleKey, shuffledScenarios, exp1SubjectId;
+  let showExplanation, fourUrnMap, ruleKey, orderedScenarios, exp1SubjectId;
 
   if (forceNoExplanation) {
     showExplanation = false;
@@ -162,7 +162,7 @@ async function bootstrap() {
     const assignment = buildRandomFourUrnAssignment();
     fourUrnMap = assignment.urnMap;
     ruleKey = assignment.ruleKey;
-    shuffledScenarios = assignment.scenarios;
+    orderedScenarios = assignment.scenarios;
   } else {
     try {
       const record = await fetchDataset();
@@ -173,7 +173,10 @@ async function bootstrap() {
       Object.keys(record.urn_colors).forEach((key) => {
         fourUrnMap[key] = { color: record.urn_colors[key], prob: record.urn_probs[key] };
       });
-      shuffledScenarios = shuffleArray(record.scenarios.slice());
+      // Not shuffled: shown in the same order they appear in the claimed
+      // experiment_1 record (i.e. the order that participant made their
+      // own 16 selections in), per explicit request.
+      orderedScenarios = record.scenarios.slice();
     } catch (err) {
       if (!(err && err.message === "no_data_available")) {
         console.error(err);
@@ -185,7 +188,7 @@ async function bootstrap() {
       const assignment = buildRandomFourUrnAssignment();
       fourUrnMap = assignment.urnMap;
       ruleKey = assignment.ruleKey;
-      shuffledScenarios = assignment.scenarios;
+      orderedScenarios = assignment.scenarios;
     }
   }
 
@@ -216,12 +219,18 @@ async function bootstrap() {
 
   const timeline = [];
 
-  // ----- Consent & Prolific ID -----
+  // ----- Consent, fullscreen, & Prolific ID -----
   timeline.push(consentTrial);
+  timeline.push({
+    type: jsPsychFullscreen,
+    fullscreen_mode: true,
+    message: "<p>The study will now switch to fullscreen mode. Please stay in fullscreen for the rest of the study.</p>",
+    button_label: "Enter Fullscreen"
+  });
   timeline.push({
     type: jsPsychSurveyText,
     questions: [{
-      prompt: `<div>Please enter your Prolific ID:</div><div class="prolific-text">Start your response with ID:</div>`,
+      prompt: `<div>Please enter your Prolific ID:</div><div class="prolific-text" data-testid="prolific-note">Start your response with ID:</div>`,
       name: "prolific_id",
       required: true
     }],
@@ -408,7 +417,7 @@ async function bootstrap() {
 
     timeline.push({
       type: jsPredictionColumns,
-      scenarios: withGivenFlags(shuffledScenarios, givenCount),
+      scenarios: withGivenFlags(orderedScenarios, givenCount),
       urn_html: fourUrnHtmlStatic,
       urn_map: fourUrnMap,
       urn_keys: urnKeysFour,
@@ -429,7 +438,7 @@ async function bootstrap() {
     if (!isLastRound) {
       timeline.push({
         type: jsBatchFeedback,
-        scenarios: shuffledScenarios.slice(givenCount, givenCount + 4),
+        scenarios: orderedScenarios.slice(givenCount, givenCount + 4),
         start_index: givenCount,
         review_question_id: `prediction_round_${roundNumber}`,
         urn_html: fourUrnHtmlStatic,

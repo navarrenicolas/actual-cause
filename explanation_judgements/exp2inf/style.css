@@ -1926,3 +1926,44 @@ mark.hi-lite {
     font-size: 0.9em;
     color: #555555;
 }
+
+/* In-page stand-in for window.alert()/window.confirm() (see
+   prediction-columns-plugin.js's showModalDialog) — a native browser
+   dialog forces the browser out of fullscreen mode, which this avoids
+   entirely by rendering inside the page instead. Fixed, covers the whole
+   viewport, sits above everything else in the trial. */
+.pcol-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.pcol-modal-box {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+}
+
+.pcol-modal-message {
+    margin: 0 0 20px;
+    font-size: 1rem;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.pcol-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+}
