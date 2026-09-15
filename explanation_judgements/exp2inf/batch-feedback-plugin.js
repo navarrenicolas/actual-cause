@@ -116,11 +116,25 @@ var jsBatchFeedback = (function (jspsych) {
         return "";
       };
 
+      // The actual outcome is always known here (this is feedback, shown
+      // after the round is over) — factored out so both the WIN/LOSE
+      // badge (rendered up front, in renderFeedbackCard) and the
+      // populate loop below can resolve it the same way, matching
+      // prediction-columns-plugin.js's given-card badge.
+      const actualWinFor = (sc) => {
+        const attempt = attemptsByScenarioId[sc.id];
+        return attempt
+          ? attempt.actual_outcome === "win"
+          : String(sc.outcome !== undefined ? sc.outcome : sc.result).toLowerCase() === "win";
+      };
+
       // Compact per-urn "ball in its slot" row (shared_urns_display:true,
       // the default) — see prediction-columns-plugin.js's identical
       // helper; reuses .urn-slot's id convention (slot-${urnKey}) so
-      // populateDraw() below works unchanged either way.
-      const renderCompactDraw = () => `
+      // populateDraw() below works unchanged either way. badgeHTML: see
+      // prediction-columns-plugin.js's renderCompactDraw — rendered as
+      // its own flex item in the same row as the slots.
+      const renderCompactDraw = (badgeHTML = "") => `
         <div class="pcol-compact-draw">
           ${urnKeys.map((urnKey) => `
             <div class="pcol-compact-slot" data-urn="${urnKey}">
@@ -128,19 +142,22 @@ var jsBatchFeedback = (function (jspsych) {
               <div class="urn-slot" id="slot-${urnKey}"></div>
             </div>
           `).join("")}
+          ${badgeHTML ? `<div class="pcol-outcome-badge-slot">${badgeHTML}</div>` : ""}
         </div>
       `;
 
       const renderDrawBlock = (draw, sc) => {
         const probText = probTextFor(draw, sc);
+        const badgeHTML = utils ? utils.renderOutcomeBadge(actualWinFor(sc)) : "";
         return sharedUrnsDisplay
           ? `
-            ${renderCompactDraw()}
+            ${renderCompactDraw(badgeHTML)}
             <div class="pcol-prob-text">${probText ? `Scenario Probability ${probText}` : ""}</div>
           `
           : `
             <div class="pcol-urns-wrapper">
               <div class="urns-display-container">${trial.urn_html}</div>
+              ${badgeHTML ? `<div class="pcol-outcome-badge-slot">${badgeHTML}</div>` : ""}
               <div class="pcol-prob-text">${probText ? `Scenario Probability ${probText}` : ""}</div>
             </div>
           `;
@@ -150,6 +167,7 @@ var jsBatchFeedback = (function (jspsych) {
 
       const renderFeedbackCard = (sc, idx) => {
         const draw = sc.urns || sc.draw || sc;
+        const actualLabel = showExplanation && sc.selected_urn ? "Explanation:" : "Actual outcome:";
         return `
           <div class="pcol-card" data-idx="${idx}">
             <div class="pcol-card-index">#${idx + startIndex + 1}</div>
@@ -157,6 +175,7 @@ var jsBatchFeedback = (function (jspsych) {
             <div class="card-prompt-text">Your prediction:</div>
             <div class="card-sentence-text" id="bf-pred-sentence-${idx}"></div>
             <div class="validation-feedback-text" id="bf-correctness-${idx}"></div>
+            <div class="card-prompt-text">${actualLabel}</div>
             <div class="pcol-explanation-row card-sentence-text" id="bf-actual-sentence-${idx}"></div>
           </div>
         `;
@@ -222,9 +241,7 @@ var jsBatchFeedback = (function (jspsych) {
       scenarios.forEach((sc, idx) => {
         const draw = sc.urns || sc.draw || sc;
         const attempt = attemptsByScenarioId[sc.id];
-        const actualWin = attempt
-          ? attempt.actual_outcome === "win"
-          : String(sc.outcome !== undefined ? sc.outcome : sc.result).toLowerCase() === "win";
+        const actualWin = actualWinFor(sc);
 
         const cardEl = cards[idx];
         populateDraw(cardEl, draw);

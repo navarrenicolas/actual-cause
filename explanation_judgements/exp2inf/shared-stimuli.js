@@ -345,7 +345,7 @@ function preExperimentHTML(showExplanation, totalRounds) {
   return `
     <h2>You are now ready for the study!</h2>
     <p><b>Unlike the practice rounds, you will not be shown the rule this time.
-    Your task is to find the rule that determines John's outcomes, which applies to all scenarios.
+    Your task is to work out the rule that determines John's outcomes, which applies to all scenarios.
     You will make predictions on John's draws based on the rule you think determines the outcomes.</b></p>
     <p>Here's how the task works:</p>
     <ul>

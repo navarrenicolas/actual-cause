@@ -190,7 +190,7 @@ var jsPredictionColumns = (function (jspsych) {
         ` : ""}
         <p class="pcol-instructions">
           ${showExplanation
-            ? "The draws on the left have already been explained."
+            ? "The outcome of the draws on the left have been explained."
             : "The draws on the left show the outcome."}
           Predict the draws on the right by selecting <b>WON</b> or <b>LOST</b>.
         </p>
