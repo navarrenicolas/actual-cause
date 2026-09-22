@@ -2,3 +2,16 @@ notes/
 .gitignore
 .DS_Store
 __pycache__
+analyses/
+models/
+steph/
+*/nic_experiment1/test-harness/
+*/inference_experiment2/test-harness/
+*/exp2inf/test-harness/
+*/exp2noexpl/test-harness/
+*/exp2inf-cyborg/test-harness/
+*/exp2inf-cyborg/cyborg-analysis/data/*
+!*/exp2inf-cyborg/cyborg-analysis/data/.gitkeep
+*/exp2inf-cyborg/cyborg-analysis/cyborg-hunter-report/
+writing/
+.vscode
