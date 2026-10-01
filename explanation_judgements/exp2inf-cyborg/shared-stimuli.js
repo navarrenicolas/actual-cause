@@ -9,7 +9,7 @@
  * — so wording only ever needs to change in one place, in one file,
  * instead of needing the same edit made twice and kept in sync by hand.
  * Loaded via its own <script> tag in both main.html files, after
- * jspsych-urn-utils.js and rules.js (buildRuleSentence below uses both)
+ * jspsych-urn-utils.js and rules.js
  * and before each experiment's own main.js.
  *
  * Deliberately does NOT reference jsPsych, subject_id, or useMockData:
@@ -217,33 +217,29 @@ function withGivenFlags(scenarios, givenCount) {
 }
 
 // ===== Debrief rule sentence =====
-// Uses rules.js's own ruleTemplates ("{low} and {high} ball, or ..."),
-// loaded as a global via rules.js's <script> tag (before this file) in
-// main.html — but fills them in with UrnUtils.getArticle/getDisplayColor/
-// normalizeColor on the raw color instead of rules.js's own
-// fillRuleTemplate + colorizeWithSpans. Those only recognize the literal
-// words "pink/orange/blue/purple" via regex, so a color like "hotpink"
-// (this app's actual palette) silently comes out unarticled and
-// uncolored; substituting the already-safe "a/an <span>...</span>" text
-// directly avoids that. Which of the 4 urns plays the "high"/"medHigh"/
-// "medLow"/"low" role is determined by relative draw probability
-// (rankUrnKeysByProb), not a fixed urn key.
+// Build complete ball phrases so each color gets the correct article and
+// its own noun. UrnUtils also handles the display name/CSS color of hotpink.
+// Roles follow relative draw probability, not fixed urn keys.
 function buildRuleSentence(ruleKey, urnMap) {
   const utils = window.UrnUtils;
   const [highKey, medHighKey, medLowKey, lowKey] = rankUrnKeysByProb(urnMap);
-  const coloredWord = (urnKey) => {
+  const coloredBall = (urnKey) => {
     const color = urnMap[urnKey].color;
-    return `${utils.getArticle(color)} <span class="urn-ball-text" style="color:${utils.getDisplayColor(color)};">${utils.normalizeColor(color)}</span>`;
+    return `${utils.getArticle(color)} <span class="urn-ball-text" style="color:${utils.getDisplayColor(color)};">${utils.normalizeColor(color)}</span> ball`;
   };
-  const template = ruleTemplates[ruleKey];
-  if (!template) return null;
-  const labels = {
-    high: coloredWord(highKey),
-    medHigh: coloredWord(medHighKey),
-    medLow: coloredWord(medLowKey),
-    low: coloredWord(lowKey)
+  const high = coloredBall(highKey);
+  const medHigh = coloredBall(medHighKey);
+  const medLow = coloredBall(medLowKey);
+  const low = coloredBall(lowKey);
+  const descriptions = {
+    rule1: `${low} and ${high}, or ${medLow}, or all three`,
+    rule2: `${low} and ${medLow}, or ${high} and ${medLow}, or all three`,
+    rule3: `${low}, ${medHigh}, and ${high}`,
+    rule4: `at least one of the following: ${low}, ${medHigh}, or ${high}`,
+    rule5: `either ${high} or ${medLow}, but not both`
   };
-  const description = template.replace(/\{(high|medHigh|medLow|low)\}/g, (_, role) => labels[role]);
+  const description = descriptions[ruleKey];
+  if (!description) return null;
   return `To win, you must draw ${description}.`;
 }
 
