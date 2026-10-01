@@ -212,6 +212,8 @@ async function bootstrap() {
         params: {
           participantId: subject_id,
           tier: "dom",
+          // v0.8.0 supports download/DataPipe only. Our PHP upload below uses
+          // getLastRecording(); the library's "none" warning is expected.
           autoSave: { mode: useMockData ? "download" : "none" }
         }
       }
@@ -245,10 +247,7 @@ async function bootstrap() {
     on_finish: function (data) {
       const response = (data.response && data.response.prolific_id) || "";
       data.prolific_id = response;
-      jsPsych.data.addProperties({
-        ai_use_session: /^\s*id\s*:/i.test(response),
-        ai_report_session: response
-      });
+      // Save the response verbatim; retrospective checks belong in the report.
       jsPsych.getDisplayElement().innerHTML = "";
     }
   });
@@ -508,6 +507,14 @@ async function bootstrap() {
       jsPsych.extensions["cyborg-hunter"].finalize();
       await jsPsych.extensions["cyborg-hunter-replay"].finalize();
 
+      if (!useMockData) {
+        await saveReplayToServer(
+          jsPsych,
+          jsPsych.extensions["cyborg-hunter-replay"].getLastRecording(),
+          showExplanation ? "explanation" : "no_explanation"
+        );
+      }
+
       jsPsych.data.get().values().forEach((trial) => { delete trial.stimulus; });
 
       const filenamePrefix = showExplanation ? "causal_inf_exp2" : "causal_inf_exp2_noexpl";
@@ -518,21 +525,23 @@ async function bootstrap() {
       saveDataToServerAsCSV(jsPsych, subject_id, filenamePrefix, useMockData, (success) => {
         if (success) {
           jsPsych.getDisplayElement().innerHTML = "";
-          jsPsych.run([
-            {
-              type: jsPsychHtmlButtonResponse,
-              stimulus: THANK_YOU_HTML,
-              choices: ["Go to Prolific"],
-              on_finish: () => {
-                // TODO: replace XXXXXXXX / this URL with the real Prolific completion code once this study exists on Prolific.
-                window.location.href = "https://app.prolific.com/submissions/complete?cc=XXXXXXXX";
-              }
-            }
-          ]);
+          done();
         } else {
           alert("There was a problem saving your data. Please check your connection and try again.");
         }
       }, condition);
+    }
+  });
+
+  // Continue the existing timeline: calling run() again reinitializes the
+  // extensions and starts a second, unsaved recorder on the thank-you screen.
+  timeline.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: THANK_YOU_HTML,
+    choices: ["Go to Prolific"],
+    on_finish: () => {
+      // TODO: replace XXXXXXXX with this study's Prolific completion code.
+      window.location.href = "https://app.prolific.com/submissions/complete?cc=XXXXXXXX";
     }
   });
 

@@ -1,7 +1,0 @@
-{
-  "dataDir": "./data",
-  "filePattern": "*.{json,csv}",
-  "participantIdField": "subject_id",
-  "integrityField": "integrity",
-  "outputDir": "./cyborg-hunter-report"
-}
