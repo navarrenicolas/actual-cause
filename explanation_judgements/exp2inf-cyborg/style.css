@@ -1912,6 +1912,14 @@ mark.hi-lite {
     gap: 14px;
 }
 
+.response-prompt {
+    display: block;
+    opacity: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
 .prolific-text {
     color: #ffffff;
     user-select: none;

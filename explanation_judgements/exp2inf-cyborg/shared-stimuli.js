@@ -374,7 +374,7 @@ function ruleRevealHTML(ruleSentenceOrFallback, fourUrnHtmlStatic) {
 }
 
 const RULE_GUESS_QUESTION = {
-  prompt: "Before we show you the results, please describe in your own words what you think the rule was.",
+  prompt: `Before we show you the results, please describe in your own words what you think the rule was.<span class="response-prompt">Start your response with 'Rule:'</span>`,
   name: "rule_guess",
   rows: 4,
   columns: 60,
