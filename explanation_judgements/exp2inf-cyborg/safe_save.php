@@ -1,28 +1,8 @@
 <?php
 declare(strict_types=1);
 
-// Saves this experiment's own participant CSVs. Two possible destinations,
-// keyed by which condition the session actually ran as — recorded
-// client-side by main.js and sent as `condition` in the request body,
-// since that's the only place that knows whether the session claimed a
-// real experiment_1 record ("explanation") or fell back to a client-side
-// generated rule/urn config once experiment_1 data ran out
-// ("no_explanation"). A missing/unrecognized `condition` defaults to
-// "explanation", matching this endpoint's original (single-condition)
-// behavior.
-//
-// Only "explanation" sessions ever complete the dataset lifecycle: once
-// the CSV is safely written, if the request identifies which session
-// saved it (exp2_subject_id), this looks up which experiment_1 record was
-// assigned to that session (via assign_dataset.php's assign_log.csv) and
-// promotes it from datasets/in_progress/ to datasets/used/ — the
-// confirmation that this claim actually completed, not just started. See
-// check_datasets.php, which verifies every used/ record has a matching
-// saved result and vice versa. A missing/unmatched exp2_subject_id doesn't
-// fail the save itself (saving the participant's data is the primary job
-// here) — it's just logged, and check_datasets.php will surface the
-// resulting inconsistency. "no_explanation" sessions never claim a ledger
-// record in the first place, so that whole step is skipped for them.
+// Save a full participant CSV, then complete only this condition's claim.
+// A reset/superseded participant can save data but cannot advance another claim.
 
 header('Access-Control-Allow-Origin: https://eco.ppls.ed.ac.uk');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -30,9 +10,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json; charset=utf-8');
 
 $config = require __DIR__ . '/config.php';
-$inProgressDir = $config['datasets_dir'] . '/in_progress';
-$usedDir = $config['datasets_dir'] . '/used';
-$logFile = $config['explanation']['exp2_data_dir'] . '/assign_log.csv';
+require_once __DIR__ . '/dataset-ledger.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
@@ -75,15 +53,12 @@ if (!is_array($obj)
     fail(400, 'filename, filedata must be strings');
 }
 
-$isExplanation = !(isset($obj['condition']) && $obj['condition'] === 'no_explanation');
-
-$resultsDir = $isExplanation
-    ? $config['explanation']['exp2_data_dir'] . '/data'
-    : $config['no_explanation']['exp2_data_dir'];
-
-$base = realpath($resultsDir);
-
-if ($base === false || !is_dir($base) || is_link($resultsDir)) {
+$condition = $obj['condition'] ?? 'explanation';
+if (!in_array($condition, DATASET_CONDITIONS, true)) fail(400, 'Invalid condition');
+try {
+    $base = ensureSaveDirectory($config, $condition);
+} catch (RuntimeException $e) {
+    error_log('safe_save.php: ' . $e->getMessage());
     fail(500, 'Data directory is unavailable');
 }
 
@@ -115,48 +90,36 @@ if (strlen($filedata) > 1_000_000) {
     fail(413, 'filedata is too large');
 }
 
-$bytes = file_put_contents($path, $filedata, FILE_APPEND | LOCK_EX);
-
-if ($bytes === false) {
-    error_log('Failed to write experiment data');
-    fail(500, 'Failed to save data');
+$subjectId = $obj['exp2_subject_id'] ?? null;
+if ($subjectId !== null && (!is_string($subjectId) || !preg_match('/\A[A-Za-z0-9_-]{1,100}\z/D', $subjectId))) {
+    fail(400, 'Invalid exp2_subject_id');
 }
-
-// Promote the assigned dataset from in_progress/ to used/ now that this
-// session's data is actually saved. Only "explanation" sessions ever
-// claim a ledger record. Best-effort: the participant's data is already
-// safely written above, so nothing here should turn that into a failure
-// response.
-$exp2SubjectId = null;
-if (isset($obj['exp2_subject_id']) && is_string($obj['exp2_subject_id'])) {
-    if (preg_match('/\A[A-Za-z0-9_-]{1,100}\z/D', $obj['exp2_subject_id'])) {
-        $exp2SubjectId = $obj['exp2_subject_id'];
-    }
+if ($subjectId !== null) {
+    $prefix = $condition === 'explanation' ? 'causal_inf_exp2_' : 'causal_inf_exp2_noexpl_';
+    if ($filename !== $prefix . $subjectId . '.csv') fail(400, 'Filename does not match participant');
 }
-
-if ($isExplanation && $exp2SubjectId !== null && is_file($logFile)) {
-    $datasetFilename = null;
-    $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if ($lines !== false) {
-        // Rows are only ever appended, so the last match for this session
-        // is the authoritative (most recent) claim.
-        foreach ($lines as $line) {
-            $fields = explode(',', $line);
-            if (count($fields) === 4 && $fields[2] === $exp2SubjectId) {
-                $datasetFilename = $fields[3];
-            }
+$temp = false;
+try {
+    $lock = lockDatasetLedger($config);
+    if ($subjectId !== null) {
+        $other = $condition === 'explanation' ? 'no_explanation' : 'explanation';
+        if (findDatasetClaim(readDatasetClaims($config, $other), 'exp2_subject_id', $subjectId) !== null) {
+            fail(409, 'Condition does not match assignment');
         }
     }
-
-    if ($datasetFilename !== null && preg_match('/\A[A-Za-z0-9][A-Za-z0-9_-]{0,94}\.json\z/D', $datasetFilename)) {
-        $srcPath = $inProgressDir . DIRECTORY_SEPARATOR . $datasetFilename;
-        $dstPath = $usedDir . DIRECTORY_SEPARATOR . $datasetFilename;
-        if (is_dir($inProgressDir) && is_dir($usedDir) && !@rename($srcPath, $dstPath)) {
-            error_log("safe_save.php: could not promote $datasetFilename to used/ for exp2_subject_id=$exp2SubjectId");
-        }
-    } else {
-        error_log("safe_save.php: no assign_log.csv match for exp2_subject_id=$exp2SubjectId");
+    // Atomic full snapshots make save retries safe, including after a failed
+    // promotion. Existing participant data are never appended a second time.
+    $temp = @tempnam($base, '.csv-');
+    if ($temp === false || dirname($temp) !== $base
+        || @file_put_contents($temp, $filedata, LOCK_EX) !== strlen($filedata)
+        || !@chmod($temp, 0666 & ~umask()) || !@rename($temp, $path)) {
+        throw new RuntimeException('Could not save participant CSV');
     }
+    $temp = false;
+    $state = $subjectId === null ? 'unassigned' : completeDatasetClaim($config, $condition, $subjectId);
+    echo json_encode(['status' => 'saved', 'dataset_status' => $state]);
+} catch (RuntimeException $e) {
+    if ($temp !== false) @unlink($temp);
+    error_log('safe_save.php: ' . $e->getMessage());
+    fail(500, 'Could not finish saving data; please retry');
 }
-
-echo json_encode(['status' => 'saved']);

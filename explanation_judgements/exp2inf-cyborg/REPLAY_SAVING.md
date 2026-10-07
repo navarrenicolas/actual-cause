@@ -1,6 +1,6 @@
 # Server replay saving
 
-Deploy `main.html`, `main.js`, `replay-save.js`, and `save_replay.php` together
+Deploy `main.html`, `main.js`, `replay-save.js`, `save_replay.php`, and `save-directory.php` together
 to the experiment's PHP server. Keep the existing server-specific `config.php`.
 The recorder's `autoSave: none` is intentional for real sessions: version 0.8.0
 does not provide a custom PHP upload mode, so `replay-save.js` uploads the result
@@ -19,10 +19,13 @@ completion flow still needs a browser check after deployment.
 Replays are saved alongside each condition's raw CSVs, using the same paths
 as `safe_save.php` (outside the public experiment directory):
 
-- `/home/s2518809/server_data/cs/exp2inf/exp2inf-0/data/`
-- `/home/s2518809/server_data/cs/exp2inf/exp2noexpl/data-0/`
+- `/home/s2518809/server_data/cs/exp2inf/exp2expl-pilot/data/`
+- `/home/s2518809/server_data/cs/exp2inf/exp2noexpl-pilot/data/`
 
-The existing data directories must be writable by the PHP worker. Replay names
+Both conditions save inside `data/`, alongside a sibling `assign_log.csv`.
+The helper creates missing save directories and parents with explicit `0777`
+permissions; existing directories retain their permissions. PHP needs write
+access to the nearest existing ancestor. Replay names
 use `<participant_id>-replay-<hash>.json`, distinguishing them from raw `.csv`
 files. Previously saved files in `replays/` are not moved automatically.
 Replays are written atomically. After writing, the temporary file is chmod'ed to
@@ -60,7 +63,8 @@ server-generated from a restricted participant ID and a timestamp hash; JSON
 decoding rejects invalid UTF-8. Temporary files must stay inside the destination
 directory. Replays intentionally use a 64 MiB body limit and JSON depth 512
 (CSV saves use 1 MB and depth 16), and atomic replacement instead of append.
-Only CSV saving promotes dataset ledger records. Neither endpoint authenticates
+Only CSV saving promotes dataset ledger records within the same condition
+queue; see [DATASET_QUEUES.md](DATASET_QUEUES.md). Neither endpoint authenticates
 participants or rate-limits requests; CORS is not authentication.
 
 Safety tests passed against a temporary PHP server: preflight/method/content-type

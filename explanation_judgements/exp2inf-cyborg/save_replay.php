@@ -47,15 +47,11 @@ if (!in_array($condition, ['explanation', 'no_explanation'], true)
     replayFail(400, 'Invalid recording or condition');
 }
 $config = require __DIR__ . '/config.php';
-$parent = $config[$condition]['exp2_data_dir'];
-// Match safe_save.php: explanation CSVs use /data; no-explanation CSVs
-// are stored directly in their configured exp2_data_dir.
-$dir = $condition === 'explanation' ? $parent . '/data' : rtrim($parent, '/');
-if (!is_dir($parent) || is_link(rtrim($parent, '/')) || is_link($dir)) {
-    replayFail(500, 'Replay directory is unavailable');
-}
-$base = realpath($dir);
-if ($base === false || !is_dir($base) || is_link($dir) || !is_writable($base)) {
+require_once __DIR__ . '/save-directory.php';
+try {
+    $base = ensureSaveDirectory($config, $condition);
+} catch (RuntimeException $e) {
+    error_log('save_replay.php: ' . $e->getMessage());
     replayFail(500, 'Replay directory is unavailable');
 }
 // A stable name makes retries replace the same recording, never append JSON.

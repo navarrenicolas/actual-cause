@@ -1,24 +1,8 @@
 /**
- * Communal stimuli/text/logic for exp2inf (explanation) and exp2noexpl
- * (no-explanation) — the two experiments are structurally identical
- * except for wording in the observation-related text (present/explained
- * vs. shown-only) and how each sources its 4-urn map/rule/scenarios
- * (exp2inf fetches a real experiment_1 record; exp2noexpl generates one
- * client-side). Everything here is either fully identical between the
- * two, or differs only in wording depending on a `showExplanation` flag
- * — so wording only ever needs to change in one place, in one file,
- * instead of needing the same edit made twice and kept in sync by hand.
- * Loaded via its own <script> tag in both main.html files, after
- * jspsych-urn-utils.js and rules.js
- * and before each experiment's own main.js.
- *
- * Deliberately does NOT reference jsPsych, subject_id, or useMockData:
- * those are declared with let/const inside each main.js, which (unlike
- * var or an explicit window.x assignment) does not become a global
- * window property, so a same-page script loaded before or after main.js
- * still can't see them. saveDataToServerAsCSV below is the one function
- * that needs jsPsych et al., so it takes them as explicit parameters
- * instead of assuming they're in scope.
+ * Shared stimuli and helpers for both exp2inf-cyborg conditions. Each uses
+ * its own queue copy of the same experiment_1 record. showExplanation controls
+ * the observation wording and selection display. Loaded after UrnUtils/rules
+ * and before main.js; functions receive jsPsych/session values explicitly.
  */
 
 // ===== Shuffle / urn-rendering helpers =====
@@ -250,8 +234,7 @@ function buildRuleSentence(ruleKey, urnMap) {
 // condition is optional (exp2noexpl's single-condition safe_save.php
 // ignores the field entirely) — exp2inf passes "explanation" or
 // "no_explanation" so its own safe_save.php can route to the right save
-// location and only run the dataset-ledger promotion step for
-// "explanation" sessions.
+// location and advance only that condition's dataset claim.
 function saveDataToServerAsCSV(jsPsychInstance, subjectId, filenamePrefix, useMockData, done = null, condition = null) {
   const csv = jsPsychInstance.data.get().csv();
   const filename = `${filenamePrefix}_${subjectId}.csv`;

@@ -1,33 +1,9 @@
 <?php
 declare(strict_types=1);
 
-// Converts nic_experiment1 (experiment_1)'s raw saved CSVs into the ledger
-// JSON records assign_dataset.php hands out (datasets/available/*.json).
-// Run from the command line: `php export_exp1_datasets.php` (uses
-// config.php's mock_mode like everything else here).
-//
-// Safe to re-run any time (e.g. cron'd as new experiment_1 participants
-// complete): a subject already represented anywhere in
-// datasets/{available,in_progress,used} is skipped, never overwritten or
-// duplicated. Only new-since-last-run CSVs actually produce a new file, in
-// datasets/available/.
-//
-// Extraction logic (validated against all 132 real participant CSVs in
-// analyses/cs_experiment1/data/exp1cs-1 while building this): a complete
-// participant has exactly 16 rows with event_type ==
-// "explanation_selection_submit" (nic_experiment1/explanation-grid-plugin.js
-// writes exactly one such row per draw combination, across its 4 batches),
-// with scenario_id covering 1..16 exactly once each. subject_id, rule_key,
-// urn_probs, and urn_colors are session-level properties
-// (jsPsych.data.addProperties) so they're identical on every row — read
-// from the first matching row. urn_probs/urn_colors are JSON-encoded
-// arrays in A,B,C,D order (see nic_experiment1/main.js) — decoded and
-// zipped with that key order here to build the {A:.., B:.., ...} shape the
-// rest of this experiment expects.
-//
-// A participant who didn't finish all 4 explanation batches (fewer than 16
-// such rows) is skipped with a warning — there's no well-formed ledger
-// record to build for them.
+// Export each complete experiment_1 participant into two independent queues.
+// Existing records in any state of a condition are never overwritten/reset.
+// If just one condition has a record, seed the other from that exact JSON.
 
 if (PHP_SAPI !== 'cli') {
     http_response_code(403);
@@ -37,10 +13,7 @@ if (PHP_SAPI !== 'cli') {
 
 $config = require __DIR__ . '/config.php';
 $exp1DataDir = $config['exp1_data_dir'];
-$datasetsDir = $config['datasets_dir'];
-$availableDir = $datasetsDir . '/available';
-$inProgressDir = $datasetsDir . '/in_progress';
-$usedDir = $datasetsDir . '/used';
+require_once __DIR__ . '/dataset-ledger.php';
 
 const URN_KEYS = ['A', 'B', 'C', 'D'];
 
@@ -60,13 +33,13 @@ function readCsvRows(string $path): ?array
     if ($fh === false) {
         return null;
     }
-    $header = fgetcsv($fh);
+    $header = fgetcsv($fh, 0, ',', '"', '');
     if ($header === false) {
         fclose($fh);
         return null;
     }
     $rows = [];
-    while (($fields = fgetcsv($fh)) !== false) {
+    while (($fields = fgetcsv($fh, 0, ',', '"', '')) !== false) {
         if (count($fields) !== count($header)) {
             continue; // malformed line — skip rather than misalign columns
         }
@@ -76,41 +49,60 @@ function readCsvRows(string $path): ?array
     return $rows;
 }
 
-/** @return array<string, bool> every subject_id already present anywhere in the ledger */
-function listExistingLedgerSubjects(string $availableDir, string $inProgressDir, string $usedDir): array
+function listExistingLedgerSubjects(array $config, string $condition): array
 {
     $subjects = [];
-    foreach ([$availableDir, $inProgressDir, $usedDir] as $dir) {
-        foreach (glob($dir . '/*.json') ?: [] as $path) {
-            $raw = file_get_contents($path);
-            if ($raw === false) {
-                continue;
-            }
-            try {
-                $decoded = json_decode($raw, true, 8, JSON_THROW_ON_ERROR);
-            } catch (JsonException $e) {
-                continue;
-            }
-            if (is_array($decoded) && is_string($decoded['subject_id'] ?? null)) {
-                $subjects[$decoded['subject_id']] = true;
-            }
+    foreach (DATASET_STATES as $state) {
+        foreach (glob(datasetDirectory($config, $condition, $state) . '/*.json') ?: [] as $path) {
+            if (is_link($path)) throw new RuntimeException('Invalid ledger path');
+            $record = readDatasetRecord($path);
+            $id = $record['subject_id'];
+            if (isset($subjects[$id])) throw new RuntimeException("Duplicate $condition dataset for $id");
+            $subjects[$id] = $path;
         }
     }
     return $subjects;
+}
+
+function publishDatasetCopies(array $config, array $record, array &$existing): int
+{
+    $id = $record['subject_id'];
+    $name = $id . '.json';
+    if (!validDatasetFilename($name)) throw new RuntimeException('Invalid exported dataset filename');
+    $json = json_encode($record, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    $created = 0;
+    foreach (DATASET_CONDITIONS as $condition) {
+        if (isset($existing[$condition][$id])) continue;
+        $dir = datasetDirectory($config, $condition, 'available');
+        $path = $dir . '/' . $name;
+        if (locateDataset($config, $condition, $name) !== null) throw new RuntimeException('Export destination already exists');
+        $temp = @tempnam($dir, '.export-');
+        if ($temp === false || dirname($temp) !== realpath($dir)
+            || @file_put_contents($temp, $json) !== strlen($json)
+            || !@chmod($temp, 0666 & ~umask()) || !@rename($temp, $path)) {
+            if ($temp !== false) @unlink($temp);
+            throw new RuntimeException('Could not publish exported dataset');
+        }
+        $existing[$condition][$id] = $path;
+        $created++;
+    }
+    return $created;
 }
 
 if (!is_dir($exp1DataDir)) {
     fwrite(STDERR, "ERROR: exp1_data_dir does not exist: $exp1DataDir\n");
     exit(1);
 }
-foreach (['available' => $availableDir, 'in_progress' => $inProgressDir, 'used' => $usedDir] as $label => $dir) {
-    if (!is_dir($dir)) {
-        fwrite(STDERR, "ERROR: datasets_dir/$label does not exist: $dir\n");
-        exit(1);
+try {
+    $lock = lockDatasetLedger($config);
+    $existingSubjects = [];
+    foreach (DATASET_CONDITIONS as $condition) {
+        $existingSubjects[$condition] = listExistingLedgerSubjects($config, $condition);
     }
+} catch (RuntimeException | JsonException $e) {
+    fwrite(STDERR, "ERROR: " . $e->getMessage() . "\n");
+    exit(1);
 }
-
-$existingSubjects = listExistingLedgerSubjects($availableDir, $inProgressDir, $usedDir);
 
 $created = 0;
 $skippedExisting = 0;
@@ -123,8 +115,18 @@ foreach (glob($exp1DataDir . '/causal_exp1_*.csv') ?: [] as $csvPath) {
         continue;
     }
 
-    if (isset($existingSubjects[$subjectIdFromName])) {
+    if (isset($existingSubjects['explanation'][$subjectIdFromName], $existingSubjects['no_explanation'][$subjectIdFromName])) {
         $skippedExisting++;
+        continue;
+    }
+    $existingPath = $existingSubjects['explanation'][$subjectIdFromName]
+        ?? $existingSubjects['no_explanation'][$subjectIdFromName] ?? null;
+    if ($existingPath !== null) {
+        try {
+            $created += publishDatasetCopies($config, readDatasetRecord($existingPath), $existingSubjects);
+        } catch (RuntimeException | JsonException $e) {
+            $skippedIncomplete[] = "$filename: " . $e->getMessage();
+        }
         continue;
     }
 
@@ -210,20 +212,17 @@ foreach (glob($exp1DataDir . '/causal_exp1_*.csv') ?: [] as $csvPath) {
         'scenarios' => array_values($scenariosById),
     ];
 
-    $outPath = $availableDir . '/' . $subjectId . '.json';
-    $json = json_encode($record, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    if ($json === false || file_put_contents($outPath, $json) === false) {
-        $skippedIncomplete[] = "$filename: failed to write $outPath";
-        continue;
+    try {
+        $created += publishDatasetCopies($config, $record, $existingSubjects);
+    } catch (RuntimeException | JsonException $e) {
+        $skippedIncomplete[] = "$filename: " . $e->getMessage();
     }
 
-    $existingSubjects[$subjectId] = true; // guard against duplicate CSVs for the same subject within this same run
-    $created++;
 }
 
 echo "=== experiment_1 -> ledger export ===\n";
-echo "Created:            $created new record(s) in $availableDir\n";
-echo "Already in ledger:  $skippedExisting subject(s) skipped (already available/in_progress/used)\n";
+echo "Created:            $created new queue record(s)\n";
+echo "Already in ledger:  $skippedExisting subject(s) skipped (already present in both condition queues)\n";
 echo "Incomplete/invalid: " . count($skippedIncomplete) . " CSV(s) skipped\n";
 foreach ($skippedIncomplete as $reason) {
     echo "  - $reason\n";
