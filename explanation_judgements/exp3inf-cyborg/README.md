@@ -1,60 +1,132 @@
 # Study 3: pooled explanations
 
-This follow-up keeps each Study 2 source record's rule, box probabilities/colors,
-scenario IDs, scenario order, and the 4/8/12 observation schedule. It replaces
-individual explanations in the main observation and feedback cards with counts
-below all four balls, with green rings for wins and red rings for losses (including
-zero counts). Prediction controls and held-out final scenarios are unchanged.
-The two-box practice still introduces the meaning of an individual explanation;
-the pre-study instructions introduce the transition to counts.
+This follow-up preserves the Study 2 yoked records: rule, box colors/probabilities,
+scenario IDs, scenario order, and the 4/8/12 observation schedule. Observation
+and feedback cards show pooled counts below all four balls, with green rings for
+wins and red for losses. Clicking a ball/count toggles its explanation callout.
+Prediction controls and the final held-out scenarios are unchanged.
 
-Counts are frozen from all 132 complete Study 1 records in the local Study 2
-ledger: rule1=26, rule2=35, rule3=23, rule4=27, rule5=21. Each person contributes
-one selection per scenario. Scenario IDs are presentation positions, not shared
-scenario identities. Aggregation therefore uses rule + colored/grey pattern in
-descending probability order (0.9, 0.6, 0.4, 0.1), then maps counts back to the
-assigned participant's boxes A–D. This preserves yoking while making explanation
-distributions identical for equivalent rule/scenario pairs. No new participant
-exclusions were applied. `tests/validate_counts.py` independently verifies all
-320 counts against the raw Study 1 CSVs.
+## Data harness
 
-`explanation-counts-data.js` contains aggregate counts only, plus a source hash.
-Saved sessions include `study=exp3inf`, `explanation_format=pooled_counts`, that
-hash, and the original yoked `exp1_subject_id`. Observation and feedback events
-also save their displayed counts. The inherited API field `exp2_subject_id` and
-internal condition `explanation` are retained for backend compatibility; all
-Study 3 files and queues use separate paths. CSV filenames start `causal_inf_exp3`.
+- `data_harness/selections.json`: Study 1 selections grouped by rule and binary
+  scenario pattern, with four counts, contributing subject IDs and selected
+  probability ranks. Rank order is high, medHigh, medLow, low (0.9/0.6/0.4/0.1).
+  The client maps these ranks back to each yoked participant's boxes A–D.
+- `data_harness/available/`, `in_progress/`, `used/`: one JSON per Study 1 subject,
+  preserving the exact source scenario order. Assignment moves a record from
+  available to in_progress; successful saving moves it to used.
+- `data_harness/subject_data.json`: immutable snapshot of all 132 source records
+  for random mock sampling, independent of live queue state.
 
-## Preview and deployment
+The builder extracts selections from the original datasets directory and checks
+all 2,112 individual selections against
+`analyses/cs_experiment1/data_processed/exp1cs-1_judgments.csv`, matching on subject,
+rule, and scenario pattern. It checks each choice and outcome, not just the grand
+total. Scenario presentation order comes from the yoked datasets; the processed
+CSV's selection-time order is not used to reorder stimuli.
 
-Open `main.html?mock=1` for a preview using real pooled counts and a synthetic
-yoked record. This bypasses server assignment/saving. External jsPsych and
-cyborg-hunter dependencies require internet access.
+Verified participants per rule: rule1=26, rule2=35, rule3=23, rule4=27, rule5=21.
+No additional participant exclusions are applied. The JSON includes source and
+judgments hashes. Sessions save the source version and yoked Study 1 subject ID.
 
-For live collection, deploy this folder with PHP 8.1+ and configure the Study 3
-paths in `config.php`. Seed a **new, empty** Study 3 queue using the original
-Study 2 ledger snapshot (read-only input):
+To create a fresh harness (the destination must not already exist):
 
 ```sh
-python3 build_study_data.py --source /path/to/study2/datasets --queue-dir /path/to/study3/datasets
+python3 build_study_data.py --source /path/to/datasets --harness /path/to/new/data_harness
 ```
 
-The default source is the repository's local Study 2 ledger. The builder reads
-all queue states, deduplicates identical copies by Study 1 subject, rejects
-conflicting copies, and preserves each source record exactly in the new queue.
-It refuses an existing destination directory. The web server needs write access
-to the new ledger and output directories. Do not point Study 3 at Study 2's
-live queue or output paths. Keep the frozen count file unchanged during collection.
-No server deployment or live queue seeding has been performed in this workspace.
+The default source is the repository's Study 2 dataset ledger. The default
+verification CSV is the processed judgments file above; override with
+`--judgments`. The default destination is this experiment's `data_harness`.
+The builder never resets existing claims or changes source files.
+
+## Mock preview
+
+There are exactly two modes:
+
+- `main.html?mock=1`: sample a random participant from the generated harness
+  snapshot. No queue claims or server saves. Responses can be downloaded.
+- `main.html` (or `?mock=0`): load the harness JSON, claim a dataset through PHP,
+  and save responses on the server. Assignment moves `available` → `in_progress`;
+  successful response saving moves `in_progress` → `used`.
+
+Mock mode loads `data_harness/browser-data.js`, generated from the JSON files,
+so it also works when opening the HTML directly. Non-mock mode requires serving
+this folder through PHP; opening an HTML file cannot execute PHP or move files.
+There is no automatic fallback to mock mode.
+
+To refresh the mock snapshot after changing the JSON, without touching queues:
+
+```sh
+python3 build_study_data.py --refresh-browser-bundle
+```
+
+In `main.js`, `MOCK_URN_ORDER` specifies probabilities for boxes **A, B, C, D**:
+
+```js
+const MOCK_URN_ORDER = [0.9, 0.6, 0.4, 0.1];
+```
+
+Use `null` (the default) to keep the sampled participant's box assignment. An
+override must contain each of the four probabilities exactly once. The override
+remaps scenario draws by probability rank, preserving the rule, scenario order,
+outcomes, and pooled explanation counts. Box colors remain attached to their
+letters. The override applies only in mock mode.
+
+## Deployment and saving
+
+`config.php` uses `__DIR__ . '/data_harness'` as the queue root and
+`/home/s2518809/server_data/cs/exp3inf/pilot/` as the output root. Deploy with
+PHP 8.1+ and give the web server write access to queue state directories and
+output directories. Do not overwrite a live harness with the initial available
+records when redeploying. Counts and the preview snapshot stay fixed throughout
+collection. No live server deployment has been performed here.
+
+There is one queue and no condition dispatch. CSV filenames start
+`causal_inf_exp3`. The inherited API parameter `exp2_subject_id` retains the
+existing assignment-log format. `stimuli.js` owns instructional copy.
 
 ## Validation
 
 ```sh
 python3 tests/validate_counts.py
 node --test tests/test-client.cjs
+python3 tests/test_backend.py
 ```
 
-Client tests verify preservation of yoked stimuli and round structure, pooled
-feedback, mock startup, and remapping under swapped box assignments. JS and PHP
-syntax checks also pass. A live browser walkthrough and deployed-server smoke
-test remain necessary before recruitment.
+Validation checks all 320 counts against both original Study 1 CSV submissions
+and processed judgments, and checks all 132 harness records against the immutable
+snapshot. Client tests cover yoked stimuli, rounds, mock loading, probability
+remapping, and callouts. Backend tests use temporary directories for assignment,
+repeat claims, exhaustion, and completion. A visual browser walkthrough and live
+server smoke test remain outstanding.
+
+## Deployment allocation errors
+
+Allocation errors include a stage code in the browser console and a matching
+`assign_dataset.php: [stage] ...` entry in the PHP error log. These distinguish
+ledger setup, reading the assignment log, scanning datasets, preparing the save
+folder, moving the dataset, and writing the assignment log.
+
+The PHP worker must have read/write/traverse access to `data_harness` and its
+`available`, `in_progress`, and `used` folders. Uploading directories commonly
+leaves them writable only by the upload user, not the PHP worker. Existing
+folder permissions are deliberately not changed by the experiment. Grant the
+PHP worker access through the server's owner/group or ACL settings. It also
+needs write access to `.ledger.lock`, the configured save root, its `data`
+subfolder, and an existing `assign_log.csv`. The save root defaults to
+`/home/s2518809/server_data/cs/exp3inf/pilot/`.
+
+## Debugging PHP allocation on this computer
+
+From the experiment folder, run `sh serve.sh`, then open
+`http://127.0.0.1:8000/main.html`. Keep the terminal open to see PHP requests and
+allocation errors. Stop the server with Ctrl+C.
+
+This runs the same non-mock PHP allocation: it moves records in the actual
+`data_harness` queue. Use `?mock=1` to bypass allocation and server saving.
+The launcher defaults `STUDY3_DATA_DIR` to `participant_output` in this folder,
+which receives `assign_log.csv` and a `data` subfolder for responses/replays.
+An existing `STUDY3_DATA_DIR` environment variable takes precedence. Deployed
+PHP without that override retains the configured `/home/.../exp3inf/pilot/` path.
+Do not upload test queue changes or test assignment logs into an active study.

@@ -2,12 +2,11 @@
 declare(strict_types=1);
 require_once __DIR__ . '/save-directory.php';
 
-const DATASET_CONDITIONS = ['explanation'];
 const DATASET_STATES = ['available', 'in_progress', 'used'];
 
-function datasetDirectory(array $config, string $condition, string $state): string
+function datasetDirectory(array $config, string $state): string
 {
-    return rtrim($config['datasets_dir'], '/') . '/' . $state . ($condition === 'no_explanation' ? '_noexpl' : '');
+    return rtrim($config['datasets_dir'], '/') . '/' . $state;
 }
 
 function validDatasetFilename(string $name): bool
@@ -21,6 +20,14 @@ function lockDatasetLedger(array $config)
     $base = rtrim($config['datasets_dir'], '/');
     if ($base === '') throw new RuntimeException('Dataset directory is not configured');
     createStudyDirectory($base);
+    if (!is_writable($base)) throw new RuntimeException('data_harness is not writable by PHP');
+    foreach (DATASET_STATES as $state) {
+        $dir = datasetDirectory($config, $state);
+        createStudyDirectory($dir);
+        if (!is_readable($dir) || !is_writable($dir)) {
+            throw new RuntimeException('Dataset folder ' . $state . ' must be readable and writable by PHP');
+        }
+    }
     $lockPath = $base . '/.ledger.lock';
     if (is_link($lockPath)) throw new RuntimeException('Invalid ledger lock');
     $lock = @fopen($lockPath, 'x');
@@ -35,20 +42,17 @@ function lockDatasetLedger(array $config)
         $lock = @fopen($lockPath, 'c');
     }
     if ($lock === false || !flock($lock, LOCK_EX)) throw new RuntimeException('Could not lock dataset ledger');
-    foreach (DATASET_CONDITIONS as $condition) {
-        foreach (DATASET_STATES as $state) createStudyDirectory(datasetDirectory($config, $condition, $state));
-    }
     return $lock;
 }
 
-function datasetLogPath(array $config, string $condition): string
+function datasetLogPath(array $config): string
 {
-    return rtrim($config[$condition]['exp2_data_dir'], '/') . '/assign_log.csv';
+    return rtrim($config['data_dir'], '/') . '/assign_log.csv';
 }
 
-function readDatasetClaims(array $config, string $condition): array
+function readDatasetClaims(array $config): array
 {
-    $path = datasetLogPath($config, $condition);
+    $path = datasetLogPath($config);
     if (!file_exists($path)) return [];
     if (!is_file($path) || is_link($path)) throw new RuntimeException('Invalid assignment log');
     $handle = @fopen($path, 'r');
@@ -70,17 +74,16 @@ function findDatasetClaim(array $claims, string $field, string $value): ?array
     return $found;
 }
 
-// A filename may exist once IN EACH CONDITION. Only within-condition duplicates
-// are errors. Manual resets move a file back to that condition's available folder.
-function locateDataset(array $config, string $condition, string $name): ?string
+// Each filename may exist in only one queue state.
+function locateDataset(array $config, string $name): ?string
 {
     if (!validDatasetFilename($name)) throw new RuntimeException('Invalid dataset filename');
     $found = null;
     foreach (DATASET_STATES as $state) {
-        $path = datasetDirectory($config, $condition, $state) . '/' . $name;
+        $path = datasetDirectory($config, $state) . '/' . $name;
         if (is_link($path)) throw new RuntimeException('Invalid dataset path');
         if (!file_exists($path)) continue;
-        if (!is_file($path) || $found !== null) throw new RuntimeException('Duplicate or invalid dataset in condition queue');
+        if (!is_file($path) || $found !== null) throw new RuntimeException('Duplicate or invalid dataset in queue');
         $found = $state;
     }
     return $found;
@@ -119,30 +122,20 @@ function readDatasetRecord(string $path): array
     return $record;
 }
 
-function datasetForCondition(array $record, string $condition): array
-{
-    if ($condition === 'no_explanation') {
-        $record['scenarios'] = array_map(fn($sc) => [
-            'id' => $sc['id'], 'draw' => $sc['draw'], 'result' => $sc['result']
-        ], $record['scenarios']);
-    }
-    return $record;
-}
-
 // Called after CSV publication under the ledger lock. Saving an old/reset
 // session is allowed, but only the latest claimant may advance the queue.
-function completeDatasetClaim(array $config, string $condition, string $subjectId): string
+function completeDatasetClaim(array $config, string $subjectId): string
 {
-    $claims = readDatasetClaims($config, $condition);
+    $claims = readDatasetClaims($config);
     $claim = findDatasetClaim($claims, 'exp2_subject_id', $subjectId);
     if ($claim === null) return 'unassigned'; // random fallback or legacy sessions
     $latest = findDatasetClaim($claims, 'filename', $claim['filename']);
-    $state = locateDataset($config, $condition, $claim['filename']);
+    $state = locateDataset($config, $claim['filename']);
     if ($latest['exp2_subject_id'] !== $subjectId || $state === 'available') return 'superseded';
     if ($state === 'used') return 'used'; // idempotent retry
     if ($state !== 'in_progress') throw new RuntimeException('Assigned dataset is missing');
-    $src = datasetDirectory($config, $condition, 'in_progress') . '/' . $claim['filename'];
-    $dst = datasetDirectory($config, $condition, 'used') . '/' . $claim['filename'];
+    $src = datasetDirectory($config, 'in_progress') . '/' . $claim['filename'];
+    $dst = datasetDirectory($config, 'used') . '/' . $claim['filename'];
     if (!@rename($src, $dst)) throw new RuntimeException('Could not complete dataset claim');
     return 'used';
 }

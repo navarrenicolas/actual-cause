@@ -14,7 +14,7 @@ const consentTrial = {
   
         <p><b>Nature of the study.</b> You are invited to participate in a study involving judgments about a game of chance. 
         After completing the task, you will be asked to provide basic demographics (e.g., age, gender). Your responses will be recorded. 
-        The session should take approximately 5 minutes. Full instructions will be provided shortly.</p>
+        The session should take approximately 8–10 minutes. Full instructions will be provided shortly.</p>
   
         <p><b>Compensation.</b> You will be paid for your participation in this study in accordance with the Prolific description.</p>
   

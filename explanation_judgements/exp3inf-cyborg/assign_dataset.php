@@ -18,56 +18,57 @@ $subjectId = $_GET['exp2_subject_id'] ?? null;
 if (!is_string($subjectId) || !preg_match('/\A[A-Za-z0-9_-]{1,100}\z/D', $subjectId)) {
     fail(400, 'A valid exp2_subject_id is required');
 }
-$requested = $_GET['condition'] ?? null;
-if ($requested !== null && !in_array($requested, ['explanation'], true)) fail(400, 'Invalid condition');
 $config = require __DIR__ . '/config.php';
 require_once __DIR__ . '/dataset-ledger.php';
+$stage = 'ledger';
 try {
     $lock = lockDatasetLedger($config);
     // Repeated requests for the same participant retain their original claim.
-    foreach (DATASET_CONDITIONS as $condition) {
-        $claims = readDatasetClaims($config, $condition);
-        $claim = findDatasetClaim($claims, 'exp2_subject_id', $subjectId);
-        if ($claim === null) continue;
+    $stage = 'assignment_log_read';
+    $claims = readDatasetClaims($config);
+    $claim = findDatasetClaim($claims, 'exp2_subject_id', $subjectId);
+    if ($claim !== null) {
+        $stage = 'existing_assignment';
         $latest = findDatasetClaim($claims, 'filename', $claim['filename']);
-        $state = locateDataset($config, $condition, $claim['filename']);
+        $state = locateDataset($config, $claim['filename']);
         if ($latest['exp2_subject_id'] !== $subjectId || $state === 'available') {
             fail(409, 'This assignment has been reset', 'assignment_reset');
         }
         if ($state === null) throw new RuntimeException('Assigned dataset is missing');
-        $record = readDatasetRecord(datasetDirectory($config, $condition, $state) . '/' . $claim['filename']);
-        echo json_encode(['condition' => $condition, 'dataset' => datasetForCondition($record, $condition)]);
+        $record = readDatasetRecord(datasetDirectory($config, $state) . '/' . $claim['filename']);
+        echo json_encode(['dataset' => $record]);
         exit;
     }
-    // Default: explanation first, then the independent no-explanation queue.
-    foreach ($requested === null ? DATASET_CONDITIONS : [$requested] as $condition) {
-        $candidates = glob(datasetDirectory($config, $condition, 'available') . '/*.json');
-        if ($candidates === false) throw new RuntimeException('Could not list datasets');
-        shuffle($candidates);
-        foreach ($candidates as $src) {
-            $name = basename($src);
-            if (!validDatasetFilename($name)) continue;
-            if (locateDataset($config, $condition, $name) !== 'available') continue;
-            try {
-                $record = readDatasetRecord($src);
-            } catch (RuntimeException | JsonException $e) {
-                error_log("assign_dataset.php: skipping $name: " . $e->getMessage());
-                continue; // leave malformed data in place for inspection
-            }
-            ensureSaveDirectory($config, $condition);
-            $dst = datasetDirectory($config, $condition, 'in_progress') . '/' . $name;
-            if (!@rename($src, $dst)) throw new RuntimeException('Could not claim dataset');
-            $line = implode(',', [date('c'), $record['subject_id'], $subjectId, $name]) . "\n";
-            if (@file_put_contents(datasetLogPath($config, $condition), $line, FILE_APPEND | LOCK_EX) !== strlen($line)) {
-                if (!@rename($dst, $src)) error_log("assign_dataset.php: could not roll back $name");
-                throw new RuntimeException('Could not log dataset assignment');
-            }
-            echo json_encode(['condition' => $condition, 'dataset' => datasetForCondition($record, $condition)]);
-            exit;
+    $stage = 'dataset_scan';
+    $candidates = glob(datasetDirectory($config, 'available') . '/*.json');
+    if ($candidates === false) throw new RuntimeException('Could not list datasets');
+    shuffle($candidates);
+    foreach ($candidates as $src) {
+        $name = basename($src);
+        if (!validDatasetFilename($name)) continue;
+        if (locateDataset($config, $name) !== 'available') continue;
+        try {
+            $record = readDatasetRecord($src);
+        } catch (RuntimeException | JsonException $e) {
+            error_log("assign_dataset.php: skipping $name: " . $e->getMessage());
+            continue; // leave malformed data in place for inspection
         }
+        $stage = 'save_directory';
+        ensureSaveDirectory($config);
+        $stage = 'dataset_move';
+        $dst = datasetDirectory($config, 'in_progress') . '/' . $name;
+        if (!@rename($src, $dst)) throw new RuntimeException('Could not claim dataset');
+        $stage = 'assignment_log_write';
+        $line = implode(',', [date('c'), $record['subject_id'], $subjectId, $name]) . "\n";
+        if (@file_put_contents(datasetLogPath($config), $line, FILE_APPEND | LOCK_EX) !== strlen($line)) {
+            if (!@rename($dst, $src)) error_log("assign_dataset.php: could not roll back $name");
+            throw new RuntimeException('Could not log dataset assignment');
+        }
+        echo json_encode(['dataset' => $record]);
+        exit;
     }
     fail(404, 'No datasets are available right now', 'no_data_available');
 } catch (RuntimeException | JsonException $e) {
-    error_log('assign_dataset.php: ' . $e->getMessage());
-    fail(500, 'Could not assign dataset');
+    error_log('assign_dataset.php: [' . $stage . '] ' . $e->getMessage());
+    fail(500, $e->getMessage(), 'allocation_' . $stage . '_failed');
 }

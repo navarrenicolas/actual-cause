@@ -11,7 +11,7 @@ window.UrnUtils = (function () {
   // normalizeColor, which is for the *word* shown in text. Pass the raw,
   // un-normalized color in (e.g. "hotpink", not "pink"): only grey/absent
   // balls get special-cased (to the same #c0c0c0 the boxes' own balls use
-  // — see shared-stimuli.js's renderUrnsHTML — for higher contrast
+  // — see stimuli.js's renderUrnsHTML — for higher contrast
   // against white than the pale CSS "grey"/"lightgrey" keywords), every
   // other color is passed straight through so it renders exactly as vividly as it does
   // in the box. Stripping "hot"/"light" here (as normalizeColor does) was
@@ -282,15 +282,7 @@ window.UrnUtils = (function () {
     return `<div class="card-outcome-line">${renderPredictionSentence(agentName, isWin)}</div><div class="card-explanation-line">${explanationHTML}</div>`;
   }
 
-  // No-explanation-condition counterpart to renderExplanationSentence(): the
-  // same yellow-highlighter treatment on a past observation, but stating
-  // only the outcome — no causal ball/box clause, because there's no
-  // explanation to state one. There's deliberately no matching
-  // "mark the ball" helper to pair this with (unlike markHighlightedBall for
-  // renderExplanationSentence) — this condition never singles out a ball.
-  // Uses the same "With this draw, {agent} won/lost." wording as
-  // renderPredictionSentence so outcome text reads identically everywhere.
-  // wrapInMark: see renderExplanationSentence above.
+  // Outcome sentence used beneath the pooled counts.
   function renderOutcomeOnlySentence(isWin, agentName, wrapInMark = true) {
     const sentence = renderPredictionSentence(agentName, isWin);
     return wrapInMark ? `<mark class="hi-lite">${sentence}</mark>` : sentence;

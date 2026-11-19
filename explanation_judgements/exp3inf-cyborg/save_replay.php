@@ -33,23 +33,21 @@ try {
 }
 if (!is_object($obj)) replayFail(400, 'Request must be a JSON object');
 $recording = $obj->recording ?? null;
-$condition = $obj->condition ?? null;
 $format = $obj->format ?? 'json';
 if (!in_array($format, ['json', 'csv'], true)) replayFail(400, 'Invalid replay format');
-if (!in_array($condition, ['explanation'], true)
-    || !is_object($recording)
+if (!is_object($recording)
     || ($recording->schema_version ?? null) !== 2
     || !is_array($recording->segments ?? null)
     || !is_string($recording->participant_id ?? null)
     || !preg_match('/\A[A-Za-z0-9_-]{1,100}\z/D', $recording->participant_id)
     || !is_string($recording->recording_started_at ?? null)
     || strtotime($recording->recording_started_at) === false) {
-    replayFail(400, 'Invalid recording or condition');
+    replayFail(400, 'Invalid recording');
 }
 $config = require __DIR__ . '/config.php';
 require_once __DIR__ . '/save-directory.php';
 try {
-    $base = ensureSaveDirectory($config, $condition);
+    $base = ensureSaveDirectory($config);
 } catch (RuntimeException $e) {
     error_log('save_replay.php: ' . $e->getMessage());
     replayFail(500, 'Replay directory is unavailable');

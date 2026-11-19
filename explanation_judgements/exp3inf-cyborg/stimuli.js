@@ -1,9 +1,5 @@
-/**
- * Shared stimuli and helpers for both exp2inf-cyborg conditions. Each uses
- * its own queue copy of the same experiment_1 record. showExplanation controls
- * the observation wording and selection display. Loaded after UrnUtils/rules
- * and before main.js; functions receive jsPsych/session values explicitly.
- */
+// Study 3 stimuli, instructional copy, and display helpers.
+const explanationCountsText = "The numbers in the observations represent the number of people that selected the ball above as the explanation for the outcome. Click any of the numbers under the balls to view the explanations given in each scenario.";
 
 // ===== Shuffle / urn-rendering helpers =====
 function shuffleArray(array) {
@@ -137,11 +133,7 @@ const conjunctivePracticeRuleText = practiceRuleBoxHTML(2, 2, `To win, you must 
 const disjunctiveRuleFn = (draw) => draw.A !== "lightgrey" || draw.B !== "lightgrey";
 const conjunctiveRuleFn = (draw) => draw.A !== "lightgrey" && draw.B !== "lightgrey";
 
-// Always carries cause_urn/cause_color, even though the no-explanation
-// condition never displays them — every plugin that would read those
-// fields already gates on its own show_explanation param first, so one
-// shared definition covering both conditions is safe, instead of two
-// near-identical arrays that differ only by omitting two fields.
+// Individual explanations used in two-box practice.
 const disjunctiveExamples = [
   { id: 1, draw: { A: twoUrnMap.A.color, B: "lightgrey" }, outcome: "win", cause_urn: "A", cause_color: twoUrnMap.A.color },
   { id: 2, draw: { A: "lightgrey", B: twoUrnMap.B.color }, outcome: "win", cause_urn: "B", cause_color: twoUrnMap.B.color }
@@ -166,15 +158,7 @@ function generateTwoUrnCombos(urnMap) {
   return combos;
 }
 
-// Builds the 2-urn training grid's scenarios, marking whichever combos
-// match the examples just shown as `given` (with their explained ball
-// carried over — unused by the plugins when show_explanation is false)
-// so prediction-columns-plugin.js can render them inline as
-// already-explained instead of a separate history view.
-// Given cards always come first (top row) — not randomized in with the
-// predict cards — so the layout is consistent while participants are
-// still learning what "given" means; only the order *within* each group
-// is shuffled for variety.
+// Build practice observations and prediction scenarios.
 function buildTwoUrnScenarios(urnMap, givenExamples) {
   const scenarios = generateTwoUrnCombos(urnMap).map((draw, idx) => {
     const match = givenExamples.find((ex) => ex.draw.A === draw.A && ex.draw.B === draw.B);
@@ -228,14 +212,7 @@ function buildRuleSentence(ruleKey, urnMap) {
 }
 
 // ===== Save-data helper =====
-// Takes jsPsych/subject_id/useMockData explicitly rather than assuming
-// they're in scope — see the file header for why they can't just be
-// referenced as bare identifiers from here.
-// condition is optional (exp2noexpl's single-condition safe_save.php
-// ignores the field entirely) — exp2inf passes "explanation" or
-// "no_explanation" so its own safe_save.php can route to the right save
-// location and advance only that condition's dataset claim.
-function saveDataToServerAsCSV(jsPsychInstance, subjectId, filenamePrefix, useMockData, done = null, condition = null) {
+function saveDataToServerAsCSV(jsPsychInstance, subjectId, filenamePrefix, useMockData, done = null) {
   const csv = jsPsychInstance.data.get().csv();
   const filename = `${filenamePrefix}_${subjectId}.csv`;
 
@@ -246,7 +223,6 @@ function saveDataToServerAsCSV(jsPsychInstance, subjectId, filenamePrefix, useMo
   }
 
   const body = { filename: filename, filedata: csv, exp2_subject_id: subjectId };
-  if (condition) body.condition = condition;
 
   fetch("safe_save.php", {
     method: "POST",
@@ -268,9 +244,7 @@ function saveDataToServerAsCSV(jsPsychInstance, subjectId, filenamePrefix, useMo
     });
 }
 
-// ===== Condition-parameterized instructional text =====
-// Identical in both conditions (no urns are ever drawn differently, and
-// nothing about the walkthrough mechanics depends on show_explanation).
+// ===== Instructions =====
 function mechanicsIntroHTML() {
   return `
     <div class="instructions-container">
@@ -283,11 +257,10 @@ function mechanicsIntroHTML() {
   `;
 }
 
-function taskDescriptionHTML(showExplanation) {
-  const explainedClause = showExplanation ? " and explained" : "";
+function taskDescriptionHTML() {
   return `
     <h2>Task: predict the outcomes</h2>
-    <p>Here, you will be shown a few draws from another player, John, which will be revealed${explainedClause} according to a rule which determines whether John won or lost in each draw.
+    <p>Here, you will be shown a few draws from another player, John, which will be revealed and explained according to a rule which determines whether John won or lost in each draw.
     This rule will be shown for your reference.</p>
     <p>
     Next, you'll see a grid of 4 scenarios, including the two draws you just saw.
@@ -295,17 +268,15 @@ function taskDescriptionHTML(showExplanation) {
   `;
 }
 
-function aDifferentRuleHTML(showExplanation) {
-  const revealedClause = showExplanation ? "outcomes revealed and explained" : "outcomes revealed";
+function aDifferentRuleHTML() {
   return `
     <h2>A different rule</h2>
     <p>Now you will try a different rule.
-    Again, you will observe two draws with their ${revealedClause}. Then, just like before, you'll predict the remaining two scenarios in a grid using the <b>WON</b> or <b>LOST</b> buttons.</p>
+    Again, you will observe two draws with their outcomes revealed and explained. Then, just like before, you'll predict the remaining two scenarios in a grid using the <b>WON</b> or <b>LOST</b> buttons.</p>
   `;
 }
 
-// Identical in both conditions — no rule or explanation is shown here
-// either way, just free practice draws to get a feel for the boxes.
+// Free practice draws to get a feel for the boxes.
 function theFullGameHTML(fourUrnMap, fourUrnLabels, fourUrnBallsData) {
   return `
     <h2>The full game</h2>
@@ -315,20 +286,17 @@ function theFullGameHTML(fourUrnMap, fourUrnLabels, fourUrnBallsData) {
   `;
 }
 
-function preExperimentHTML(showExplanation, totalRounds) {
-  const givenClause = showExplanation ? ", each with counts showing how many participants in the previous study chose each ball as the explanation" : "";
-  const revealedVerb = showExplanation ? "revealed and explained" : "shown";
+function preExperimentHTML(totalRounds) {
   return `
     <h2>You are now ready for the study!</h2>
     <p><b>Unlike the practice rounds, you will not be shown the rule this time.
     Your task is to work out the rule that determines John's outcomes, which applies to all scenarios.
     You will make predictions on John's draws based on the rule you think determines the outcomes.</b></p>
-    ${window.ExplanationCounts.legend}
     <p>Here's how the task works:</p>
     <ul>
-      <li>You will be given 4 outcomes of John playing the game${givenClause}.</li>
+      <li>You will be given 4 outcomes of John playing the game, each with counts showing how many people, who know the rule, chose each ball as the explanation for the outcome.</li>
       <li>The remaining set of scenarios from John's draws are left for you to predict.</li>
-      <li>There are ${totalRounds} prediction rounds. Each round, 4 more outcomes are ${revealedVerb}, so the number of predictions you need to make shrinks: 12, then 8, then 4.</li>
+      <li>There are ${totalRounds} prediction rounds. Each round, 4 more outcomes are revealed and explained, so the number of predictions you need to make shrinks: 12, then 8, then 4.</li>
       <li>After each round except the last, you'll receive feedback on your first four predictions. Those same four scenarios will then be given in the next round.</li>
       <li>The rule will be shown to you at the end of the study.</li>
     </ul>
@@ -336,7 +304,7 @@ function preExperimentHTML(showExplanation, totalRounds) {
   `;
 }
 
-// Identical in both conditions — ruleSentenceOrFallback is already the
+// ruleSentenceOrFallback is already the
 // full "To win, you must draw ..." sentence (or the not-found fallback
 // message) computed by the caller via buildRuleSentence.
 function ruleRevealHTML(ruleSentenceOrFallback, fourUrnHtmlStatic) {

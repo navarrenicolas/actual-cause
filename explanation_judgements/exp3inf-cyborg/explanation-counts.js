@@ -1,6 +1,5 @@
 /* Pooled counts are matched by probability role, never randomized scenario ID. */
 window.ExplanationCounts = {
-  legend: `<p class="explanation-counts-legend">The numbers in the observations represent the number of people that selected the ball above as the explanation for the outcome: “John won/lost because of the grey/colored ball from box A/B/C/D”.</p>`,
   attach(record) {
     const keys = Object.keys(record.urn_probs).sort((a, b) => record.urn_probs[b] - record.urn_probs[a]);
     return record.scenarios.map(sc => {
@@ -12,16 +11,53 @@ window.ExplanationCounts = {
       return { id: sc.id, draw: sc.draw, result: sc.result, explanation_counts: counts };
     });
   },
-  render(card, counts, keys, isWin) {
+  render(card, counts, keys, isWin, draw, agentName = 'John') {
+    const callout = document.createElement('div');
+    callout.className = 'explanation-count-callout';
+    callout.setAttribute('role', 'status');
+    callout.setAttribute('aria-live', 'polite');
+    callout.hidden = true;
+    card.appendChild(callout);
+    const buttons = [];
+    let activeButton = null;
     keys.forEach(key => {
       const slot = card.querySelector(`#slot-${key}`);
       if (!slot) return;
       window.UrnUtils.markHighlightedBall(slot, isWin);
-      const label = document.createElement('div');
+      const label = document.createElement('span');
       label.className = 'explanation-count';
       label.textContent = counts[key];
-      label.setAttribute('aria-label', `${counts[key]} people selected the ball from box ${key}`);
-      slot.insertAdjacentElement('afterend', label);
+      const people = counts[key] === 1 ? 'person' : 'people';
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'explanation-count-button';
+      button.setAttribute('aria-label', `Show explanation: ${counts[key]} ${people} selected the ball from box ${key}`);
+      button.setAttribute('aria-pressed', 'false');
+      slot.insertAdjacentElement('beforebegin', button);
+      button.append(slot, label);
+      buttons.push(button);
+      button.addEventListener('click', () => {
+        if (activeButton === button) {
+          button.setAttribute('aria-pressed', 'false');
+          activeButton = null;
+          callout.hidden = true;
+          callout.textContent = '';
+          return;
+        }
+        activeButton = button;
+        buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+        const color = window.UrnUtils.normalizeColor(draw[key]);
+        const colorWord = document.createElement('span');
+        colorWord.className = 'urn-ball-text';
+        colorWord.style.color = window.UrnUtils.getDisplayColor(draw[key]);
+        colorWord.textContent = color;
+        callout.replaceChildren(
+          `${counts[key]} ${people} said ‘${agentName} ${isWin ? 'won' : 'lost'} because of the `,
+          colorWord,
+          ` ball from box ${key}’`
+        );
+        callout.hidden = false;
+      });
     });
   }
 };

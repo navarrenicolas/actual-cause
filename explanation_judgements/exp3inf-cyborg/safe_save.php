@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-// Save a full participant CSV, then complete only this condition's claim.
+// Save a full participant CSV, then complete only the dataset claim.
 // A reset/superseded participant can save data but cannot advance another claim.
 
 header('Access-Control-Allow-Origin: https://eco.ppls.ed.ac.uk');
@@ -53,10 +53,8 @@ if (!is_array($obj)
     fail(400, 'filename, filedata must be strings');
 }
 
-$condition = $obj['condition'] ?? 'explanation';
-if (!in_array($condition, DATASET_CONDITIONS, true)) fail(400, 'Invalid condition');
 try {
-    $base = ensureSaveDirectory($config, $condition);
+    $base = ensureSaveDirectory($config);
 } catch (RuntimeException $e) {
     error_log('safe_save.php: ' . $e->getMessage());
     fail(500, 'Data directory is unavailable');
@@ -95,7 +93,7 @@ if ($subjectId !== null && (!is_string($subjectId) || !preg_match('/\A[A-Za-z0-9
     fail(400, 'Invalid exp2_subject_id');
 }
 if ($subjectId !== null) {
-    $prefix = $condition === 'explanation' ? 'causal_inf_exp3_' : 'causal_inf_exp3_noexpl_';
+    $prefix = 'causal_inf_exp3_';
     if ($filename !== $prefix . $subjectId . '.csv') fail(400, 'Filename does not match participant');
 }
 $temp = false;
@@ -110,7 +108,7 @@ try {
         throw new RuntimeException('Could not save participant CSV');
     }
     $temp = false;
-    $state = $subjectId === null ? 'unassigned' : completeDatasetClaim($config, $condition, $subjectId);
+    $state = $subjectId === null ? 'unassigned' : completeDatasetClaim($config, $subjectId);
     echo json_encode(['status' => 'saved', 'dataset_status' => $state]);
 } catch (RuntimeException $e) {
     if ($temp !== false) @unlink($temp);

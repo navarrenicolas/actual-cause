@@ -64,14 +64,6 @@ var jsPredictionColumns = (function (jspsych) {
         type: jspsych.ParameterType.FUNCTION,
         default: null
       },
-      /** false for the no-explanation condition: given cards still get the
-       * yellow-highlighter sentence, but stating only the outcome, and
-       * their ball is never ring-highlighted (there's no causal ball to
-       * point to). */
-      show_explanation: {
-        type: jspsych.ParameterType.BOOL,
-        default: true
-      },
       /** Default true: one full urn display is shown once, above both
        * columns, as a size/probability reference; each card then shows
        * only a compact single row of drawn balls in their slots (one per
@@ -147,7 +139,6 @@ var jsPredictionColumns = (function (jspsych) {
       const utils = window.UrnUtils;
       const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
       const scenarios = trial.scenarios || [];
-      const showExplanation = trial.show_explanation !== false;
       const sharedUrnsDisplay = trial.shared_urns_display !== false;
       const givenColumnHighlight = !!trial.given_column_highlight;
       const agentName = trial.agent_name || "John";
@@ -182,19 +173,9 @@ var jsPredictionColumns = (function (jspsych) {
       const passed = scenarios.map((sc) => !!sc.given);
       const attempts = scenarios.map(() => 0);
 
-      const headerHTML = `
-        ${trial.rule_text ? `<div class="pcol-rule-text">${trial.rule_text}</div>` : ""}
-        ${trial.round_number ? `
-          <h2 class="pcol-round-title">Round ${trial.round_number} of ${trial.total_rounds}</h2>
-          <p class="pcol-round-sub">${givenEntries.length} of ${agentName}'s draws have now been ${showExplanation ? "explained" : "shown"}.</p>
-        ` : ""}
-        <p class="pcol-instructions">
-          ${showExplanation
-            ? "The outcome of the draws on the left have been explained."
-            : "The draws on the left show the outcome."}
-          Predict the draws on the right by selecting <b>WON</b> or <b>LOST</b>.
-        </p>
-      `;
+      const headerHTML = scenarios.some(sc => sc.explanation_counts)
+        ? `<p class="pcol-instructions">${explanationCountsText}</p>`
+        : (trial.rule_text ? `<div class="pcol-rule-text">${trial.rule_text}</div>` : "");
 
       // Compact per-urn "ball in its slot" row (shared_urns_display:true,
       // the default) — reuses .urn-slot's id convention (slot-${urnKey}),
@@ -275,7 +256,8 @@ var jsPredictionColumns = (function (jspsych) {
 
       display_element.innerHTML = `
         <div class="pcol-container${urnKeys.length <= 2 ? " pcol-two-urns" : ""}">
-          <div class="pcol-header">${headerHTML}${scenarios.some(sc => sc.explanation_counts) ? window.ExplanationCounts.legend : ""}</div>
+          <div class="pcol-header">${headerHTML}</div>
+          <p class="pcol-instructions">Predict the draws on the right by selecting <b>WON</b> or <b>LOST</b>.</p>
           ${sharedUrnsBlockHTML}
           <div class="pcol-columns">
             <div class="pcol-column${givenColumnHighlight ? " pcol-column-given-highlight" : ""}">
@@ -326,7 +308,7 @@ var jsPredictionColumns = (function (jspsych) {
           if (slotEl && drawnColor) {
             const displayColor = utils.getDisplayColor(drawnColor);
             slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
-            if (isGiven && showExplanation && sc.selected_urn === urnKey) {
+            if (isGiven && sc.selected_urn === urnKey) {
               utils.markHighlightedBall(slotEl, isWin);
             }
           }
@@ -351,17 +333,10 @@ var jsPredictionColumns = (function (jspsych) {
         });
 
         if (isGiven) {
-          if (showExplanation && sc.explanation_counts) window.ExplanationCounts.render(cardEl, sc.explanation_counts, urnKeys, isWin);
+          if (sc.explanation_counts) window.ExplanationCounts.render(cardEl, sc.explanation_counts, urnKeys, isWin, draw, agentName);
           if (sentenceEl) {
-            // Explanation cards: always keep the causal clause highlighted
-            // (wrapInMark forced true, ignoring given_column_highlight)
-            // and prepend a standalone outcome line above it — per
-            // explicit request, the explanation itself must stay visually
-            // marked even in the column-tinted (practice/main-task)
-            // layout. No-explanation cards are unaffected: there's no
-            // separate causal clause to highlight, so they keep
-            // respecting given_column_highlight as before.
-            sentenceEl.innerHTML = (showExplanation && sc.selected_urn)
+            // Practice uses an individual example; main observations show pooled counts.
+            sentenceEl.innerHTML = (sc.selected_urn)
               ? utils.renderExplanationSentence(isWin, sc.selected_color, sc.selected_urn, agentName, true, true)
               : utils.renderOutcomeOnlySentence(isWin, agentName, !givenColumnHighlight);
           }

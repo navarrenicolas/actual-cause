@@ -3,7 +3,7 @@
  * draws, used to teach what a rule/explanation looks like before the
  * participant has to predict anything themselves (steps 2 and 4 of the
  * inference task: one draw per page, already labelled with its outcome and
- * — in the explanation condition — which ball caused it).
+ * which ball caused it).
  * Nothing is clickable; this is a reveal, not a task. Page toggling follows
  * the same show/hide-persistent-blocks pattern as walkthrough-instructions-plugin.js.
  */
@@ -43,11 +43,6 @@ var jsExplanationExample = (function (jspsych) {
         type: jspsych.ParameterType.STRING,
         default: "You"
       },
-      /** Condition flag: false hides the highlighted ball + explanation sentence. */
-      show_explanation: {
-        type: jspsych.ParameterType.BOOL,
-        default: true
-      },
       question_id: {
         type: jspsych.ParameterType.STRING,
         default: "explanation_example"
@@ -76,7 +71,6 @@ var jsExplanationExample = (function (jspsych) {
       const examples = trial.examples || [];
       const agentName = trial.agent_name || "You";
       const questionId = trial.question_id || "explanation_example";
-      const showExplanation = trial.show_explanation !== false;
       const hasIntro = !!trial.intro_html;
       const pageCount = examples.length + (hasIntro ? 1 : 0);
 
@@ -162,7 +156,7 @@ var jsExplanationExample = (function (jspsych) {
           const displayColor = utils.getDisplayColor(drawnColor);
           slotEl.innerHTML = `<div class="ball" style="background-color:${displayColor};" data-urn="${urnKey}" data-color="${drawnColor}"></div>`;
 
-          if (showExplanation && ex.cause_urn === urnKey) {
+          if (ex.cause_urn === urnKey) {
             utils.markHighlightedBall(slotEl, isWin);
           }
 
@@ -180,7 +174,7 @@ var jsExplanationExample = (function (jspsych) {
 
         feedbackText.innerHTML = utils.renderDrawDescription(draw, urnKeys, agentName);
 
-        if (showExplanation && ex.cause_urn) {
+        if (ex.cause_urn) {
           sentenceBox.innerHTML = `<p>${utils.renderExplanationSentence(isWin, ex.cause_color, ex.cause_urn, agentName)}</p>`;
         } else {
           sentenceBox.innerHTML = `<p>${utils.renderOutcomeOnlySentence(isWin, agentName)}</p>`;
@@ -192,7 +186,7 @@ var jsExplanationExample = (function (jspsych) {
           example_id: ex.id || null,
           draw_A: draw.A,
           draw_B: draw.B,
-          cause_urn: showExplanation ? (ex.cause_urn || null) : null,
+          cause_urn: ex.cause_urn || null,
           result: isWin ? "win" : "lose"
         });
       };

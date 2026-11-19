@@ -20,11 +20,12 @@ function createStudyDirectory(string $dir): void
     }
 }
 
-function ensureSaveDirectory(array $config, string $condition): string
+function ensureSaveDirectory(array $config): string
 {
-    $parent = rtrim($config[$condition]['exp2_data_dir'], '/');
+    $parent = rtrim($config['data_dir'], '/');
     if ($parent === '') throw new RuntimeException('Save directory is not configured');
     createStudyDirectory($parent);
+    if (!is_writable($parent)) throw new RuntimeException('Save root is not writable by PHP (needed for assign_log.csv)');
     createStudyDirectory($parent . '/data');
     $base = realpath($parent . '/data');
     if ($base === false || !is_writable($base)) throw new RuntimeException('Save directory is not writable');

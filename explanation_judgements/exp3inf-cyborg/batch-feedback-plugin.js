@@ -49,13 +49,6 @@ var jsBatchFeedback = (function (jspsych) {
         type: jspsych.ParameterType.STRING,
         default: "John"
       },
-      /** false for the no-explanation condition: the left column's
-       * observation cards still get the yellow-highlighter sentence, but
-       * stating only the outcome, and the ball is never ring-highlighted. */
-      show_explanation: {
-        type: jspsych.ParameterType.BOOL,
-        default: true
-      },
       /** Default true: one full urn display is shown once, above the
        * column, as a size/probability reference; each card then shows
        * only a compact single row of drawn balls in their slots instead
@@ -97,7 +90,6 @@ var jsBatchFeedback = (function (jspsych) {
       const scenarios = trial.scenarios || [];
       const questionId = trial.question_id || "batch_feedback";
       const agentName = trial.agent_name || "John";
-      const showExplanation = trial.show_explanation !== false;
       const sharedUrnsDisplay = trial.shared_urns_display !== false;
 
       const attemptsByScenarioId = {};
@@ -190,7 +182,7 @@ var jsBatchFeedback = (function (jspsych) {
       display_element.innerHTML = `
         <div class="pcol-container${urnKeys.length <= 2 ? " pcol-two-urns" : ""}">
           <div class="pcol-header">
-            ${scenarios.some(sc => sc.explanation_counts) ? window.ExplanationCounts.legend : ""}
+            <p class="pcol-instructions">${explanationCountsText}</p>
             <p class="pcol-instructions"><strong>Here are your predictions with the correct outcomes${explanationsClause} in highlighted text. These will also be provided in the next round.</strong></p>
           </div>
           ${sharedUrnsBlockHTML}
@@ -246,18 +238,9 @@ var jsBatchFeedback = (function (jspsych) {
 
         const cardEl = cards[idx];
         populateDraw(cardEl, draw);
-        if (showExplanation && sc.explanation_counts) window.ExplanationCounts.render(cardEl, sc.explanation_counts, urnKeys, actualWin);
-        if (showExplanation && sc.selected_urn) {
-          const slotEl = cardEl.querySelector(`#slot-${sc.selected_urn}`);
-          if (slotEl) utils.markHighlightedBall(slotEl, actualWin);
-        }
-
+        if (sc.explanation_counts) window.ExplanationCounts.render(cardEl, sc.explanation_counts, urnKeys, actualWin, draw, agentName);
         const actualSentenceEl = cardEl.querySelector(`#bf-actual-sentence-${idx}`);
-        if (actualSentenceEl) {
-          actualSentenceEl.innerHTML = (showExplanation && sc.selected_urn)
-            ? utils.renderExplanationSentence(actualWin, sc.selected_color, sc.selected_urn, agentName)
-            : utils.renderOutcomeOnlySentence(actualWin, agentName);
-        }
+        if (actualSentenceEl) actualSentenceEl.innerHTML = utils.renderOutcomeOnlySentence(actualWin, agentName);
 
         const predSentenceEl = cardEl.querySelector(`#bf-pred-sentence-${idx}`);
         const correctnessEl = cardEl.querySelector(`#bf-correctness-${idx}`);

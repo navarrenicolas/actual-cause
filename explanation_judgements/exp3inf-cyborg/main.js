@@ -1,7 +1,7 @@
 // Study 3 uses an independent queue preserving the original yoked scenario order.
 // ===== Bootstrap: try to fetch the assigned experiment_1 dataset before
 // building anything else, since the main task's urns/scenarios come from
-// it in both conditions.
+// the assigned Study 1 record.
 //
 // jsPsych doesn't create its display element until jsPsych.run() actually
 // starts, so getDisplayElement() is unusable for the loading/error states
@@ -11,65 +11,73 @@
 let jsPsych;
 const subject_id = "subj_" + Math.random().toString(36).substring(2, 10);
 
-// Dev-only preview path: open main.html?mock=1 (even as a plain file://
-// page, or via any static server) to run the whole timeline against a
-// bundled sample record with no PHP involved at all — useful for eyeballing
-// the design. Real runs (no query param) always go through
-// assign_dataset.php. See test-harness/ for the equivalent fixture used
-// when testing assign_dataset.php itself via `php -S`.
+// Only the explicit mock parameter disables assignment and server saving.
 const useMockData = new URLSearchParams(window.location.search).get("mock") === "1";
+// Probabilities for boxes A, B, C, D in mock mode. null preserves the sampled
+// participant's assignment. Example: [0.9, 0.6, 0.4, 0.1].
+const MOCK_URN_ORDER = null;
 
-// Study 2 baseline data are reused; no new baseline is allocated here.
-const forceNoExplanation = false; // Study 3 has one pooled-explanation condition.
+async function loadJSON(path) {
+  if (useMockData) {
+    const name = path.replace(/^data_harness\//, '');
+    const data = window.Study3HarnessData?.[name];
+    if (!data) throw new Error(`Missing mock harness data: ${name}`);
+    return JSON.parse(JSON.stringify(data));
+  }
+  const response = await fetch(path, { cache: "no-store" });
+  if (!response.ok) throw new Error(`Unable to load ${path}`);
+  return response.json();
+}
 
-const MOCK_DATASET = {
-  subject_id: "subj_mockpreview",
-  rule_key: "rule4",
-  urn_colors: { A: "orange", B: "blue", C: "purple", D: "hotpink" },
-  urn_probs: { A: 0.9, B: 0.6, C: 0.4, D: 0.1 },
-  scenarios: [
-    { id: 1, draw: { A: "orange", B: "blue", C: "purple", D: "hotpink" }, result: "win", selected_urn: "B", selected_color: "blue" },
-    { id: 2, draw: { A: "orange", B: "blue", C: "purple", D: "lightgrey" }, result: "win", selected_urn: "B", selected_color: "blue" },
-    { id: 3, draw: { A: "orange", B: "blue", C: "lightgrey", D: "hotpink" }, result: "win", selected_urn: "A", selected_color: "orange" },
-    { id: 4, draw: { A: "orange", B: "blue", C: "lightgrey", D: "lightgrey" }, result: "win", selected_urn: "A", selected_color: "orange" },
-    { id: 5, draw: { A: "orange", B: "lightgrey", C: "purple", D: "hotpink" }, result: "win", selected_urn: "A", selected_color: "orange" },
-    { id: 6, draw: { A: "orange", B: "lightgrey", C: "purple", D: "lightgrey" }, result: "win", selected_urn: "A", selected_color: "orange" },
-    { id: 7, draw: { A: "orange", B: "lightgrey", C: "lightgrey", D: "hotpink" }, result: "win", selected_urn: "A", selected_color: "orange" },
-    { id: 8, draw: { A: "orange", B: "lightgrey", C: "lightgrey", D: "lightgrey" }, result: "win", selected_urn: "A", selected_color: "orange" },
-    { id: 9, draw: { A: "lightgrey", B: "blue", C: "purple", D: "hotpink" }, result: "win", selected_urn: "B", selected_color: "blue" },
-    { id: 10, draw: { A: "lightgrey", B: "blue", C: "purple", D: "lightgrey" }, result: "win", selected_urn: "B", selected_color: "blue" },
-    { id: 11, draw: { A: "lightgrey", B: "blue", C: "lightgrey", D: "hotpink" }, result: "win", selected_urn: "D", selected_color: "hotpink" },
-    { id: 12, draw: { A: "lightgrey", B: "blue", C: "lightgrey", D: "lightgrey" }, result: "win", selected_urn: "B", selected_color: "blue" },
-    { id: 13, draw: { A: "lightgrey", B: "lightgrey", C: "purple", D: "hotpink" }, result: "win", selected_urn: "D", selected_color: "hotpink" },
-    { id: 14, draw: { A: "lightgrey", B: "lightgrey", C: "purple", D: "lightgrey" }, result: "lose", selected_urn: "B", selected_color: "lightgrey" },
-    { id: 15, draw: { A: "lightgrey", B: "lightgrey", C: "lightgrey", D: "hotpink" }, result: "win", selected_urn: "D", selected_color: "hotpink" },
-    { id: 16, draw: { A: "lightgrey", B: "lightgrey", C: "lightgrey", D: "lightgrey" }, result: "lose", selected_urn: "A", selected_color: "lightgrey" }
-  ]
-};
+function applyMockUrnOrder(record, order) {
+  if (order === null) return record;
+  const keys = ["A", "B", "C", "D"];
+  if (!Array.isArray(order) || order.length !== 4 ||
+      [...order].sort((a, b) => a - b).join(',') !== '0.1,0.4,0.6,0.9') {
+    throw new Error('MOCK_URN_ORDER must contain 0.9, 0.6, 0.4, 0.1 exactly once');
+  }
+  const sourceKey = Object.fromEntries(keys.map((key, i) =>
+    [key, keys.find(old => record.urn_probs[old] === order[i])]
+  ));
+  return {
+    ...record,
+    urn_probs: Object.fromEntries(keys.map((key, i) => [key, order[i]])),
+    scenarios: record.scenarios.map(sc => ({
+      id: sc.id,
+      result: sc.result,
+      draw: Object.fromEntries(keys.map(key => [key,
+        sc.draw[sourceKey[key]] === 'lightgrey' ? 'lightgrey' : record.urn_colors[key]
+      ]))
+    }))
+  };
+}
 
 async function fetchDataset() {
-  if (useMockData) return {
-    condition: forceNoExplanation ? "no_explanation" : "explanation",
-    dataset: MOCK_DATASET
-  };
+  if (useMockData) {
+    const records = await loadJSON('data_harness/subject_data.json');
+    if (!records.length) throw new Error('No mock participants available');
+    const record = records[Math.floor(Math.random() * records.length)];
+    return { dataset: applyMockUrnOrder(record, MOCK_URN_ORDER) };
+  }
   const params = new URLSearchParams({ exp2_subject_id: subject_id });
-  if (forceNoExplanation) params.set("condition", "no_explanation");
   const res = await fetch(`assign_dataset.php?${params}`, { cache: "no-store" });
   const body = await res.json();
-  if (!res.ok || !body.dataset) throw new Error(body.code || body.error || "Failed to assign dataset");
-  if (body.condition !== "explanation") throw new Error("Invalid assigned condition");
+  if (!res.ok || !body.dataset) {
+    const error = new Error([body.code, body.error].filter(Boolean).join(': ') || 'Failed to assign dataset');
+    error.code = body.code;
+    throw error;
+  }
   return body;
 }
 
 function buildAssignedStudy(assignment) {
   const record = assignment.dataset;
-  const showExplanation = assignment.condition === "explanation";
   const fourUrnMap = {};
   Object.keys(record.urn_colors).forEach((key) => {
     fourUrnMap[key] = { color: record.urn_colors[key], prob: record.urn_probs[key] };
   });
   return {
-    showExplanation, fourUrnMap, ruleKey: record.rule_key, exp1SubjectId: record.subject_id,
+    fourUrnMap, ruleKey: record.rule_key, exp1SubjectId: record.subject_id,
     assignmentSource: useMockData ? "mock" : "dataset",
     orderedScenarios: window.ExplanationCounts.attach(record)
   };
@@ -95,19 +103,24 @@ function showFatalError(message, showRetryInstructions = true) {
 
 async function bootstrap() {
   showLoadingMessage();
+  if (!useMockData && window.location.protocol === "file:") {
+    showFatalError('Non-mock assignment requires PHP. Start the server with <code>sh serve.sh</code> in the experiment folder, then open <a href="http://127.0.0.1:8000/main.html">http://127.0.0.1:8000/main.html</a>.', false);
+    return;
+  }
 
   let assignedStudy;
   try {
+    window.Study3CountsData = await loadJSON('data_harness/selections.json');
     assignedStudy = buildAssignedStudy(await fetchDataset());
   } catch (err) {
     console.error(err);
-    const unavailable = err && err.message === "no_data_available";
+    const unavailable = err && err.code === "no_data_available";
     showFatalError(unavailable
       ? "This experiment is currently not available. Please return to Prolific."
       : "There was a problem starting the study.", !unavailable);
     return;
   }
-  const { showExplanation, fourUrnMap, ruleKey, orderedScenarios, exp1SubjectId, assignmentSource } = assignedStudy;
+  const { fourUrnMap, ruleKey, orderedScenarios, exp1SubjectId, assignmentSource } = assignedStudy;
 
   const fourUrnLabels = buildUrnLabels(fourUrnMap);
   const fourUrnBallsData = getOrCreateUrnsData(fourUrnMap);
@@ -139,7 +152,6 @@ async function bootstrap() {
     study: "exp3inf",
     explanation_format: "pooled_counts",
     explanation_counts_version: window.Study3CountsData.version,
-    condition: showExplanation ? "explanation" : "no_explanation",
     exp1_subject_id: exp1SubjectId,
     assignment_source: assignmentSource,
     rule_key: ruleKey,
@@ -151,6 +163,7 @@ async function bootstrap() {
   });
 
   const timeline = [];
+  
 
   // ----- Consent, fullscreen, & Prolific ID -----
   timeline.push(consentTrial);
@@ -193,7 +206,6 @@ async function bootstrap() {
     rule_fn: disjunctiveRuleFn,
     rule_text: disjunctiveRuleText,
     include_rule_pages: true,
-    show_explanation: showExplanation,
     cause_urn: disjunctiveExamples[0].cause_urn,
     cause_color: disjunctiveExamples[0].cause_color,
     question_id: "mechanics_walkthrough",
@@ -213,7 +225,7 @@ async function bootstrap() {
     type: jsPsychHtmlButtonResponse,
     stimulus: `
       ${practiceLabelHTML(1, 2)}
-      <div class="instructions-container">${taskDescriptionHTML(showExplanation)}</div>`,
+      <div class="instructions-container">${taskDescriptionHTML()}</div>`,
     choices: ["Continue"],
     data: { question_id: "task_description" },
     on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
@@ -226,7 +238,6 @@ async function bootstrap() {
     urn_map: twoUrnMap,
     urn_keys: ["A", "B"],
     agent_name: "John",
-    show_explanation: showExplanation,
     rule_text: disjunctivePracticeRuleText,
     question_id: "disjunctive_examples",
     finish_button_label: "Continue",
@@ -242,7 +253,6 @@ async function bootstrap() {
     urn_keys: ["A", "B"],
     agent_name: "John",
     rule_fn: disjunctiveRuleFn,
-    show_explanation: showExplanation,
     given_column_highlight: true,
     rule_text: disjunctivePracticeRuleText,
     feedback_mode: "retry",
@@ -258,7 +268,7 @@ async function bootstrap() {
     type: jsPsychHtmlButtonResponse,
     stimulus: `
       ${practiceLabelHTML(2, 2)}
-      <div class="instructions-container">${aDifferentRuleHTML(showExplanation)}</div>`,
+      <div class="instructions-container">${aDifferentRuleHTML()}</div>`,
     choices: ["Continue"],
     data: { question_id: "pre_conjunctive_examples" },
     on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
@@ -271,7 +281,6 @@ async function bootstrap() {
     urn_map: twoUrnMap,
     urn_keys: ["A", "B"],
     agent_name: "John",
-    show_explanation: showExplanation,
     rule_text: conjunctivePracticeRuleText,
     question_id: "conjunctive_examples",
     finish_button_label: "Continue",
@@ -287,7 +296,6 @@ async function bootstrap() {
     urn_keys: ["A", "B"],
     agent_name: "John",
     rule_fn: conjunctiveRuleFn,
-    show_explanation: showExplanation,
     given_column_highlight: true,
     rule_text: conjunctivePracticeRuleText,
     feedback_mode: "retry",
@@ -338,7 +346,7 @@ async function bootstrap() {
 
   timeline.push({
     type: jsPsychHtmlButtonResponse,
-    stimulus: `<div class="instructions-container">${preExperimentHTML(showExplanation, totalRounds)}</div>`,
+    stimulus: `<div class="instructions-container">${preExperimentHTML(totalRounds)}</div>`,
     choices: ["Start"],
     on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; },
     data: { question_id: "pre_experiment" }
@@ -354,7 +362,6 @@ async function bootstrap() {
       urn_map: fourUrnMap,
       urn_keys: urnKeysFour,
       agent_name: "John",
-      show_explanation: showExplanation,
       given_column_highlight: true,
       round_number: roundNumber,
       total_rounds: totalRounds,
@@ -377,7 +384,6 @@ async function bootstrap() {
         urn_map: fourUrnMap,
         urn_keys: urnKeysFour,
         agent_name: "John",
-        show_explanation: showExplanation,
         question_id: `batch_feedback_${roundNumber}`,
         data: { question_id: `batch_feedback_${roundNumber}` },
         on_finish: function () { jsPsych.getDisplayElement().innerHTML = ""; }
@@ -429,15 +435,13 @@ async function bootstrap() {
       if (!useMockData) {
         await saveReplayToServer(
           jsPsych,
-          jsPsych.extensions["cyborg-hunter-replay"].getLastRecording(),
-          showExplanation ? "explanation" : "no_explanation"
+          jsPsych.extensions["cyborg-hunter-replay"].getLastRecording()
         );
       }
 
       jsPsych.data.get().values().forEach((trial) => { delete trial.stimulus; });
 
-      const filenamePrefix = showExplanation ? "causal_inf_exp3" : "causal_inf_exp2_noexpl";
-      const condition = showExplanation ? "explanation" : "no_explanation";
+      const filenamePrefix = "causal_inf_exp3";
       if (useMockData) {
         jsPsych.data.get().localSave("csv", `${filenamePrefix}_${subject_id}.csv`);
       }
@@ -448,7 +452,7 @@ async function bootstrap() {
         } else {
           alert("There was a problem saving your data. Please check your connection and try again.");
         }
-      }, condition);
+      });
     }
   });
 

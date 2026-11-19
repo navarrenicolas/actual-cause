@@ -1,11 +1,11 @@
 // Keep the completed recording in memory until the server acknowledges it.
-async function saveReplayToServer(jsPsych, recording, condition) {
+async function saveReplayToServer(jsPsych, recording) {
   if (!recording) {
     console.error("Replay recorder did not produce a recording");
     jsPsych.data.addProperties({ replayUploadStatus: "missing_recording" });
     return; // Still save the participant's behavioural data.
   }
-  const body = JSON.stringify({ recording, condition });
+  const body = JSON.stringify({ recording });
   const display = jsPsych.getDisplayElement();
   for (;;) {
     display.innerHTML = "<p>Saving your session. Please keep this page open.</p>";

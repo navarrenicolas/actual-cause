@@ -61,16 +61,8 @@ var jsWalkthroughInstructions = (function (jspsych) {
         type: jspsych.ParameterType.BOOL,
         default: true
       },
-      /** Set false to drop the explanation pages entirely (no-explanation
-       * condition) — there's nothing to introduce there, not even an
-       * outcome-only version, since pages 6-8 already cover the outcome.
-       * Only meaningful when include_rule_pages is true. */
-      show_explanation: {
-        type: jspsych.ParameterType.BOOL,
-        default: true
-      },
       /** Which urn's ball caused the outcome, for the explanation pages —
-       * required (with cause_color) whenever show_explanation is true. */
+       * required together with cause_color. */
       cause_urn: {
         type: jspsych.ParameterType.STRING,
         default: null
@@ -107,7 +99,7 @@ var jsWalkthroughInstructions = (function (jspsych) {
     }, overrides);
   }
 
-  function buildPages(includeRulePages, includeExplanationPages, includeOutro) {
+  function buildPages(includeRulePages, includeOutro) {
     const pages = [
       makePage({ intro: true }),                                                                                          // 1. Introduction to the boxes
       makePage({ interactive: true, title: "Drawing from the boxes", promptDraw: true }),                                  // 2. Interactive draws with descriptions
@@ -119,10 +111,8 @@ var jsWalkthroughInstructions = (function (jspsych) {
       pages.push(makePage({ interactive: true, title: "The rule", feedback: true, rule: true }));                                                          // 6. Introduction of the rule
       pages.push(makePage({ interactive: true, title: "The result", feedback: true, rule: true, result: true }));                                          // 7. Rule outcome
       pages.push(makePage({ interactive: true, title: "The result", feedback: true, rule: true, result: true, highlight: "result", tooltip: RESULT_TOOLTIP })); // 8. Pop up: outcome
-      if (includeExplanationPages) {
         pages.push(makePage({ interactive: true, title: "The explanation", feedback: true, rule: true, result: true, explanation: true }));                                                        // 9. Introduction of explanation
         pages.push(makePage({ interactive: true, title: "The explanation", feedback: true, rule: true, result: true, explanation: true, highlight: "explanation", tooltip: EXPLANATION_TOOLTIP })); // 10. Pop up: explanation
-      }
     }
     if (includeOutro) pages.push(makePage({ outro: true }));
     return pages;
@@ -138,8 +128,7 @@ var jsWalkthroughInstructions = (function (jspsych) {
       const urnKeys = trial.urn_keys || ["A", "B", "C", "D"];
       const targetDraw = trial.draw || {};
       const questionId = trial.question_id || "walkthrough";
-      const showExplanation = trial.show_explanation !== false;
-      const PAGES = buildPages(trial.include_rule_pages !== false, showExplanation, !!trial.outro_html);
+      const PAGES = buildPages(trial.include_rule_pages !== false, !!trial.outro_html);
 
       const drawnSoFar = {};
 
